@@ -1,0 +1,284 @@
+/* Estilos globales para los modales de Evaluación y Asignación */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-contenido-evaluador,
+.modal-contenido-evaluar {
+    background: #ffffff;
+    width: 90%;
+    max-width: 580px;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    max-height: 90vh;
+    overflow-y: auto;
+    color: #333;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #eaeaea;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: #1f2937;
+}
+
+.btn-cerrar {
+    background: transparent;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: #6b7280;
+    line-height: 1;
+}
+
+.btn-cerrar:hover {
+    color: #111827;
+}
+
+.info-poster-resumen {
+    background-color: #f8fafc;
+    border-left: 4px solid #0284c7;
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+}
+
+.info-poster-resumen p {
+    margin: 4px 0;
+}
+
+.filtro-contenedor {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filtro-contenedor label {
+    font-weight: 600;
+    font-size: 0.88rem;
+}
+
+.filtro-contenedor input {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.filtro-contenedor input:focus {
+    border-color: #0284c7;
+}
+
+.lista-evaluadores {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 16px;
+    background: #fafafa;
+}
+
+.item-evaluador {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.item-evaluador:hover {
+    background-color: #f1f5f9;
+}
+
+.datos-evaluador {
+    display: flex;
+    flex-direction: column;
+}
+
+.datos-evaluador .nombre {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.datos-evaluador .carrera {
+    font-size: 0.82rem;
+    color: #64748b;
+}
+
+.datos-evaluador .correo {
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+.criterio {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.criterio label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.valor-nota {
+    font-weight: bold;
+    color: #0284c7;
+}
+
+.criterio input[type="range"] {
+    width: 100%;
+    accent-color: #0284c7;
+    cursor: pointer;
+}
+
+.resumen-promedio {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+.nota-promedio {
+    font-size: 1.3rem;
+    color: #16a34a;
+}
+
+.campo-observaciones {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.campo-observaciones label {
+    font-weight: 600;
+    font-size: 0.88rem;
+}
+
+.campo-observaciones textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    resize: vertical;
+    font-size: 0.9rem;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.modal-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.btn-guardar {
+    background: #0284c7;
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.btn-guardar:hover {
+    background: #0369a1;
+}
+
+.btn-cancelar {
+    background: #64748b;
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.btn-cancelar:hover {
+    background: #475569;
+}
+
+.alerta {
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    font-size: 0.88rem;
+}
+
+.alerta-exito {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.alerta-error {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+/* Botones de acción dentro de la tabla */
+.btn-accion-tabla {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-evaluar {
+    background-color: #f59e0b;
+    color: #ffffff;
+}
+
+.btn-evaluar:hover {
+    background-color: #d97706;
+}
+
+.btn-asignar {
+    background-color: #0284c7;
+    color: #ffffff;
+}
+
+.btn-asignar:hover {
+    background-color: #0369a1;
+}

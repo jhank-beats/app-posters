@@ -1,0 +1,13 @@
+#root {
+  /* Hacemos que el div principal de React también sea un contenedor flex */
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Esto hace que #root ocupe todo el alto del body */
+
+  /* Eliminamos el padding y el margin que creaban espacios */
+  margin: 0;
+  padding: 0;
+  
+  /* Mantenemos el text-align si lo necesitas para el contenido general */
+  text-align: center;
+}

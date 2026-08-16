@@ -1,0 +1,504 @@
+
+/* =========================
+  homepage Super Admin
+   Header
+   ========================= */
+.encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+    margin-left: 2rem;
+    margin-right: 2rem;
+}
+
+.logo-nav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo-ucc {
+    height: 50px;
+}
+
+nav {
+    cursor: pointer;
+}
+
+a {
+    margin: 0 1rem;
+    font-weight: 500;
+    color: #000000;
+    text-decoration: inherit;
+}
+
+.boton-hamburguesa {
+  display: none;
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width:990px) {
+  /* El nav se oculta y se despliega con hamburguesa */
+  .menu-nav {
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    position: absolute;
+    top: 0;  /* debajo del header */
+    right: 0px;
+    bottom: 0;
+    background: #fbfafa;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    gap: 10px;  
+    box-shadow: 0 0 0 100vmax #41414135;
+  }
+  
+  link {
+    color: #00acc9;
+  }
+  .menu-nav button:hover {
+    background-color: #3d3d3d24;
+    transform: scale(1.1);
+  }
+
+  .menu-usuario {
+    display: none;
+    flex-direction: column;
+    align-items: center; 
+    position: absolute;
+    top: 70px;   
+    right: 80px;
+    background: #fff;
+    padding: 2rem 1rem 1rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    gap: 10px;
+    box-shadow: 0 0 0 100vmax #41414135;
+  }
+
+  .menu-usuario .boton-cerrar {
+    position: absolute;
+    top: -10px;    
+    right: -10px;  /* lo sacamos un poco hacia la derecha */
+    font-size: 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+  .menu-usuario .boton-cerrar:hover {
+    color: #00acc9;
+  }
+
+  .menu-nav.activo, .menu-usuario.activo {
+    display: flex;
+    
+  }
+
+  /* La parte derecha: Sesión + Registro + Hamburguesa */
+  .acciones-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: -1rem;
+  }
+
+  .boton-hamburguesa, .boton-usuario, .boton-cerrar {
+    display: flex;
+  }
+  
+
+  .boton-hamburguesa button {
+    color: #000000;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+}
+
+
+/* 
+-------------------------------------------------------------------- 
+inicio 
+-------------------------------------------------------------------- 
+*/
+.inicio {
+    padding: 3rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    grid-template-rows: auto auto;  
+    gap: 1rem;
+    column-gap: 5rem;
+}
+
+.texto-inicio {
+    max-width: clamp(250px, 90%, 700px);
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.grupo-tarjetas {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin: 2rem 0;
+}
+
+.tarjeta {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.tarjeta:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.icono {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+
+/* =========================
+   INICIO - RESPONSIVE UNIFICADO
+   ========================= */
+@media (max-width:1020px) {
+  .inicio {
+    margin-top: -2rem;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem 1rem;
+  }
+
+  .texto-inicio {
+    max-width: 95%;
+    text-align: center;
+  }
+
+  .texto-inicio h1 {
+    font-size: clamp(2rem, 7vw, 2.8rem);
+    line-height: 1.25;
+    font-weight: 700;
+    color: #0f0f0f;
+    margin-bottom: 1rem;
+  }
+  .texto-inicio p {
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    line-height: 1.5;
+    color: #333;
+    margin: 0 auto;
+    max-width: 90%;
+  }
+}
+
+
+/* 
+-------------------------------------------------------------------- 
+comunidad GensTI 
+-------------------------------------------------------------------- 
+*/
+.comunidad-gensti { 
+  padding: 1rem 2rem; 
+  align-items: center;
+} 
+
+.cuadros-texto { 
+  display: flex;
+  justify-content: center;     /* Centra horizontalmente */
+  align-items: flex-start;
+  flex-wrap: nowrap;           /* Mantén una fila la mayor parte del tiempo */
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.cuadros-texto > div { 
+  border: 1px solid #4db1c31d; 
+  border-radius: 25px; 
+  box-shadow: 0px 3px 8px rgba(0,0,0,0.25); 
+  flex: 1 1 25%;               /* 🔑 Cada cuadro ocupa 25% del ancho, pero puede ajustarse */
+  max-width: 350px;            /* No se agranda demasiado */
+  min-width: 250px;            /* No se hace tan pequeño */
+  transition: all 0.3s ease;   /* Transición suave al redimensionar */
+}
+
+.imagen-cuadro-comunidad { 
+  width: 120px; 
+  height: 120px; 
+  border-radius: 30px; 
+  margin-top: 2rem; 
+  margin-bottom: 0.2rem; 
+} 
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width:850px) {
+  .comunidad-gensti { 
+    margin-top: -3rem;
+  } 
+
+  .subtitulo-cuadro-comunidad {
+    font-size: clamp(1.4rem, 4vw, 1.5rem); /* ✅ título responsive */
+    margin-bottom: 0.8rem;
+  }
+
+  .subtitulo-texto-comunidad p {
+  font-size: clamp(0.9rem, 2vw, 1.2rem); /* ✅ texto adaptativo */
+  }
+    .cuadros-texto {
+    flex-wrap: wrap; /* permite que salte a una segunda línea si no cabe */
+  }
+  .cuadros-texto > div {
+    flex: 1 1 45%;  /* dos por fila */
+    min-width: 220px;
+  }
+}
+
+
+/* -------------------------------------------------------------------- 
+novedades - carrusel 
+-------------------------------------------------------------------- */
+.carrusel-separacion {
+  margin-top: 2rem;
+}
+.carousel {
+  position: relative;
+  border-radius: 16px;
+  max-width: 850px;
+  margin: auto;
+  overflow: hidden;
+  box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+.carousel img {
+  display: block ;
+  width: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 3px solid #42494a33;
+  opacity: 0.95;
+  transition: opacity 0.4s ease-in-out, 
+  transform 0.3s ease-in-out;
+}
+
+.carousel img:hover {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+.slide_direction {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  pointer-events: none;
+  padding: 0 10px; /* menos espacio en los lados */
+}
+
+.left,
+.right {
+  background-color: #5f5e5e;
+  width: 45px;      /* ancho fijo */
+  height: 45px;     /* alto fijo (igual que ancho = círculo perfecto) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;  
+  cursor: pointer;
+  transition: 0.3s;
+  pointer-events: auto;
+  opacity: 75%;
+}
+
+.left svg,
+.right svg {
+  width: 20px;
+  height: 20px;
+  fill: #fff;   /* flecha blanca */
+}
+
+.left:hover,
+.right:hover {
+  background-color: #4db1c3;
+  transform: scale(1.15);
+}
+
+/* Indicadores */
+.carousel-indicator {
+  position: absolute;
+  bottom: 18px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.dot {
+  background-color: #5f5e5e;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: 0.3s;
+  opacity: 75%;
+}
+
+.dot:hover {
+  background-color: #4db1c3;
+  width: 14px;
+  height: 14px;
+}
+
+.active {
+  background-color: #80ba27;
+  transform: scale(1.2);
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width:850px) {
+  .carousel {
+  max-width: 95%;
+}
+}
+
+/* -------------------------------------------------------------------- 
+footer 
+-------------------------------------------------------------------- */
+.footer {
+  margin-top: 4rem;
+  background-color: #132740; /* Azul fundadores */
+  color: #ffffff;
+  padding: 2rem 1rem 1rem;
+  font-family: Arial, sans-serif;
+  text-align: center; /* Centra todo el contenido */
+}
+
+.contenedor-footer {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0 auto;
+}
+
+/* Centrar el contenido de cada columna */
+.footer-columna {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.footer-texto {
+  color: #bcbcbc;
+  max-width: 300px;
+}
+
+.footer .logo-ucc {
+  width: 120px;
+  margin-bottom: 0.8rem;
+}
+
+.footer-columna h4 {
+  margin-bottom: 0.8rem;
+  font-size: 1rem;
+  color: #00acc9; /* Azul diversidad */
+}
+
+.footer-columna ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-columna ul li {
+  margin-bottom: 0.5rem;
+}
+
+.footer-columna ul li a {
+  text-decoration: none;
+  color: #fdfdfd;
+  font-size: 0.9rem;
+  transition: 0.3s;
+}
+
+.footer-columna ul li a:hover {
+  color: #80ba27; /* Verde solidario */
+}
+
+.footer-columna p {
+  font-size: 0.9rem;
+  color: #cccccc;
+}
+
+.footer-copy-creditos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  border-top: 1px solid #5f5e5e;
+  padding-top: 1rem;
+}
+
+.footer-copy-creditos strong  {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  color: #80ba27; 
+}
+
+/* -------------------------------------------------------------------- 
+Responsive 
+-------------------------------------------------------------------- */
+@media (max-width: 992px) {
+  .contenedor-footer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .contenedor-footer {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.1rem;
+  }
+
+  .footer-columna {
+    margin-bottom: 1rem;
+  }
+
+  .footer-copy-creditos {
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+}
+
+
+
+/* -------------------------------------------------------------------- 
+Overlay Formularios
+-------------------------------------------------------------------- */
+.modal-registro {
+  position: fixed;
+top: 0; left: 0;
+width: 100vw; height: 100vh;
+background-color: rgba(0,0,0,0.5);
+display: flex; justify-content: center; align-items: center;
+z-index: index 100;
+}

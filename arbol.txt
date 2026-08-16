@@ -1,0 +1,111 @@
+.
+├── backend
+│   ├── api
+│   │   ├── AsignarEvaluadores.php
+│   │   ├── Categorias.php
+│   │   ├── Evaluaciones.php
+│   │   ├── GestionarCuenta.php
+│   │   ├── InicioSesion.php
+│   │   ├── Registro.php
+│   │   ├── SubirPosters.php
+│   │   ├── TablaPosters.php
+│   │   ├── TablaSolicitudes.php
+│   │   └── TablaUsuarios.php
+│   ├── imgPosters
+│   │   ├── Estadistica de pandemia.pdf
+│   │   ├── ingles4.pdf
+│   │   ├── Nuevo modelo frontend.png
+│   │   ├── pexels-hendrik-b-744318.jpg
+│   │   ├── pexels-kaique-rocha-242140.jpg
+│   │   ├── Sistema de Seguridad.pdf
+│   │   ├── SOLICITUD EXONERACION DE PREPARATORIOS (1)-1.pdf
+│   │   ├── SOLICITUD EXONERACION DE PREPARATORIOS (1).pdf
+│   │   ├── StockSnap_YZ00UZN69T.jpg
+│   │   ├── VideoJuego Adaptativo.pdf
+│   │   └── violin-key-gb819f8b04_640.png
+│   ├── Conexion.php
+│   └── test.php
+├── BD
+│   ├── posters_cargar_posters.sql
+│   ├── posters_categorias.sql
+│   ├── posters_roles.sql
+│   └── posters_usuario.sql
+├── public
+│   └── img
+│       ├── logoucc.png
+│       └── poster.png
+├── src
+│   ├── assets
+│   │   ├── documentacion
+│   │   │   ├── DocumentacionCreacionDeAPlicativo.docx
+│   │   │   ├── prompt explicacion del proyecto.docx
+│   │   │   └── requirimientos poster delfin.docx
+│   │   ├── img
+│   │   │   └── logoucc.png
+│   │   ├── imgPosters
+│   │   │   ├── desktop.ini
+│   │   │   └── sad.jpg
+│   │   └── ~$cumentacionCreacionDeAPlicativo.docx
+│   ├── components
+│   │   ├── formularios
+│   │   │   ├── CargarPosters.jsx
+│   │   │   ├── Formulario.css
+│   │   │   ├── Login.jsx
+│   │   │   └── Registro.jsx
+│   │   ├── generales
+│   │   │   ├── Footer.jsx
+│   │   │   └── VolverArriba.jsx
+│   │   ├── homePage
+│   │   │   ├── Carrusel.jsx
+│   │   │   ├── CuadrosTextoComunidad.jsx
+│   │   │   ├── Header.jsx
+│   │   │   ├── HomePage.css
+│   │   │   ├── HomePage.jsx
+│   │   │   └── PreguntasFrecuentes.jsx
+│   │   ├── registro
+│   │   │   └── Registro.jsx
+│   │   └── roles
+│   │       ├── admin
+│   │       │   ├── HeaderAdmin.jsx
+│   │       │   └── HomePageAdmin.jsx
+│   │       ├── evaluador
+│   │       │   ├── HeaderEvaluador.jsx
+│   │       │   └── HomePageEvaluador.jsx
+│   │       ├── generales
+│   │       │   ├── AsignarEvaluadorModal.jsx
+│   │       │   ├── Categorias.jsx
+│   │       │   ├── Cuenta.jsx
+│   │       │   ├── EditarPoster.jsx
+│   │       │   ├── EditarUsuario.jsx
+│   │       │   ├── Evaluar.css
+│   │       │   ├── EvaluarPosterModal.jsx
+│   │       │   ├── MostrarPostersAdmin.jsx
+│   │       │   ├── MostrarPosters.jsx
+│   │       │   ├── roles.css
+│   │       │   ├── SolicitudesUsuarios.jsx
+│   │       │   └── Usuarios.jsx
+│   │       ├── super_admin
+│   │       │   ├── HeaderSuperAdmin.jsx
+│   │       │   └── HomePageSuperAdmin.jsx
+│   │       └── usuario
+│   │           ├── HeaderUsuario.jsx
+│   │           ├── HomePageSuperAdmin.css
+│   │           └── HomePageUsuario.jsx
+│   ├── analytics.js
+│   ├── App.css
+│   ├── App.jsx
+│   ├── index.css
+│   └── main.jsx
+├── arbol_proyecto.txt
+├── arbol.txt
+├── conf continue.txt
+├── eslint.config.js
+├── estructura-proyecto.txt
+├── index.html
+├── package.json
+├── package-lock.json
+├── paraIniciar.txt
+├── README.md
+└── vite.config.js
+
+23 directories, 86 files
