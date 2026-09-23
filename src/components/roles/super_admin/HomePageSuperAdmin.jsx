@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import HeaderSuperAdmin from "./HeaderSuperAdmin.jsx";
 import SolicitudesUsuarios from '../generales/SolicitudesUsuarios.jsx';
+import MostrarPosters from '../generales/MostrarPosters.jsx';
 import MostrarPostersAdmin from '../generales/MostrarPostersAdmin.jsx';
 import Usuarios from '../generales/Usuarios.jsx';
 import Categorias from '../generales/Categorias.jsx';
 import Cuenta from '../generales/Cuenta.jsx';
 import GestionEventosModal from './GestionEventosModal.jsx';
+import GestionEspaciosModal from '../generales/GestionEspaciosModal.jsx';
+import GestionCriterios from './GestionCriterios.jsx';
+import ListadoUbicaciones from '../generales/ListadoUbicaciones.jsx';
 import Footer from "../../generales/Footer.jsx";
 import VolverArriba from "../../generales/VolverArriba.jsx";
 import "../generales/roles.css";
@@ -23,10 +27,20 @@ const HomePageSuperAdmin = () => {
     const [eventosResumen, setEventosResumen] = useState([]);
     const [loadingEventos, setLoadingEventos] = useState(true);
 
+    // Estados para la Gestión de Espacios Físicos
+    const [mostrarGestionEspacios, setMostrarGestionEspacios] = useState(false);
+    const [espaciosResumen, setEspaciosResumen] = useState([]);
+
+    // Estado para el Listado Completo por Ubicaciones
+    const [mostrarListadoUbicaciones, setMostrarListadoUbicaciones] = useState(false);
+
+    // Estados para Criterios de Evaluación
+    const [mostrarCriterios, setMostrarCriterios] = useState(false);
+    const [criteriosResumen, setCriteriosResumen] = useState([]);
+
     const [nombreUsuario, setNombreUsuario] = useState("");
     const [idRolActual, setIdRolActual] = useState(null);
 
-    // Detección automática de la ruta del backend
     const obtenerUrlApi = async () => {
         try {
             const resPrincipal = await fetch(`${SERVER_URL}/backend/api/Eventos.php`);
@@ -43,13 +57,37 @@ const HomePageSuperAdmin = () => {
             if (!res.ok) throw new Error(`HTTP Error Status: ${res.status}`);
 
             const data = await res.json();
-            if (data.status === 'success') {
+            if (data.status === 'success' || data.success) {
                 setEventosResumen(data.data || []);
             }
         } catch (error) {
             console.error("Error al obtener eventos:", error);
         } finally {
             setLoadingEventos(false);
+        }
+    };
+
+    const cargarEspaciosResumen = async () => {
+        try {
+            const res = await fetch(`${SERVER_URL}/api/Espacios.php`);
+            const data = await res.json();
+            if (data.status === 'success' || data.success) {
+                setEspaciosResumen(data.data || []);
+            }
+        } catch (error) {
+            console.error("Error al cargar espacios físicos:", error);
+        }
+    };
+
+    const cargarCriteriosResumen = async () => {
+        try {
+            const res = await fetch(`${SERVER_URL}/api/Criterios.php`);
+            const data = await res.json();
+            if (data.success) {
+                setCriteriosResumen(data.data || []);
+            }
+        } catch (error) {
+            console.error("Error al cargar criterios de evaluación:", error);
         }
     };
 
@@ -62,6 +100,8 @@ const HomePageSuperAdmin = () => {
         if (idRol) setIdRolActual(parseInt(idRol));
 
         cargarEventosResumen();
+        cargarEspaciosResumen();
+        cargarCriteriosResumen();
     }, []);
 
     const limite = 3;
@@ -87,18 +127,18 @@ const HomePageSuperAdmin = () => {
                     <div className="grupo-tarjetas">
                         <div className="tarjeta">
                             <div className="icono">👥</div>
-                            <h3>Gestionar Usuarios / Asignar Roles</h3>
+                            <h3>Gestionar Usuarios / Roles</h3>
                             <p>Aprobar o rechazar solicitudes y modificar roles</p>
                         </div>
                         <div className="tarjeta">
-                            <div className="icono">🖼️</div>
-                            <h3>Administrar Pósters</h3>
-                            <p>Revisar, editar o eliminar</p>
+                            <div className="icono">📝</div>
+                            <h3>Criterios de Evaluación</h3>
+                            <p>Crear, modificar y parametrizar los criterios</p>
                         </div>
                         <div className="tarjeta">
-                            <div className="icono">📊</div>
-                            <h3>Modificar Categorías</h3>
-                            <p>Cambiar, agregar o eliminar categorías de los pósters</p>
+                            <div className="icono">📍</div>
+                            <h3>Espacios Físicos</h3>
+                            <p>Definir salones, estantes y capacidad de ubicación</p>
                         </div>
                         <div className="tarjeta">
                             <div className="icono">🗓️</div>
@@ -111,10 +151,8 @@ const HomePageSuperAdmin = () => {
 
             {/* Modal Cuenta */}
             {mostrarCuenta && (
-                <div className="modal-cuenta">
-                    <div className="modal">
-                        <Cuenta cerrarCuenta={() => setMostrarCuenta(false)} />
-                    </div>
+                <div className="modal">
+                    <Cuenta cerrarCuenta={() => setMostrarCuenta(false)} />
                 </div>
             )}
 
@@ -127,26 +165,153 @@ const HomePageSuperAdmin = () => {
                 />
             </section>
             {mostrarSolicitudes && (
-                <div className="modal-solicitudes">
-                    <div className="modal">
-                        <SolicitudesUsuarios cerrarTabla={() => setMostrarSolicitudes(false)} />
+                <div className="modal">
+                    <SolicitudesUsuarios cerrarTabla={() => setMostrarSolicitudes(false)} />
+                </div>
+            )}
+
+            {/* Criterios de Evaluación Dinámicos */}
+            <section id="criterios" className="eventos" style={{ marginTop: '30px' }}>
+                <h2>Criterios de Evaluación Dinámicos</h2>
+                <div className="tabla-contenedor">
+                    <table className="tabla-general">
+                        <thead>
+                            <tr>
+                                <th>Criterio</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {criteriosResumen.length === 0 ? (
+                                <tr>
+                                    <td colSpan="3" style={{ textAlign: 'center' }}>
+                                        No se encontraron criterios de evaluación registrados.
+                                    </td>
+                                </tr>
+                            ) : (
+                                criteriosResumen.slice(0, limite).map((crit) => (
+                                    <tr key={crit.id}>
+                                        <td><strong>{crit.nombre}</strong></td>
+                                        <td>{crit.descripcion || 'Sin descripción'}</td>
+                                        <td>
+                                            <span className="badge" style={{ background: '#28a745', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>
+                                                ACTIVO
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                    <div className="contenedor-ver-mas">
+                        <button className="btn-ver-mas" onClick={() => setMostrarCriterios(true)}>
+                            Administrar / Crear Criterios
+                        </button>
                     </div>
+                </div>
+            </section>
+
+            {/* Modal Gestión de Criterios */}
+            {mostrarCriterios && (
+                <div className="modal">
+                    <GestionCriterios
+                        cerrarTabla={() => {
+                            setMostrarCriterios(false);
+                            cargarCriteriosResumen();
+                        }}
+                    />
                 </div>
             )}
 
             {/* Posters publicados */}
             <section id="posters" className="posters-publicados">
                 <h2>Posters Publicados</h2>
-                <MostrarPostersAdmin
+                <MostrarPosters
                     limite={limite}
                     verMas={() => setMostrarPosters(true)}
                 />
             </section>
+
             {mostrarPosters && (
-                <div className="modal-posters">
-                    <div className="modal">
-                        <MostrarPostersAdmin cerrarTabla={() => setMostrarPosters(false)} />
+                <div className="modal">
+                    <MostrarPostersAdmin cerrarTabla={() => setMostrarPosters(false)} />
+                </div>
+            )}
+
+            {/* Gestión de Espacios Físicos (Resumen en Home) */}
+            <section id="espacios" className="eventos" style={{ marginTop: '30px' }}>
+                <h2>Gestión de Espacios Físicos y Capacidad</h2>
+                <div className="tabla-contenedor">
+                    <table className="tabla-general">
+                        <thead>
+                            <tr>
+                                <th>Nombre del Salón / Pabellón / Estante</th>
+                                <th>Capacidad Máxima</th>
+                                <th>Pósters Ocupados</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {espaciosResumen.length === 0 ? (
+                                <tr>
+                                    <td colSpan="4" style={{ textAlign: 'center' }}>
+                                        No se encontraron espacios físicos registrados.
+                                    </td>
+                                </tr>
+                            ) : (
+                                espaciosResumen.slice(0, limite).map((esp) => {
+                                    const ocupacion = esp.ocupacion_actual !== undefined ? parseInt(esp.ocupacion_actual) : (esp.ocupados || 0);
+                                    const lleno = ocupacion >= esp.capacidad;
+                                    return (
+                                        <tr key={esp.id_espacio}>
+                                            <td><strong>{esp.nombre_espacio}</strong></td>
+                                            <td>{esp.capacidad}</td>
+                                            <td>{ocupacion}</td>
+                                            <td>
+                                                {lleno ? (
+                                                    <span className="badge" style={{ background: '#dc3545', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>LLENO</span>
+                                                ) : (
+                                                    <span className="badge" style={{ background: '#28a745', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>DISPONIBLE</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                    <div className="contenedor-ver-mas" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                        <button className="btn-ver-mas" onClick={() => setMostrarGestionEspacios(true)}>
+                            Administrar / Crear Espacios Físicos
+                        </button>
+                        <button
+                            className="btn-ver-mas"
+                            onClick={() => setMostrarListadoUbicaciones(true)}
+                            style={{ background: '#17a2b8' }}
+                        >
+                            📍 Ver Listado Completo por Ubicaciones
+                        </button>
                     </div>
+                </div>
+            </section>
+
+            {/* Modal Gestión de Espacios Físicos */}
+            {mostrarGestionEspacios && (
+                <div className="modal">
+                    <GestionEspaciosModal
+                        cerrarModal={() => {
+                            setMostrarGestionEspacios(false);
+                            cargarEspaciosResumen();
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* Modal para ver el Listado de Ubicaciones Completo */}
+            {mostrarListadoUbicaciones && (
+                <div className="modal">
+                    <ListadoUbicaciones cerrarTabla={() => setMostrarListadoUbicaciones(false)} />
                 </div>
             )}
 
@@ -160,10 +325,8 @@ const HomePageSuperAdmin = () => {
                 />
             </section>
             {mostrarUsuarios && (
-                <div className="modal-usuarios">
-                    <div className="modal">
-                        <Usuarios cerrarTabla={() => setMostrarUsuarios(false)} />
-                    </div>
+                <div className="modal">
+                    <Usuarios cerrarTabla={() => setMostrarUsuarios(false)} />
                 </div>
             )}
 
@@ -176,10 +339,8 @@ const HomePageSuperAdmin = () => {
                 />
             </section>
             {mostrarCategorias && (
-                <div className="modal-categorias">
-                    <div className="modal">
-                        <Categorias cerrarTabla={() => setMostrarCategorias(false)} />
-                    </div>
+                <div className="modal">
+                    <Categorias cerrarTabla={() => setMostrarCategorias(false)} />
                 </div>
             )}
 
@@ -239,6 +400,10 @@ const HomePageSuperAdmin = () => {
             {mostrarEventos && (
                 <div className="modal">
                     <GestionEventosModal
+                        cerrarModal={() => {
+                            setMostrarEventos(false);
+                            cargarEventosResumen();
+                        }}
                         cerrarTabla={() => {
                             setMostrarEventos(false);
                             cargarEventosResumen();

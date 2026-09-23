@@ -15,7 +15,7 @@ import Carrusel from './Carrusel.jsx';
 import Header from './Header.jsx';
 import VolverArriba from '../generales/VolverArriba.jsx';
 import Registro from "../formularios/Registro";
-import Login from "../formularios/Login"; // 👈 1. IMPORTAR LOGIN
+import Login from "../formularios/Login";
 import PreguntasFrecuentes from './PreguntasFrecuentes.jsx';
 
 const images = [
@@ -130,19 +130,38 @@ const HomePage = () => {
                 </div>
 
                 <div className='posters-separacion'>
-                    <div>
+
+                    {/* Poster del semestre */}
+                    <div className='poster-card'>
                         <h3>Poster del Semestre</h3>
-                        <img className='imagen-poster' src="/img/poster.png" alt="Maqueta del poster para este semestre" />
-                        <a href="/img/poster.png" download={"Maqueta-Poster.png"}>Link de descarga de la imagen</a>
+
+                        <img
+                            className='imagen-poster'
+                            src="/img/poster.png"
+                            alt="Maqueta del poster para este semestre"
+                        />
+
+                        <a
+                            className='link-descarga-poster'
+                            href="/img/poster.png"
+                            download="Maqueta-Poster.png"
+                        >
+                            Descargar imagen del poster
+                        </a>
                     </div>
 
-                    <div>
+                    {/* Recomendaciones */}
+                    <div className='recomendaciones-poster'>
                         <h3>Recomendaciones para subir los posters</h3>
-                        <p>👉 Evita subir posters duplicados</p>
-                        <p>👉 Respeta los derechos de autor y evita el plagio</p>
-                        <p>👉 Revisa la información antes de publicar</p>
-                        <p>👉 Respeta los lineamientos de diseño institucional</p>
+
+                        <div className='lista-recomendaciones'>
+                            <p>👉 Evita subir posters duplicados</p>
+                            <p>👉 Respeta los derechos de autor y evita el plagio</p>
+                            <p>👉 Revisa la información antes de publicar</p>
+                            <p>👉 Respeta los lineamientos de diseño institucional</p>
+                        </div>
                     </div>
+
                 </div>
             </section>
 

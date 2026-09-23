@@ -4,9 +4,10 @@ import '../generales/roles.css';
 const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const EvaluacionPosters = ({ poster, idEvaluador, cerrarModal, alGuardar }) => {
-    const [contenido, setContenido] = useState(0);
-    const [diseno, setDiseno] = useState(0);
-    const [exposicion, setExposicion] = useState(0);
+    // Estados inicializados estrictamente en 1 por defecto
+    const [contenido, setContenido] = useState(1);
+    const [diseno, setDiseno] = useState(1);
+    const [exposicion, setExposicion] = useState(1);
     const [observaciones, setObservaciones] = useState('');
     const [cargando, setCargando] = useState(false);
     const [mensaje, setMensaje] = useState(null);
@@ -25,9 +26,15 @@ const EvaluacionPosters = ({ poster, idEvaluador, cerrarModal, alGuardar }) => {
 
             if (data.success && data.data && data.data.length > 0) {
                 const evalExistente = data.data[0];
-                setContenido(parseFloat(evalExistente.calificacion_contenido) || 0);
-                setDiseno(parseFloat(evalExistente.calificacion_diseno) || 0);
-                setExposicion(parseFloat(evalExistente.calificacion_exposicion) || 0);
+
+                // Mapeo seguro: si la BD trae null, 0 o algo menor a 1, se fuerza a 1
+                const valContenido = parseFloat(evalExistente.calificacion_contenido);
+                const valDiseno = parseFloat(evalExistente.calificacion_diseño);
+                const valExposicion = parseFloat(evalExistente.calificacion_exposicion);
+
+                setContenido(!isNaN(valContenido) && valContenido >= 1 ? valContenido : 1);
+                setDiseno(!isNaN(valDiseno) && valDiseno >= 1 ? valDiseno : 1);
+                setExposicion(!isNaN(valExposicion) && valExposicion >= 1 ? valExposicion : 1);
                 setObservaciones(evalExistente.observaciones || '');
             }
         } catch (error) {
@@ -36,23 +43,42 @@ const EvaluacionPosters = ({ poster, idEvaluador, cerrarModal, alGuardar }) => {
     };
 
     const calcularPromedio = () => {
-        const c = parseFloat(contenido) || 0;
-        const d = parseFloat(diseno) || 0;
-        const e = parseFloat(exposicion) || 0;
+        const c = parseFloat(contenido) || 1;
+        const d = parseFloat(diseno) || 1;
+        const e = parseFloat(exposicion) || 1;
         return ((c + d + e) / 3).toFixed(2);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setCargando(true);
         setMensaje(null);
+
+        const c = parseFloat(contenido);
+        const d = parseFloat(diseno);
+        const exp = parseFloat(exposicion);
+
+        // Validaciones estrictas con aviso específico si algún criterio es menor a 1 o mayor a 5
+        if (isNaN(c) || c < 1 || c > 5) {
+            setMensaje({ tipo: 'error', texto: 'El criterio de Contenido no es válido. La nota mínima es 1 y la máxima es 5.' });
+            return;
+        }
+        if (isNaN(d) || d < 1 || d > 5) {
+            setMensaje({ tipo: 'error', texto: 'El criterio de Diseño está en un valor no válido (menor a 1 o en 0). La nota mínima es 1.' });
+            return;
+        }
+        if (isNaN(exp) || exp < 1 || exp > 5) {
+            setMensaje({ tipo: 'error', texto: 'El criterio de Exposición no es válido. La nota mínima es 1 y la máxima es 5.' });
+            return;
+        }
+
+        setCargando(true);
 
         const payload = {
             id_poster: poster.id,
             id_evaluador: idEvaluador,
-            calificacion_contenido: parseFloat(contenido),
-            calificacion_diseno: parseFloat(diseno),
-            calificacion_exposicion: parseFloat(exposicion),
+            calificacion_contenido: c,
+            calificacion_diseño: d,
+            calificacion_exposicion: exp,
             observaciones: observaciones
         };
 
@@ -105,10 +131,10 @@ const EvaluacionPosters = ({ poster, idEvaluador, cerrarModal, alGuardar }) => {
 
                 <form onSubmit={handleSubmit} className="form-evaluacion">
                     <div className="grupo-input">
-                        <label>Calificación de Contenido (0.0 - 5.0):</label>
+                        <label>Calificación de Contenido (1.0 - 5.0):</label>
                         <input
                             type="number"
-                            min="0"
+                            min="1"
                             max="5"
                             step="0.1"
                             value={contenido}
@@ -118,10 +144,10 @@ const EvaluacionPosters = ({ poster, idEvaluador, cerrarModal, alGuardar }) => {
                     </div>
 
                     <div className="grupo-input">
-                        <label>Calificación de Diseño (0.0 - 5.0):</label>
+                        <label>Calificación de Diseño (1.0 - 5.0):</label>
                         <input
                             type="number"
-                            min="0"
+                            min="1"
                             max="5"
                             step="0.1"
                             value={diseno}
@@ -131,10 +157,10 @@ const EvaluacionPosters = ({ poster, idEvaluador, cerrarModal, alGuardar }) => {
                     </div>
 
                     <div className="grupo-input">
-                        <label>Calificación de Exposición (0.0 - 5.0):</label>
+                        <label>Calificación de Exposición (1.0 - 5.0):</label>
                         <input
                             type="number"
-                            min="0"
+                            min="1"
                             max="5"
                             step="0.1"
                             value={exposicion}

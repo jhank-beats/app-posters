@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 header("Content-Type: application/json; charset=UTF-8");
 
 include '../Conexion.php';
+include_once __DIR__ . '/includes/Correos.php';
 
 // Detección de duplicados y registro
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -29,6 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         echo json_encode(["status" => "error", "message" => "ID de usuario no válido"]);
         return;
     }
+    $id_usuario = intval($id_usuario);
 
     // 1. Sanitizar todas las variables globalmente (sirve para consulta e inserción)
     $titulo_escapado = mysqli_real_escape_string($conexion, $titulo);
@@ -92,7 +94,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $nombreArchivo = basename($_FILES['archivo']['name']);
         $rutaTemporal = $_FILES['archivo']['tmp_name'];
 
-        $directorioDestino = __DIR__ . "/../imgPosters/"; 
+        $directorioDestino = __DIR__ . "/../imgPosters/";
         if (!file_exists($directorioDestino)) {
             mkdir($directorioDestino, 0777, true);
         }
@@ -102,14 +104,72 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (move_uploaded_file($rutaTemporal, $rutaFinal)) {
             $rutaRelativa = "src/assets/imgPosters/" . $nombreArchivo;
 
-            $insertarDatos = "INSERT INTO `cargar_posters`
-                (`titulo`, `autores`, `descripcion`, `categoria`, `palabrasClave`, `ruta_imagen`, `id_usuario`) 
-                VALUES ('$titulo_escapado', '$autores_escapado', '$descripcion_escapada', '$categoria_escapada', '$palabrasClave_escapadas', '$rutaRelativa', $id_usuario)";
+            // --- INICIO DE ASIGNACIÓN AUTOMÁTICA DE ESPACIO FÍSICO ---
+            $sqlEvento = "SELECT id_evento FROM eventos WHERE activo = 1 LIMIT 1";
+            $resEvento = mysqli_query($conexion, $sqlEvento);
+            $id_evento_activo = 1;
+            if ($resEvento && $rowEv = mysqli_fetch_assoc($resEvento)) {
+                $id_evento_activo = intval($rowEv['id_evento']);
+            }
 
-            if (mysqli_query($conexion, $insertarDatos)) {
-                echo json_encode(["status" => "success", "message" => "Póster registrado y guardado exitosamente"]);
-            } else {
-                echo json_encode(["status" => "error", "message" => mysqli_error($conexion)]);
+            $sqlEspacioLibre = "
+                SELECT e.id_espacio, e.capacidad, COUNT(p.id) AS ocupados 
+                FROM espacios_fisicos e 
+                LEFT JOIN cargar_posters p ON e.id_espacio = p.id_espacio AND p.activo = 1 
+                WHERE e.id_evento = $id_evento_activo 
+                GROUP BY e.id_espacio 
+                HAVING ocupados < e.capacidad 
+                LIMIT 1";
+
+            $resEspacio = mysqli_query($conexion, $sqlEspacioLibre);
+            $id_espacio_asignado = "NULL";
+
+            if ($resEspacio && $espacioDisp = mysqli_fetch_assoc($resEspacio)) {
+                $id_espacio_asignado = intval($espacioDisp['id_espacio']);
+            }
+            // --- FIN DE ASIGNACIÓN AUTOMÁTICA ---
+
+            // 4. Inserción con el espacio físico asignado
+            $insertarDatos = "INSERT INTO `cargar_posters`
+                (`titulo`, `autores`, `descripcion`, `categoria`, `palabrasClave`, `ruta_imagen`, `id_usuario`, `id_espacio`) 
+                VALUES ('$titulo_escapado', '$autores_escapado', '$descripcion_escapada', '$categoria_escapada', '$palabrasClave_escapadas', '$rutaRelativa', $id_usuario, $id_espacio_asignado)";
+
+            try {
+                $ok = mysqli_query($conexion, $insertarDatos);
+                if (!$ok) {
+                    throw new Exception(mysqli_error($conexion));
+                }
+                // Obtener datos del usuario para enviar correo de confirmación
+                $sqlUsuario = "SELECT nombres, apellidos, correo FROM usuario WHERE id = ?";
+                $stmtUsr = $conexion->prepare($sqlUsuario);
+                $stmtUsr->bind_param("i", $id_usuario);
+                $stmtUsr->execute();
+                $resUsr = $stmtUsr->get_result();
+                if ($rowUsr = $resUsr->fetch_assoc()) {
+                    $nombreCompleto = $rowUsr['nombres'] . ' ' . $rowUsr['apellidos'];
+                    $destSub = $rowUsr['correo'];
+                    $asuntoSub = "Registro exitoso de tu póster";
+                    $mensajeSub = "
+                        <h2>¡Hola, {$nombreCompleto}!</h2>
+                        <p>Tu póster titulado <strong>'{$titulo}'</strong> ha sido cargado correctamente en la plataforma y se encuentra registrado con éxito.</p>
+                        <p>Te notificaremos cuando sea asignado a evaluadores o reciba actualizaciones.</p>
+                    ";
+                }
+                $stmtUsr->close();
+
+                responderJsonYNotificar(["status" => "success", "message" => "Póster registrado y guardado exitosamente"], $destSub ?? null, $asuntoSub ?? null, $mensajeSub ?? null);
+                return;
+            } catch (Throwable $e) {
+                // Si el archivo ya se movió pero el INSERT falló, eliminarlo para no dejar basura
+                if (isset($rutaFinal) && file_exists($rutaFinal)) {
+                    @unlink($rutaFinal);
+                }
+                // FK típica: id_usuario no existe en la tabla usuario
+                if (str_contains($e->getMessage(), 'foreign key') || str_contains($e->getMessage(), 'fk_poster_usuario')) {
+                    echo json_encode(["status" => "error", "message" => "Tu sesión tiene un usuario inválido (id=$id_usuario). Cierra sesión e inicia de nuevo."]);
+                } else {
+                    echo json_encode(["status" => "error", "message" => "Error al guardar: " . $e->getMessage()]);
+                }
             }
         } else {
             echo json_encode(["status" => "error", "message" => "No se pudo mover el archivo"]);
@@ -120,3 +180,4 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 } else {
     echo json_encode(["status" => "error", "message" => "Método inválido"]);
 }
+?>

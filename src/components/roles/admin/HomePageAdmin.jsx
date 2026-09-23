@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import HeaderAdmin from "./HeaderAdmin.jsx";
 import SolicitudesUsuarios from '../generales/SolicitudesUsuarios.jsx';
+import MostrarPosters from '../generales/MostrarPosters.jsx';
 import MostrarPostersAdmin from '../generales/MostrarPostersAdmin.jsx';
 import Usuarios from '../generales/Usuarios.jsx';
 import Categorias from '../generales/Categorias.jsx';
 import Cuenta from '../generales/Cuenta.jsx';
+import GestionEspaciosModal from '../generales/GestionEspaciosModal.jsx';
 import Footer from "../../generales/Footer.jsx";
 import VolverArriba from "../../generales/VolverArriba.jsx";
 import "../generales/roles.css";
+
+const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const HomePageAdmin = () => {
     const [mostrarSolicitudes, setMostrarSolicitudes] = useState(false);
@@ -15,17 +19,35 @@ const HomePageAdmin = () => {
     const [mostrarUsuarios, setMostrarUsuarios] = useState(false);
     const [mostrarCategorias, setMostrarCategorias] = useState(false);
     const [mostrarCuenta, setMostrarCuenta] = useState(false);
+
+    // Estados para la Gestión de Espacios Físicos
+    const [mostrarGestionEspacios, setMostrarGestionEspacios] = useState(false);
+    const [espaciosResumen, setEspaciosResumen] = useState([]);
+
     const [nombreUsuario, setNombreUsuario] = useState("");
     const [idRolActual, setIdRolActual] = useState(null);
+
+    const cargarEspaciosResumen = async () => {
+        try {
+            const res = await fetch(`${SERVER_URL}/api/Espacios.php`);
+            const data = await res.json();
+            if (data.status === 'success' || data.success) {
+                setEspaciosResumen(data.data || []);
+            }
+        } catch (error) {
+            console.error("Error al cargar espacios físicos:", error);
+        }
+    };
 
     useEffect(() => {
         const nombre = localStorage.getItem("nombreUsuario");
         if (nombre) {
             setNombreUsuario(nombre);
         }
-
         const idRol = localStorage.getItem("id_rol");
         if (idRol) setIdRolActual(parseInt(idRol));
+
+        cargarEspaciosResumen();
     }, []);
 
     const limite = 3;
@@ -47,7 +69,7 @@ const HomePageAdmin = () => {
                     </p>
                 </div>
                 <div className="texto-tarjetas">
-                    <h3>Recuerda que puedes hacer las siguientes acciones:</h3>
+                    <h3>🔔 Recuerda que puedes hacer las siguientes acciones:</h3>
                     <div className="grupo-tarjetas">
                         <div className="tarjeta">
                             <div className="icono">👥</div>
@@ -58,6 +80,11 @@ const HomePageAdmin = () => {
                             <div className="icono">🖼️</div>
                             <h3>Administrar Pósters</h3>
                             <p>Revisar, editar o eliminar</p>
+                        </div>
+                        <div className="tarjeta">
+                            <div className="icono">📍</div>
+                            <h3>Espacios Físicos</h3>
+                            <p>Definir salones, estantes y capacidad de ubicación</p>
                         </div>
                         <div className="tarjeta">
                             <div className="icono">📊</div>
@@ -96,7 +123,7 @@ const HomePageAdmin = () => {
             {/* Posters publicados */}
             <section id="posters" className="posters-publicados">
                 <h2>Posters Publicados</h2>
-                <MostrarPostersAdmin
+                <MostrarPosters
                     limite={limite}
                     verMas={() => setMostrarPosters(true)}
                 />
@@ -107,6 +134,66 @@ const HomePageAdmin = () => {
                         <MostrarPostersAdmin cerrarTabla={() => setMostrarPosters(false)} />
                     </div>
                 </div>
+            )}
+
+            {/* Gestión de Espacios Físicos (Resumen en Home) */}
+            <section id="espacios" className="eventos" style={{ marginTop: '30px' }}>
+                <h2>Gestión de Espacios Físicos y Capacidad</h2>
+                <div className="tabla-contenedor">
+                    <table className="tabla-general">
+                        <thead>
+                            <tr>
+                                <th>Nombre del Salón / Pabellón / Estante</th>
+                                <th>Capacidad Máxima</th>
+                                <th>Pósters Ocupados</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {espaciosResumen.length === 0 ? (
+                                <tr>
+                                    <td colSpan="4" style={{ textAlign: 'center' }}>
+                                        No se encontraron espacios físicos registrados.
+                                    </td>
+                                </tr>
+                            ) : (
+                                espaciosResumen.slice(0, limite).map((esp) => {
+                                    const ocupacion = esp.ocupacion_actual !== undefined ? parseInt(esp.ocupacion_actual) : (esp.ocupados || 0);
+                                    const lleno = ocupacion >= esp.capacidad;
+                                    return (
+                                        <tr key={esp.id_espacio}>
+                                            <td><strong>{esp.nombre_espacio}</strong></td>
+                                            <td>{esp.capacidad}</td>
+                                            <td>{ocupacion}</td>
+                                            <td>
+                                                {lleno ? (
+                                                    <span className="badge" style={{ background: '#dc3545', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>LLENO</span>
+                                                ) : (
+                                                    <span className="badge" style={{ background: '#28a745', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>DISPONIBLE</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                    <div className="contenedor-ver-mas">
+                        <button className="btn-ver-mas" onClick={() => setMostrarGestionEspacios(true)}>
+                            Administrar / Crear Espacios Físicos
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Modal Gestión de Espacios Físicos */}
+            {mostrarGestionEspacios && (
+                <GestionEspaciosModal
+                    cerrarModal={() => {
+                        setMostrarGestionEspacios(false);
+                        cargarEspaciosResumen();
+                    }}
+                />
             )}
 
             {/* Usuarios */}

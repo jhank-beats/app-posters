@@ -237,8 +237,8 @@ Usuarios pendientes
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  overflow-x: overlay;
-  overflow-y: overlay;
+  overflow-x: auto;
+  /* Cambiado de 'overlay' a 'auto' para asegurar compatibilidad en todos los navegadores */
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
   width: 100%;
@@ -254,12 +254,12 @@ Usuarios pendientes
 
 table {
   width: 100%;
-  min-width: 600px;
+  min-width: 1300px;
+  /* Incrementamos el ancho mínimo para garantizar espacio para las 13 columnas */
   border-collapse: separate;
   border-spacing: 0.5rem;
   margin-bottom: 1rem;
   box-sizing: border-box;
-
 }
 
 .toggle-switch {
@@ -609,4 +609,173 @@ Overlay Formularios
   border: none;
   cursor: pointer;
   color: #000;
+}
+
+/* ====================================================================
+   Corrección de Estilos para el Modal de Gestión de Espacios Físicos
+   ==================================================================== */
+.modal-espacios-contenido {
+  background-color: white;
+  border-radius: 12px;
+  padding: 30px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.grid-gestion-espacios {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.form-crear-espacio {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  height: fit-content;
+}
+
+.tabla-espacios-container {
+  background: #fff;
+  padding: 0;
+}
+
+/* Responsividad para pantallas pequeñas */
+@media (max-width: 768px) {
+  .grid-gestion-espacios {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ====================================================================
+   Estilos específicos para el Modal de Asignación de Espacios
+   ==================================================================== */
+.modal-overlay-asignar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.modal-contenido-asignar {
+  position: relative;
+  background: #fff;
+  max-width: 480px;
+  width: 100%;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.modal-contenido-asignar h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 20px;
+  color: #333;
+}
+
+.poster-info-box {
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #0056b3;
+  font-size: 14px;
+}
+
+.poster-info-box p {
+  margin: 0 0 5px 0;
+}
+
+.poster-info-box p:last-child {
+  margin-bottom: 0;
+}
+
+.mensaje-alerta {
+  margin-bottom: 12px;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.mensaje-alerta.exito {
+  background: #d4edda;
+  color: #155724;
+}
+
+.mensaje-alerta.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.form-group-asignar {
+  margin-bottom: 15px;
+}
+
+.form-group-asignar label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.form-group-asignar select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  font-size: 14px;
+  background-color: #fff;
+}
+
+.modal-botones-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-cancelar {
+  padding: 9px 16px;
+  cursor: pointer;
+  background: #6c757d;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.btn-guardar {
+  padding: 9px 16px;
+  background: #0056b3;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-guardar:disabled {
+  background: #a0c4ed;
+  cursor: not-allowed;
 }

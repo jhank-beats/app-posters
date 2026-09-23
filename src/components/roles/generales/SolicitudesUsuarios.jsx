@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FaTrashAlt } from "react-icons/fa";
 import "./roles.css";
 
+const SERVER_URL = `http://${window.location.hostname}:8000`;
+
 const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
     const [solicitudesRegistro, setSolicitudesRegistro] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,7 +15,8 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
 
     const cargarSolicitudes = async () => {
         try {
-            const respuesta = await fetch('http://localhost:8000/api/TablaSolicitudes.php');
+            // CORREGIDO: Se quitó '/backend' para apuntar correctamente a la raíz del servidor PHP
+            const respuesta = await fetch(`${SERVER_URL}/api/TablaSolicitudes.php`);
             const datos = await respuesta.json();
             if (datos.success) setSolicitudesRegistro(datos.data);
         } catch (error) {
@@ -29,7 +32,8 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
                 prev.map(s => (s.id === id ? { ...s, activo: estadoActual ? 0 : 1 } : s))
             );
 
-            const respuesta = await fetch('http://localhost:8000/api/TablaSolicitudes.php', {
+            // CORREGIDO: Se quitó '/backend'
+            const respuesta = await fetch(`${SERVER_URL}/api/TablaSolicitudes.php`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, activo: !estadoActual }),
@@ -49,7 +53,8 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
         if (!window.confirm("¿Rechazar esta solicitud?")) return;
 
         try {
-            const respuesta = await fetch('http://localhost:8000/api/TablaSolicitudes.php', {
+            // CORREGIDO: Se quitó '/backend'
+            const respuesta = await fetch(`${SERVER_URL}/api/TablaSolicitudes.php`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id }),
@@ -68,14 +73,14 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
         }
     };
 
-    // ✅ Filtro general
+    // Filtro general
     const solicitudesFiltradas = solicitudesRegistro.filter(s =>
         `${s.nombres} ${s.apellidos} ${s.correo} ${s.carrera}`
             .toLowerCase()
             .includes(filtro.toLowerCase())
     );
 
-    // ✅ Si tiene límite, cortar la lista
+    // Si tiene límite, cortar la lista
     const solicitudesParaMostrar = limite
         ? solicitudesFiltradas.slice(0, limite)
         : solicitudesFiltradas;

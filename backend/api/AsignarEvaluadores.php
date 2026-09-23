@@ -1,20 +1,17 @@
 <?php
-// ENCABEZADOS CORS OBLIGATORIOS AL INICIO DEL ARCHIVO
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Content-Type: application/json; charset=UTF-8");
 
-// Manejo de petición pre-flight de CORS (OPTIONS)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// Incluir el archivo de conexión (define $conexion)
 require_once '../Conexion.php';
+include_once __DIR__ . '/includes/Correos.php';
 
-// Verificar que $conexion exista y no tenga error
 if (!isset($conexion) || $conexion->connect_error) {
     echo json_encode([
         'success' => false,
@@ -112,25 +109,71 @@ function guardarAsignacion($conexion)
         $stmtDelete = $conexion->prepare($deleteSql);
         $stmtDelete->bind_param("i", $id_poster);
         $stmtDelete->execute();
+        $stmtDelete->close();
 
-        // 2. Insertar las nuevas asignaciones
+        // Obtener título del póster para el correo
+        $sqlPoster = "SELECT titulo FROM cargar_posters WHERE id = ?";
+        $stmtP = $conexion->prepare($sqlPoster);
+        $stmtP->bind_param("i", $id_poster);
+        $stmtP->execute();
+        $resP = $stmtP->get_result();
+        $tituloPoster = "Póster";
+        if ($rowP = $resP->fetch_assoc()) {
+            $tituloPoster = $rowP['titulo'];
+        }
+        $stmtP->close();
+
+        // 2. Insertar las nuevas asignaciones (correos se envían tras responder)
+        $notificaciones = [];
         if (!empty($evaluadores_ids)) {
             $insertSql = "INSERT INTO asignaciones_evaluadores (id_poster, id_evaluador) VALUES (?, ?)";
             $stmtInsert = $conexion->prepare($insertSql);
+
+            $sqlEvalInfo = "SELECT CONCAT(nombres, ' ', apellidos) AS nombre_evaluador, correo FROM usuario WHERE id = ?";
+            $stmtEvalInfo = $conexion->prepare($sqlEvalInfo);
 
             foreach ($evaluadores_ids as $id_evaluador) {
                 $id_ev = intval($id_evaluador);
                 $stmtInsert->bind_param("ii", $id_poster, $id_ev);
                 $stmtInsert->execute();
+
+                // Recoger datos para notificar después de responder
+                $stmtEvalInfo->bind_param("i", $id_ev);
+                $stmtEvalInfo->execute();
+                $resEval = $stmtEvalInfo->get_result();
+                if ($rowEval = $resEval->fetch_assoc()) {
+                    $notificaciones[] = [
+                        'correo' => $rowEval['correo'],
+                        'asunto' => "Nuevo póster asignado para evaluación",
+                        'mensaje' => "
+                        <h2>¡Hola, {$rowEval['nombre_evaluador']}!</h2>
+                        <p>Se te ha asignado un nuevo póster titulado <strong>'{$tituloPoster}'</strong> para su respectiva evaluación en la plataforma.</p>
+                        <p>Por favor ingresa al sistema para revisarlo y registrar tu calificación.</p>
+                    "
+                    ];
+                }
             }
+            $stmtInsert->close();
+            $stmtEvalInfo->close();
         }
 
         $conexion->commit();
 
-        echo json_encode([
+        $respAsignar = [
             'success' => true,
             'message' => 'Asignación de evaluadores actualizada correctamente'
-        ]);
+        ];
+
+        // Responder primero; correos en procesos de fondo (no bloquean la UI)
+        if (ob_get_length()) {
+            ob_clean();
+        }
+        echo json_encode($respAsignar);
+
+        foreach ($notificaciones as $n) {
+            encolarCorreoFondo($n['correo'], $n['asunto'], $n['mensaje']);
+        }
+        return;
 
     } catch (Exception $e) {
         $conexion->rollback();

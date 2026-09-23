@@ -1,195 +1,245 @@
+/* =========================================================
+   HOMEPAGE
+   ========================================================= */
 
-/* =========================
-  homepagenormal
-   Header
-   ========================= */
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
 .encabezado {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 1rem;
-    margin-left: 2rem;
-    margin-right: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 1rem;
+  margin-left: 2rem;
+  margin-right: 2rem;
 }
 
 .logo-nav {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .logo-ucc {
-    height: 50px;
+  height: 50px;
 }
 
 nav {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 a {
-    margin: 0 1rem;
-    font-weight: 500;
-    color: #000000;
-    text-decoration: inherit;
+  margin: 0 1rem;
+  font-weight: 500;
+  color: #000000;
+  text-decoration: inherit;
 }
 
-.boton-hamburguesa, .boton-usuario, .boton-cerrar {
+/* Botones ocultos en escritorio */
+.boton-hamburguesa,
+.boton-usuario,
+.boton-cerrar {
   display: none;
 }
 
-/* =========================
-   RESPONSIVE
-   ========================= */
-@media (max-width:990px) {
-  /* El nav se oculta y se despliega con hamburguesa */
+
+/* =========================================================
+   HEADER - RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 990px) {
+
+  /* Menú de navegación móvil */
   .menu-nav {
     display: none;
     flex-direction: column;
     align-items: flex-end;
+
     position: absolute;
-    top: 0;  /* debajo del header */
-    right: 0px;
+    top: 0;
+    right: 0;
     bottom: 0;
+
     background: #fbfafa;
     padding: 1rem;
+
     border: 1px solid #ccc;
     border-radius: 8px;
-    gap: 10px;  
+
+    gap: 10px;
+
     box-shadow: 0 0 0 100vmax #41414135;
   }
-  
-  link {
-    color: #00acc9;
-  }
+
   .menu-nav button:hover {
     background-color: #3d3d3d24;
     transform: scale(1.1);
   }
 
+
+  /* Menú del usuario */
   .menu-usuario {
     display: none;
     flex-direction: column;
-    align-items: center; 
+    align-items: center;
+
     position: absolute;
-    top: 70px;   
+    top: 70px;
     right: 80px;
+
     background: #fff;
-    padding: 2rem 1rem 1rem 1rem;
+    padding: 2rem 1rem 1rem;
+
     border: 1px solid #ccc;
     border-radius: 8px;
+
     gap: 10px;
+
     box-shadow: 0 0 0 100vmax #41414135;
   }
 
+
+  /* Botón para cerrar menú */
   .menu-usuario .boton-cerrar {
     position: absolute;
-    top: -10px;    
-    right: -10px;  /* lo sacamos un poco hacia la derecha */
+
+    top: -10px;
+    right: -10px;
+
     font-size: 20px;
+
     background: transparent;
     border: none;
+
     cursor: pointer;
   }
+
   .menu-usuario .boton-cerrar:hover {
     color: #00acc9;
   }
 
-  .menu-nav.activo, .menu-usuario.activo {
+
+  /* Mostrar menú activo */
+  .menu-nav.activo,
+  .menu-usuario.activo {
     display: flex;
-    
   }
 
-  /* La parte derecha: Sesión + Registro + Hamburguesa */
+
+  /* Botones del lado derecho */
   .acciones-header {
     display: flex;
     align-items: center;
+
     gap: 5px;
     margin-right: -1rem;
   }
 
-  .boton-hamburguesa, .boton-usuario, .boton-cerrar {
+
+  /* Mostrar botones móviles */
+  .boton-hamburguesa,
+  .boton-usuario,
+  .boton-cerrar {
     display: flex;
   }
-  
 
-  .boton-hamburguesa button, .boton-usuario button, .boton-cerrar {
+
+  .boton-hamburguesa button,
+  .boton-usuario button,
+  .boton-cerrar {
     color: #000000;
     background-color: transparent;
+
     border: none;
     cursor: pointer;
   }
-
 }
 
 
-/* 
--------------------------------------------------------------------- 
-inicio 
--------------------------------------------------------------------- 
-*/
+/* =========================================================
+   SECCIÓN DE INICIO
+   ========================================================= */
+
 .inicio {
-    padding: 3rem;
-    display: grid;
-    grid-template-columns: 1fr 1fr; 
-    grid-template-rows: auto auto;  
-    gap: 1rem;
-    column-gap: 5rem;
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+
+  gap: 1rem;
+  column-gap: 5rem;
+
+  padding: 3rem;
 }
 
+
+/* Texto de bienvenida */
 .texto-inicio {
-    max-width: clamp(250px, 90%, 700px);
-    flex-shrink: 0;
-    text-align: left;
+  max-width: clamp(250px, 90%, 700px);
+  flex-shrink: 0;
+
+  text-align: left;
 }
 
+
+/* Contenedor de botones */
 .botones-inicio {
-    margin-top: 2.5rem;
-    display: flex;
-    gap: 1rem;
+  display: flex;
+  gap: 1rem;
+
+  margin-top: 2.5rem;
 }
 
-.preguntas-frecuentes {
-  position: relative;
-  background-color: white;
-  padding: 2rem;
-  margin: 2rem auto;
-  border: 1px solid #80ba27;
-  border-radius: 15px;
-  align-items: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.152);
-  width: 427px;
-}
 
+/* Botón de preguntas frecuentes */
 .boton-preguntas-frecuentes {
-    background-color: #fdfdfd;
-    color: #000000;
-    border: 1px solid #5f5e5e;
+  background-color: #fdfdfd;
+  color: #000000;
+
+  border: 1px solid #5f5e5e;
 }
 
 .boton-preguntas-frecuentes:hover {
-    background-color: #eeeded;
-    border-color: #4db1c3;
+  background-color: #eeeded;
+  border-color: #4db1c3;
+}
+
+
+/* Imagen principal */
+.imagen-inicio {
+  margin-top: 2rem;
 }
 
 .imagen-inicio img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 10px;
+  max-width: 100%;
+  height: auto;
+
+  border-radius: 10px;
 }
 
+
+/* Redes sociales */
 .imagenes-redes {
-    padding: 1rem;
-    grid-column: 1 / span 2; /* ocupa las dos columnas */
-    display: flex;
-    justify-content: center;
-    gap: clamp(2rem, 6vw, 8rem); /* espacio adaptable */
-    margin-top: 2rem;
-    flex-wrap: wrap;
+  grid-column: 1 / span 2;
+
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  gap: clamp(2rem, 6vw, 8rem);
+
+  padding: 1rem;
+  margin-top: 2rem;
 }
 
 .imagenes-redes .cuadros {
-  font-size: clamp(1.6rem, 5vw, 3.5rem); /* 👈 se adapta al ancho de pantalla */
-  transition: transform 0.3s ease, color 0.3s ease;
+  font-size: clamp(1.6rem, 5vw, 3.5rem);
+
+  transition: transform 0.3s ease,
+    color 0.3s ease;
 }
 
 .imagenes-redes .cuadros:hover {
@@ -197,176 +247,228 @@ inicio
   color: #4db1c3;
 }
 
-.imagen-inicio {
-    margin-top: 2rem;
-}
 
-/* =========================
-   INICIO - RESPONSIVE UNIFICADO
-   ========================= */
-@media (max-width:1020px) {
+/* =========================================================
+   INICIO - RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1020px) {
+
   .inicio {
-    margin-top: -2rem;
-    align-items: center;
     display: flex;
     flex-direction: column;
     align-items: center;
+
     text-align: center;
+
+    margin-top: -2rem;
     padding: 2rem 1rem;
   }
+
 
   .texto-inicio {
     max-width: 95%;
     text-align: center;
   }
 
+
   .texto-inicio h1 {
     font-size: clamp(2rem, 7vw, 2.8rem);
     line-height: 1.25;
+
     font-weight: 700;
     color: #0f0f0f;
+
     margin-bottom: 1rem;
   }
+
+
   .texto-inicio p {
     font-size: clamp(1rem, 4vw, 1.3rem);
     line-height: 1.5;
+
     color: #333;
+
     margin: 0 auto;
     max-width: 90%;
   }
+
+
+  /* Botones en columna */
   .botones-inicio {
     flex-direction: column;
     align-items: center;
+
     gap: 1rem;
     margin-top: 2rem;
   }
 
+
   .botones-inicio button {
     width: 85%;
     max-width: 280px;
+
     font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+
     padding: 0.8rem 1rem;
   }
 
-  /* 🔹 Imagen colocada debajo del texto */
+
+  /* Imagen debajo del texto */
   .imagen-inicio {
-    margin-top: 2rem;
     width: 100%;
+    margin-top: 2rem;
   }
+
 
   .imagen-inicio img {
     width: 100%;
     max-width: 600px;
+
     border-radius: 12px;
   }
 
-  /* 🔹 Íconos de redes más grandes y bien espaciados */
+
+  /* Redes sociales */
   .imagenes-redes {
-    margin-top: 2rem;
-    gap: 2.5rem;
     justify-content: center;
     flex-wrap: wrap;
+
+    gap: 2.5rem;
+    margin-top: 2rem;
   }
+
 
   .imagenes-redes .cuadros {
     font-size: clamp(2rem, 8vw, 3rem);
-    transition: transform 0.3s ease, color 0.3s ease;
-  }
-
-  .imagenes-redes .cuadros:hover {
-    transform: scale(1.15);
-    color: #4db1c3;
   }
 }
 
 
-/* 
--------------------------------------------------------------------- 
-comunidad GensTI 
--------------------------------------------------------------------- 
-*/
-.comunidad-gensti { 
-  padding: 1rem 2rem; 
-  align-items: center;
-} 
+/* =========================================================
+   COMUNIDAD GENSTI
+   ========================================================= */
 
-.cuadros-texto, .posters-separacion { 
+.comunidad-gensti {
+  padding: 1rem 2rem;
+  align-items: center;
+}
+
+
+/* Contenedor de tarjetas */
+.cuadros-texto {
   display: flex;
-  justify-content: center;     /* Centra horizontalmente */
+  justify-content: center;
   align-items: flex-start;
-  flex-wrap: nowrap;           /* Mantén una fila la mayor parte del tiempo */
+  flex-wrap: nowrap;
+
   gap: 2rem;
   padding: 2rem;
 }
 
-.cuadros-texto > div, .posters-separacion >div { 
-  border: 1px solid #4db1c31d; 
-  border-radius: 25px; 
-  box-shadow: 0px 3px 8px rgba(0,0,0,0.25); 
-  flex: 1 1 25%;               /* 🔑 Cada cuadro ocupa 25% del ancho, pero puede ajustarse */
-  max-width: 350px;            /* No se agranda demasiado */
-  min-width: 250px;            /* No se hace tan pequeño */
-  transition: all 0.3s ease;   /* Transición suave al redimensionar */
+
+/* Tarjetas de comunidad */
+.cuadros-texto>div {
+  border: 1px solid #4db1c31d;
+  border-radius: 25px;
+
+  box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.25);
+
+  flex: 1 1 25%;
+
+  max-width: 350px;
+  min-width: 250px;
+
+  transition: all 0.3s ease;
 }
 
-.imagen-cuadro-comunidad { 
-  width: 120px; 
-  height: 120px; 
-  border-radius: 30px; 
-  margin-top: 2rem; 
-  margin-bottom: 0.2rem; 
-} 
 
-/* =========================
-   RESPONSIVE
-   ========================= */
-@media (max-width:850px) {
-  .comunidad-gensti { 
+/* Imagen de cada tarjeta */
+.imagen-cuadro-comunidad {
+  width: 120px;
+  height: 120px;
+
+  border-radius: 30px;
+
+  margin-top: 2rem;
+  margin-bottom: 0.2rem;
+}
+
+
+/* =========================================================
+   COMUNIDAD - RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 850px) {
+
+  .comunidad-gensti {
     margin-top: -3rem;
-  } 
+  }
+
 
   .subtitulo-cuadro-comunidad {
-    font-size: clamp(1.4rem, 4vw, 1.5rem); /* ✅ título responsive */
+    font-size: clamp(1.4rem, 4vw, 1.5rem);
     margin-bottom: 0.8rem;
   }
 
+
   .subtitulo-texto-comunidad p {
-  font-size: clamp(0.9rem, 2vw, 1.2rem); /* ✅ texto adaptativo */
+    font-size: clamp(0.9rem, 2vw, 1.2rem);
   }
-    .cuadros-texto, .posters-separacion {
-    flex-wrap: wrap; /* permite que salte a una segunda línea si no cabe */
+
+
+  .cuadros-texto {
+    flex-wrap: wrap;
   }
-  .cuadros-texto > div {
-    flex: 1 1 45%;  /* dos por fila */
+
+
+  .cuadros-texto>div {
+    flex: 1 1 45%;
     min-width: 220px;
   }
 }
 
 
-/* -------------------------------------------------------------------- 
-novedades - carrusel 
--------------------------------------------------------------------- */
+/* =========================================================
+   NOVEDADES - CARRUSEL
+   ========================================================= */
+
 .carrusel-separacion {
   margin-top: 2rem;
 }
+
+
+/* Contenedor principal */
 .carousel {
   position: relative;
-  border-radius: 16px;
+
   max-width: 850px;
+
   margin: auto;
+
   overflow: hidden;
+
+  border-radius: 16px;
+
   box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.25);
 }
 
+
+/* Imagen del carrusel */
 .carousel img {
-  display: block ;
+  display: block;
+
   width: 100%;
+
   object-fit: cover;
-  border-radius: 16px;
+
   border: 3px solid #42494a33;
+  border-radius: 16px;
+
   opacity: 0.95;
-  transition: opacity 0.4s ease-in-out, 
-  transform 0.3s ease-in-out;
+
+  transition: opacity 0.4s ease-in-out,
+    transform 0.3s ease-in-out;
 }
 
 .carousel img:hover {
@@ -374,196 +476,475 @@ novedades - carrusel
   transform: scale(1.02);
 }
 
+
+/* Flechas de navegación */
 .slide_direction {
   position: absolute;
+
   top: 50%;
   left: 0;
   right: 0;
+
   display: flex;
   justify-content: space-between;
+
   transform: translateY(-50%);
+
   pointer-events: none;
-  padding: 0 10px; /* menos espacio en los lados */
+
+  padding: 0 10px;
 }
 
+
+/* Botones izquierdo y derecho */
 .left,
 .right {
-  background-color: #5f5e5e;
-  width: 45px;      /* ancho fijo */
-  height: 45px;     /* alto fijo (igual que ancho = círculo perfecto) */
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;  
+
+  width: 45px;
+  height: 45px;
+
+  background-color: #5f5e5e;
+
+  border-radius: 50%;
+
   cursor: pointer;
-  transition: 0.3s;
-  pointer-events: auto;
+
   opacity: 75%;
+
+  pointer-events: auto;
+
+  transition: 0.3s;
 }
 
+
+/* Iconos de las flechas */
 .left svg,
 .right svg {
   width: 20px;
   height: 20px;
-  fill: #fff;   /* flecha blanca */
+
+  fill: #fff;
 }
 
+
+/* Hover flechas */
 .left:hover,
 .right:hover {
   background-color: #4db1c3;
   transform: scale(1.15);
 }
 
-/* Indicadores */
+
+/* Indicadores inferiores */
 .carousel-indicator {
   position: absolute;
+
   bottom: 18px;
+
   width: 100%;
+
   display: flex;
   justify-content: center;
+
   gap: 12px;
 }
 
+
+/* Puntos del carrusel */
 .dot {
-  background-color: #5f5e5e;
   width: 12px;
   height: 12px;
+
+  background-color: #5f5e5e;
+
   border-radius: 50%;
+
   cursor: pointer;
-  transition: 0.3s;
+
   opacity: 75%;
+
+  transition: 0.3s;
 }
 
 .dot:hover {
-  background-color: #4db1c3;
   width: 14px;
   height: 14px;
+
+  background-color: #4db1c3;
 }
 
+
+/* Punto activo */
 .active {
   background-color: #80ba27;
   transform: scale(1.2);
 }
 
-/* =========================
-   RESPONSIVE
-   ========================= */
-@media (max-width:850px) {
+
+/* =========================================================
+   CARRUSEL - RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 850px) {
+
   .carousel {
-  max-width: 95%;
-}
+    max-width: 95%;
+  }
 }
 
-/* -------------------------------------------------------------------- 
-novedades - carrusel 
--------------------------------------------------------------------- */
-.imagen-poster{
-  width: 48%;
+
+/* =========================================================
+   SECCIÓN DE POSTERS
+   ========================================================= */
+
+/*
+   Contenedor principal de las dos tarjetas:
+   - Poster del semestre
+   - Recomendaciones
+*/
+.posters-separacion {
+  display: flex;
+  justify-content: center;
+
+  /* Las tarjetas tienen la misma altura visual */
+  align-items: stretch;
+
+  gap: 2rem;
+
+  padding: 2rem;
+}
+
+
+/*
+   Estilo general de ambas tarjetas
+*/
+.poster-card,
+.recomendaciones-poster {
+  display: flex;
+  flex-direction: column;
+
+  flex: 1 1 45%;
+
+  max-width: 500px;
+  min-width: 250px;
+
+  padding: 2rem;
+
+  box-sizing: border-box;
+
+  border: 1px solid #4db1c31d;
+  border-radius: 25px;
+
+  box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+
+/* =========================================================
+   TARJETA DEL POSTER DEL SEMESTRE
+   ========================================================= */
+
+/*
+   Centra horizontalmente todos los elementos:
+   título, imagen y botón de descarga
+*/
+.poster-card {
   align-items: center;
 }
 
-/* -------------------------------------------------------------------- 
-footer 
--------------------------------------------------------------------- */
-.footer {
-  margin-top: 4rem;
-  background-color: #132740; /* Azul fundadores */
-  color: #ffffff;
-  padding: 2rem 1rem 1rem;
-  font-family: Arial, sans-serif;
-  text-align: center; /* Centra todo el contenido */
+
+/* Título */
+.poster-card h3 {
+  width: 100%;
+
+  text-align: center;
+
+  margin-top: 0;
+  margin-bottom: 1.5rem;
 }
 
+
+/*
+   Imagen del poster
+   Se mantiene centrada y con un tamaño máximo
+*/
+.imagen-poster {
+  display: block;
+
+  width: 100%;
+  max-width: 350px;
+
+  height: auto;
+
+  object-fit: contain;
+
+  margin: 0 auto 1.5rem;
+
+  border-radius: 8px;
+}
+
+
+/*
+   Enlace para descargar el poster
+   Se ubica debajo de la imagen
+*/
+.link-descarga-poster {
+  display: inline-block;
+
+  margin: 0;
+
+  padding: 0.8rem 1.5rem;
+
+  color: #00acc9;
+
+  font-weight: 600;
+  text-align: center;
+
+  text-decoration: none;
+
+  border: 1px solid #00acc9;
+  border-radius: 8px;
+
+  transition: all 0.3s ease;
+}
+
+
+/* Efecto al pasar el mouse */
+.link-descarga-poster:hover {
+  background-color: #00acc9;
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   RECOMENDACIONES PARA SUBIR POSTERS
+   ========================================================= */
+
+/* Título de recomendaciones */
+.recomendaciones-poster h3 {
+  text-align: center;
+
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+
+/*
+   Contenedor de todas las recomendaciones
+   Permite mantener espacios iguales entre ellas
+*/
+.lista-recomendaciones {
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+
+  gap: 0.8rem;
+}
+
+
+/*
+   Cada recomendación ocupa exactamente
+   el mismo ancho y mantiene una alineación uniforme
+*/
+.lista-recomendaciones p {
+  width: 100%;
+
+  margin: 0;
+
+  padding: 1rem;
+
+  box-sizing: border-box;
+
+  text-align: left;
+
+  background-color: #f7f7f7;
+
+  border-radius: 8px;
+}
+
+
+/* =========================================================
+   POSTERS - RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 850px) {
+
+  /*
+       En pantallas pequeñas las tarjetas
+       pasan de horizontal a vertical
+    */
+  .posters-separacion {
+    flex-direction: column;
+    align-items: center;
+  }
+
+
+  /* Tarjetas a ancho completo */
+  .poster-card,
+  .recomendaciones-poster {
+    width: 100%;
+    max-width: 500px;
+  }
+
+
+  /* Reducir un poco el poster en celular */
+  .imagen-poster {
+    max-width: 300px;
+  }
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.footer {
+  margin-top: 4rem;
+
+  background-color: #132740;
+  color: #ffffff;
+
+  padding: 2rem 1rem 1rem;
+
+  font-family: Arial, sans-serif;
+
+  text-align: center;
+}
+
+
+/* Contenedor de columnas */
 .contenedor-footer {
   display: grid;
+
   grid-template-columns: repeat(4, 1fr);
+
   margin: 0 auto;
 }
 
-/* Centrar el contenido de cada columna */
+
+/* Cada columna */
 .footer-columna {
   display: flex;
   flex-direction: column;
   align-items: center;
+
   text-align: center;
 }
 
+
 .footer-texto {
-  color: #bcbcbc;
   max-width: 300px;
+  color: #bcbcbc;
 }
 
+
+/* Logo */
 .footer .logo-ucc {
   width: 120px;
+
   margin-bottom: 0.8rem;
 }
 
+
+/* Títulos */
 .footer-columna h4 {
   margin-bottom: 0.8rem;
+
   font-size: 1rem;
-  color: #00acc9; /* Azul diversidad */
+
+  color: #00acc9;
 }
 
+
+/* Lista */
 .footer-columna ul {
-  list-style: none;
   padding: 0;
+  list-style: none;
 }
+
 
 .footer-columna ul li {
   margin-bottom: 0.5rem;
 }
 
+
 .footer-columna ul li a {
-  text-decoration: none;
+  margin: 0;
+
   color: #fdfdfd;
+
   font-size: 0.9rem;
+
+  text-decoration: none;
+
   transition: 0.3s;
 }
 
+
 .footer-columna ul li a:hover {
-  color: #80ba27; /* Verde solidario */
+  color: #80ba27;
 }
 
+
+/* Texto */
 .footer-columna p {
   font-size: 0.9rem;
   color: #cccccc;
 }
 
+
+/* Parte inferior del footer */
 .footer-copy-creditos {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  text-align: center;
+
   margin-top: 2rem;
-  font-size: 0.85rem;
-  border-top: 1px solid #5f5e5e;
   padding-top: 1rem;
+
+  font-size: 0.85rem;
+  text-align: center;
+
+  border-top: 1px solid #5f5e5e;
 }
 
-.footer-copy-creditos strong  {
+
+.footer-copy-creditos strong {
   margin-top: 0.3rem;
+
   font-size: 0.8rem;
-  color: #80ba27; 
+
+  color: #80ba27;
 }
 
-/* -------------------------------------------------------------------- 
-Responsive 
--------------------------------------------------------------------- */
+
+/* =========================================================
+   FOOTER - RESPONSIVE
+   ========================================================= */
+
 @media (max-width: 992px) {
+
   .contenedor-footer {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
+
 @media (max-width: 600px) {
+
   .contenedor-footer {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.1rem;
   }
 
+
   .footer-columna {
     margin-bottom: 1rem;
   }
+
 
   .footer-copy-creditos {
     flex-direction: column;
@@ -572,149 +953,267 @@ Responsive
 }
 
 
+/* =========================================================
+   MODALES
+   ========================================================= */
 
-/* -------------------------------------------------------------------- 
-Overlay Formularios
--------------------------------------------------------------------- */
-.modal-registro, .modal  {
+/* Overlay general */
+.modal-registro,
+.modal {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background-color: rgba(0,0,0,0.5);
-  display: flex; 
-  justify-content: center; 
+
+  top: 0;
+  left: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  justify-content: center;
   align-items: center;
-  z-index:  100;
+
+  background-color: rgba(0, 0, 0, 0.5);
+
+  z-index: 100;
 }
-/* ====================== FAQ MODAL ====================== */
+
+
+/* =========================================================
+   PREGUNTAS FRECUENTES
+   ========================================================= */
+
 .faq-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+
   padding: 1rem;
+
+  background-color: rgba(0, 0, 0, 0.5);
+
+  z-index: 1000;
 }
 
+
+/* Contenedor principal */
 .faq-container {
   position: relative;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  max-width: 640px;
+
   width: 100%;
+  max-width: 640px;
+
   max-height: 90vh;
-  overflow-y: auto;
+
   padding: 2.5rem 2rem;
+
+  overflow-y: auto;
+
+  background: white;
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
+
+/* Botón cerrar */
 .faq-cerrar {
   position: absolute;
+
   top: 0.1rem;
   right: 0.1rem;
-  background: none;
-  border: none;
-  font-size: 2rem;
-  color: #000;
-  cursor: pointer;
-  width: 40px;
-  height: 40px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
+  width: 40px;
+  height: 40px;
+
+  background: none;
+
+  border: none;
   border-radius: 10%;
+
+  font-size: 2rem;
+
+  color: #000000;
+
+  cursor: pointer;
 }
 
-.faq-cerrar:hover { background-color: #f3f4f6; }
 
+.faq-cerrar:hover {
+  background-color: #f3f4f6;
+}
+
+
+/* Título */
 .faq-titulo {
+  margin-bottom: 2rem;
+
   font-size: 2.5rem;
   font-weight: 700;
+
   text-align: center;
+
   color: #111827;
-  margin-bottom: 2rem;
 }
 
+
+/* Lista */
 .faq-lista {
   margin-top: 1rem;
 }
 
-.faq-item {
-  border-bottom: 1px solid #e5e7eb;
-  overflow: hidden;
-}
-.faq-item:last-child { border-bottom: none; }
 
-/* Pregunta */
+/* Cada pregunta */
+.faq-item {
+  overflow: hidden;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+
+/* Botón de pregunta */
 .faq-pregunta {
-  width: 100%;
-  padding: 1.5rem 2.5rem;
-  background: none;
-  border: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  text-align: left;
+
+  width: 100%;
+
+  padding: 1.5rem 2.5rem;
+
+  background: none;
+
+  border: none;
+
   font-size: 1.125rem;
   font-weight: 500;
+
+  text-align: left;
+
   color: #111827;
+
   cursor: pointer;
+
   transition: all 0.5s ease;
 }
-.faq-pregunta:hover { background-color: #f9fafb; }
 
-/* ABIERTO → menos padding + icono girado */
-.faq-item[data-state="open"] .faq-pregunta {
-  padding: 1.5rem 1.5rem;
+
+.faq-pregunta:hover {
+  background-color: #f9fafb;
 }
+
+
+/* Pregunta abierta */
+.faq-item[data-state="open"] .faq-pregunta {
+  padding: 1.5rem;
+}
+
 
 /* Icono */
 .faq-icon {
   width: 24px;
   height: 24px;
+
   flex-shrink: 0;
+
   transition: transform 0.5s ease;
 }
+
+
+/* Rotar icono al abrir */
 .faq-item[data-state="open"] .faq-icon {
   transform: rotate(180deg);
 }
 
-/* Wrapper respuesta (animación) */
+
+/* Contenedor de respuesta */
 .faq-respuesta-wrapper {
   max-height: 0;
+
   overflow: hidden;
-  transition: max-height 0.45s ease, padding 0.35s ease;
+
+  transition:
+    max-height 0.45s ease,
+    padding 0.35s ease;
 }
+
+
+/* Respuesta abierta */
 .faq-item[data-state="open"] .faq-respuesta-wrapper {
-  max-height: 800px;        /* valor grande suficiente */
+  max-height: 800px;
+
   padding-bottom: 1.5rem;
 }
 
-/* Texto respuesta */
+
+/* Texto de respuesta */
 .faq-respuesta {
   padding: 0 2.5rem;
+
   color: #4b5563;
+
   line-height: 1.7;
+
   transition: padding 0.35s ease;
 }
+
+
+/* Ajuste al abrir */
 .faq-item[data-state="open"] .faq-respuesta {
   padding: 0 1.5rem;
 }
 
+
+/* Enlaces */
 .faq-link {
   color: #4db1c3;
+
   font-weight: 600;
+
   text-decoration: underline;
 }
-.faq-link:hover { color: #80ba27; }
 
-/* Responsive */
+
+.faq-link:hover {
+  color: #80ba27;
+}
+
+
+/* =========================================================
+   FAQ - RESPONSIVE
+   ========================================================= */
+
 @media (max-width: 640px) {
-  .faq-container { padding: 2rem 1rem; }
-  .faq-titulo { font-size: 2rem; }
-  .faq-pregunta { padding: 1.3rem 1.2rem; }
+
+  .faq-container {
+    padding: 2rem 1rem;
+  }
+
+
+  .faq-titulo {
+    font-size: 2rem;
+  }
+
+
+  .faq-pregunta {
+    padding: 1.3rem 1.2rem;
+  }
+
+
   .faq-item[data-state="open"] .faq-pregunta,
   .faq-item[data-state="open"] .faq-respuesta {
     padding-left: 1rem !important;

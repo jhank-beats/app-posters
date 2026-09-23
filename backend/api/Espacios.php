@@ -6,9 +6,15 @@ header("Content-Type: application/json; charset=UTF-8");
 
 // Incluir el archivo de conexión existente
 include_once '../Conexion.php';
+include_once __DIR__ . '/includes/Correos.php';
 
 // $conexion viene instanciado desde Conexion.php ($conexion = new mysqli(...))
 $method = $_SERVER['REQUEST_METHOD'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 switch ($method) {
 
@@ -53,11 +59,19 @@ switch ($method) {
     case 'POST':
         $data = json_decode(file_get_contents("php://input"));
 
-        if (!empty($data->nombre_espacio) && !empty($data->capacidad) && !empty($data->id_evento)) {
+        if (!empty($data->nombre_espacio) && !empty($data->capacidad)) {
             $nombre = trim($data->nombre_espacio);
             $ubicacion = isset($data->ubicacion_detallada) ? trim($data->ubicacion_detallada) : '';
             $capacidad = intval($data->capacidad);
-            $id_evento = intval($data->id_evento);
+
+            // Obtener evento activo actual automáticamente
+            $sqlActivo = "SELECT id_evento FROM eventos WHERE activo = 1 LIMIT 1";
+            $resActivo = $conexion->query($sqlActivo);
+            if ($resActivo && $rowActivo = $resActivo->fetch_assoc()) {
+                $id_evento = intval($rowActivo['id_evento']);
+            } else {
+                $id_evento = 1; // Evento por defecto
+            }
 
             $sql = "INSERT INTO espacios_fisicos (nombre_espacio, ubicacion_detallada, capacidad, id_evento) VALUES (?, ?, ?, ?)";
             $stmt = $conexion->prepare($sql);
@@ -123,11 +137,45 @@ switch ($method) {
             }
 
             if ($stmtAsignar->execute()) {
-                echo json_encode(["status" => "success", "message" => "Ubicación asignada correctamente"]);
+                $stmtAsignar->close();
+                // Preparar datos del correo SIN enviarlo aún
+                $destEsp = null; $asuntoEsp = null; $mensajeEsp = null;
+                $sqlAut = "SELECT p.titulo, u.correo, CONCAT(u.nombres, ' ', u.apellidos) AS nombre_autor FROM cargar_posters p JOIN usuario u ON p.id_usuario = u.id WHERE p.id = ?";
+                $stmtAut = $conexion->prepare($sqlAut);
+                $stmtAut->bind_param("i", $id_poster);
+                $stmtAut->execute();
+                $resAut = $stmtAut->get_result();
+                if ($rowAut = $resAut->fetch_assoc()) {
+                    $destEsp = $rowAut['correo'];
+                    if ($id_espacio === null) {
+                        $asuntoEsp = "Espacio liberado para tu póster";
+                        $mensajeEsp = "<h2>Hola, {$rowAut['nombre_autor']}!</h2><p>Tu póster <strong>'{$rowAut['titulo']}'</strong> ha sido <strong>desasignado</strong> de su espacio físico. Quedamos atentos a una nueva asignación.</p>";
+                    } else {
+                        $nomEsp = "espacio asignado";
+                        $ubiEsp = "";
+                        $sqlEsp = "SELECT nombre_espacio, ubicacion_detallada FROM espacios_fisicos WHERE id_espacio = ?";
+                        $stmtEsp = $conexion->prepare($sqlEsp);
+                        $stmtEsp->bind_param("i", $id_espacio);
+                        $stmtEsp->execute();
+                        $resEsp = $stmtEsp->get_result();
+                        if ($rowEsp = $resEsp->fetch_assoc()) {
+                            $nomEsp = $rowEsp['nombre_espacio'];
+                            $ubiEsp = $rowEsp['ubicacion_detallada'];
+                        }
+                        $stmtEsp->close();
+                        $asuntoEsp = "Espacio asignado a tu póster";
+                        $mensajeEsp = "<h2>Hola, {$rowAut['nombre_autor']}!</h2><p>Tu póster <strong>'{$rowAut['titulo']}'</strong> ha sido asignado al espacio <strong>'{$nomEsp}'</strong>" . ($ubiEsp !== "" ? " (Ubicación: {$ubiEsp})" : "") . ".</p>";
+                    }
+                }
+                $stmtAut->close();
+                // Responder primero, enviar correo después (no bloquea la UI)
+                responderJsonYNotificar(["status" => "success", "message" => "Ubicación asignada correctamente"], $destEsp, $asuntoEsp, $mensajeEsp);
+                exit;
             } else {
-                echo json_encode(["status" => "error", "message" => "Error al actualizar la ubicación: " . $conexion->error]);
+                $errMsg = "Error al actualizar la ubicación: " . $conexion->error;
+                $stmtAsignar->close();
+                echo json_encode(["status" => "error", "message" => $errMsg]);
             }
-            $stmtAsignar->close();
         } else {
             echo json_encode(["status" => "error", "message" => "Falta el ID del póster"]);
         }

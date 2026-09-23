@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import "./roles.css";
 import AsignarEvaluadorModal from '../generales/AsignarEvaluadorModal.jsx';
+import DetallesCalificacionModal from './DetallesCalificacionModal.jsx';
+import TarjetaPosterQR from './TarjetaPosterQR.jsx';
 
 const SERVER_URL = `http://${window.location.hostname}:8000`;
 
@@ -12,15 +14,23 @@ const construirUrlArchivo = (rutaImagen) => {
 
 const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = false, soloAsignados = false, idEvaluador = null }) => {
     const [posters, setPosters] = useState([]);
+    const [criterios, setCriterios] = useState([]);
     const [loading, setLoading] = useState(true);
     const [imagenSeleccionada, setImagenSeleccionada] = useState(null);
     const [filtro, setFiltro] = useState("");
 
-    // Estado de evaluaciones por cada póster ID { [id_poster]: { contenido, diseno, exposicion, observaciones, editando, guardando, mensaje } }
+    // Estados de evaluaciones para evaluadores
     const [evaluacionesMap, setEvaluacionesMap] = useState({});
+
+    // Estado de evaluaciones públicas/recibidas para usuarios
+    const [calificacionesUsuarioMap, setCalificacionesUsuarioMap] = useState({});
+    const [modalDetalleEval, setModalDetalleEval] = useState(null);
 
     // Modal asignación admin
     const [posterAAsignar, setPosterAAsignar] = useState(null);
+
+    // Modal código QR
+    const [posterParaQR, setPosterParaQR] = useState(null);
 
     // Contexto de usuario
     const [rolUsuario, setRolUsuario] = useState("");
@@ -34,25 +44,39 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
     }, [idEvaluador]);
 
     useEffect(() => {
-        if (idUsuarioActual || !soloAsignados) {
-            cargarTodosPosters();
-        }
-    }, [soloMisPosters, soloAsignados, idUsuarioActual]);
+        cargarCriteriosYPosters();
+    }, [soloMisPosters, soloAsignados, idEvaluador]);
 
-    const cargarTodosPosters = async () => {
+    const cargarCriteriosYPosters = async () => {
         try {
             setLoading(true);
+
+            const rol = localStorage.getItem("rol") || localStorage.getItem("rolUsuario") || "";
+            const idUsr = idEvaluador || localStorage.getItem("idUsuario") || localStorage.getItem("id_usuario");
+
+            // 1. Cargar la lista de Criterios Dinámicos
+            let listaCriterios = [];
+            try {
+                const resCrit = await fetch(`${SERVER_URL}/api/Criterios.php`);
+                const dataCrit = await resCrit.json();
+                if (dataCrit.success) {
+                    listaCriterios = dataCrit.data || [];
+                    setCriterios(listaCriterios);
+                }
+            } catch (err) {
+                console.error('Error al cargar criterios:', err);
+            }
+
+            // 2. Cargar Lista de Pósters
             let url = `${SERVER_URL}/api/TablaPosters.php`;
             const params = [];
 
-            if (soloMisPosters) {
-                const idUsuario = localStorage.getItem("idUsuario") || localStorage.getItem("id_usuario");
-                if (idUsuario) params.push(`id_usuario=${idUsuario}`);
+            if (soloMisPosters && idUsr) {
+                params.push(`id_usuario=${idUsr}`);
             }
 
-            const idEv = idEvaluador || idUsuarioActual;
-            if (soloAsignados || rolUsuario.toLowerCase() === 'evaluador') {
-                if (idEv) params.push(`id_evaluador=${idEv}`);
+            if ((soloAsignados || rol.toLowerCase() === 'evaluador') && idUsr) {
+                params.push(`id_evaluador=${idUsr}`);
             }
 
             if (params.length > 0) {
@@ -63,20 +87,39 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             const datos = await respuesta.json();
 
             if (datos.success) {
-                setPosters(datos.data);
-                // Si es evaluador, cargar evaluaciones previas para cada póster
-                if (rolUsuario.toLowerCase() === 'evaluador' || soloAsignados) {
-                    cargarEvaluacionesParaPosters(datos.data, idEv);
+                const listaPosters = datos.data || [];
+                setPosters(listaPosters);
+
+                if (rol.toLowerCase() === 'evaluador' || soloAsignados) {
+                    cargarEvaluacionesParaPosters(listaPosters, listaCriterios, idUsr);
+                } else {
+                    cargarCalificacionesRecibidas(listaPosters);
                 }
             }
         } catch (error) {
-            console.error('Error al cargar los posters:', error);
+            console.error('Error general al cargar los pósters:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const cargarEvaluacionesParaPosters = async (listaPosters, idEv) => {
+    const cargarCalificacionesRecibidas = async (listaPosters) => {
+        const mapaCalificaciones = {};
+        for (const p of listaPosters) {
+            try {
+                const res = await fetch(`${SERVER_URL}/api/Evaluaciones.php?id_poster=${p.id}`);
+                const data = await res.json();
+                if (data.success && (data.evaluaciones || data.data)) {
+                    mapaCalificaciones[p.id] = data;
+                }
+            } catch (err) {
+                console.error(`Error al consultar calificación del póster ${p.id}`, err);
+            }
+        }
+        setCalificacionesUsuarioMap(mapaCalificaciones);
+    };
+
+    const cargarEvaluacionesParaPosters = async (listaPosters, listaCriterios, idEv) => {
         if (!idEv) return;
         const mapa = {};
 
@@ -85,26 +128,26 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                 const res = await fetch(`${SERVER_URL}/api/Evaluaciones.php?id_poster=${p.id}&id_evaluador=${idEv}`);
                 const data = await res.json();
 
-                if (data.success && data.data && data.data.length > 0) {
-                    const ev = data.data[0];
+                const notasCriterios = {};
+                if (data.success && data.evaluaciones) {
+                    listaCriterios.forEach(c => {
+                        const val = parseFloat(data.evaluaciones[c.id]);
+                        notasCriterios[c.id] = !isNaN(val) ? val : 0;
+                    });
+
                     mapa[p.id] = {
-                        contenido: parseFloat(ev.calificacion_contenido) || 0,
-                        diseno: parseFloat(ev.calificacion_diseno) || 0,
-                        exposicion: parseFloat(ev.calificacion_exposicion) || 0,
-                        promedio: parseFloat(ev.promedio_total) || 0,
-                        observaciones: ev.observaciones || '',
+                        criterios: notasCriterios,
+                        observaciones: data.observaciones || '',
                         existente: true,
                         editando: false
                     };
                 } else {
+                    listaCriterios.forEach(c => { notasCriterios[c.id] = 0; });
                     mapa[p.id] = {
-                        contenido: 0,
-                        diseno: 0,
-                        exposicion: 0,
-                        promedio: 0,
+                        criterios: notasCriterios,
                         observaciones: '',
                         existente: false,
-                        editando: true // Si no existe, permite ingresar nota directamente
+                        editando: true
                     };
                 }
             } catch (err) {
@@ -114,20 +157,53 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
         setEvaluacionesMap(mapa);
     };
 
-    const handleCampoEvaluacionChange = (posterId, campo, valor) => {
-        setEvaluacionesMap(prev => {
-            const actual = prev[posterId] || { contenido: 0, diseno: 0, exposicion: 0, observaciones: '', editando: true };
-            const nuevoState = { ...actual, [campo]: valor };
+    const calcularPromedioRecibido = (evaluacionData) => {
+        if (!evaluacionData) return null;
 
-            // Recalcular promedio al vuelo
-            if (['contenido', 'diseno', 'exposicion'].includes(campo)) {
-                const c = campo === 'contenido' ? parseFloat(valor) || 0 : parseFloat(nuevoState.contenido) || 0;
-                const d = campo === 'diseno' ? parseFloat(valor) || 0 : parseFloat(nuevoState.diseno) || 0;
-                const e = campo === 'exposicion' ? parseFloat(valor) || 0 : parseFloat(nuevoState.exposicion) || 0;
-                nuevoState.promedio = ((c + d + e) / 3).toFixed(2);
-            }
-            return { ...prev, [posterId]: nuevoState };
+        const evs = evaluacionData.evaluaciones || evaluacionData.data;
+        if (!evs) return null;
+
+        let valores = [];
+        if (typeof evs === 'object' && !Array.isArray(evs)) {
+            valores = Object.values(evs).map(v => parseFloat(v)).filter(v => !isNaN(v));
+        } else if (Array.isArray(evs)) {
+            valores = evs.map(e => parseFloat(e.nota || e.calificacion)).filter(v => !isNaN(v));
+        }
+
+        if (valores.length === 0) return null;
+        const suma = valores.reduce((acc, curr) => acc + curr, 0);
+        return (suma / valores.length).toFixed(2);
+    };
+
+    const handleCampoEvaluacionChange = (posterId, criterioId, valor) => {
+        setEvaluacionesMap(prev => {
+            const actual = prev[posterId] || { criterios: {}, observaciones: '', editando: true };
+            return {
+                ...prev,
+                [posterId]: {
+                    ...actual,
+                    criterios: {
+                        ...actual.criterios,
+                        [criterioId]: parseFloat(valor) || 0
+                    }
+                }
+            };
         });
+    };
+
+    const handleObservacionChange = (posterId, valor) => {
+        setEvaluacionesMap(prev => ({
+            ...prev,
+            [posterId]: { ...prev[posterId], observaciones: valor }
+        }));
+    };
+
+    const calcularPromedioDinamico = (criteriosObj) => {
+        if (!criteriosObj) return '0.00';
+        const listaValores = Object.values(criteriosObj);
+        if (listaValores.length === 0) return '0.00';
+        const suma = listaValores.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+        return (suma / listaValores.length).toFixed(2);
     };
 
     const alternarEditar = (posterId) => {
@@ -149,9 +225,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
         const payload = {
             id_poster: posterId,
             id_evaluador: idUsuarioActual,
-            calificacion_contenido: parseFloat(ev.contenido) || 0,
-            calificacion_diseno: parseFloat(ev.diseno) || 0,
-            calificacion_exposicion: parseFloat(ev.exposicion) || 0,
+            criterios: ev.criterios,
             observaciones: ev.observaciones || ''
         };
 
@@ -169,7 +243,6 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                     ...prev,
                     [posterId]: {
                         ...prev[posterId],
-                        promedio: data.promedio_total || prev[posterId].promedio,
                         existente: true,
                         editando: false,
                         guardando: false,
@@ -199,7 +272,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
     };
 
     const postersFiltrados = posters.filter(p =>
-        `${p.titulo} ${p.autores} ${p.descripcion} ${p.categoria} ${p.palabras_clave} ${p.nombre_usuario}`
+        `${p.titulo} ${p.autores} ${p.descripcion} ${p.categoria} ${p.palabras_clave} ${p.nombre_usuario || ''} ${p.nombre_espacio || ''}`
             .toLowerCase()
             .includes(filtro.toLowerCase())
     );
@@ -208,6 +281,10 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
 
     const esAdminOSuper = ['admin', 'administrador', 'superadmin'].includes(rolUsuario.toLowerCase());
     const esEvaluador = rolUsuario.toLowerCase() === 'evaluador' || soloAsignados;
+
+    const totalColumnas = esEvaluador
+        ? 7 + criterios.length
+        : 7;
 
     return (
         <section id="mostrar-posters" className={limite ? "preview-posters" : "todos-posters"}>
@@ -232,14 +309,20 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                             <th>Título</th>
                             <th>Autores</th>
                             <th>Categoría</th>
+                            <th>Ubicación Física</th>
                             <th>Archivo</th>
+                            <th>Código QR</th>
 
-                            {/* Columnas exclusivas de Evaluación */}
+                            {(soloMisPosters || rolUsuario.toLowerCase() === 'usuario') && <th>Nota Promedio</th>}
+
+                            {esEvaluador && criterios.map(crit => (
+                                <th key={crit.id} style={{ minWidth: '90px' }}>
+                                    {crit.nombre}
+                                </th>
+                            ))}
+
                             {esEvaluador && (
                                 <>
-                                    <th style={{ width: '80px' }}>Contenido</th>
-                                    <th style={{ width: '80px' }}>Diseño</th>
-                                    <th style={{ width: '80px' }}>Exposición</th>
                                     <th style={{ width: '80px' }}>Promedio</th>
                                     <th>Observaciones</th>
                                     <th>Acción</th>
@@ -254,28 +337,30 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={esEvaluador ? "10" : "8"} style={{ textAlign: "center", padding: "20px" }}>
+                                <td colSpan={totalColumnas} style={{ textAlign: "center", padding: "20px" }}>
                                     Cargando pósters...
                                 </td>
                             </tr>
                         ) : postersMostrar.length === 0 ? (
                             <tr>
-                                <td colSpan={esEvaluador ? "10" : "8"} style={{ textAlign: "center", padding: "20px" }}>
+                                <td colSpan={totalColumnas} style={{ textAlign: "center", padding: "20px" }}>
                                     {esEvaluador
                                         ? "No tienes pósters asignados para evaluar"
-                                        : "No hay pósters disponibles"}
+                                        : soloMisPosters
+                                            ? "No has publicado pósters aún"
+                                            : "No hay pósters disponibles"}
                                 </td>
                             </tr>
                         ) : (
                             postersMostrar.map(poster => {
                                 const evalState = evaluacionesMap[poster.id] || {
-                                    contenido: 0,
-                                    diseno: 0,
-                                    exposicion: 0,
-                                    promedio: 0,
+                                    criterios: {},
                                     observaciones: '',
                                     editando: true
                                 };
+
+                                const calificacionRecibida = calificacionesUsuarioMap[poster.id];
+                                const promedioNota = calcularPromedioRecibido(calificacionRecibida);
 
                                 return (
                                     <tr key={poster.id}>
@@ -283,6 +368,26 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                                         <td>{poster.autores}</td>
                                         <td>
                                             <span className="badge-categoria">{poster.categoria}</span>
+                                        </td>
+
+                                        {/* Celda de Ubicación Física y Número Asignado */}
+                                        <td>
+                                            {poster.nombre_espacio ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                    <span style={{ backgroundColor: '#e0f7fa', color: '#006064', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85em', fontWeight: 'bold' }}>
+                                                        📍 {poster.nombre_espacio} {poster.ubicacion_detallada && (
+                                                            <span>
+                                                                - # <strong>{poster.ubicacion_detallada}</strong>
+                                                            </span>
+                                                        )}
+                                                    </span>
+
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: '#999', fontStyle: 'italic', fontSize: '0.85em' }}>
+                                                    Sin asignar
+                                                </span>
+                                            )}
                                         </td>
 
                                         <td>
@@ -299,60 +404,68 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                                             )}
                                         </td>
 
-                                        {/* Columnas de evaluación e inputs en línea */}
+                                        <td>
+                                            <button
+                                                onClick={() => setPosterParaQR(poster)}
+                                                title="Ver código QR del póster"
+                                                style={{ background: '#6f42c1', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                                            >
+                                                📱 QR
+                                            </button>
+                                        </td>
+
+                                        {(soloMisPosters || rolUsuario.toLowerCase() === 'usuario') && (
+                                            <td>
+                                                {promedioNota !== null ? (
+                                                    <button
+                                                        onClick={() => setModalDetalleEval({ poster, evaluacion: calificacionRecibida })}
+                                                        style={{
+                                                            backgroundColor: '#e8f5e9',
+                                                            color: '#2e7d32',
+                                                            border: '1px solid #a5d6a7',
+                                                            padding: '6px 12px',
+                                                            borderRadius: '20px',
+                                                            cursor: 'pointer',
+                                                            fontWeight: 'bold',
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px'
+                                                        }}
+                                                        title="Haz clic para ver el desglose por criterio y observaciones"
+                                                    >
+                                                        {promedioNota}
+                                                    </button>
+                                                ) : (
+                                                    <span style={{ color: '#6c757d', fontStyle: 'italic', fontSize: '0.9em' }}>
+                                                        ⏳ Pendiente
+                                                    </span>
+                                                )}
+                                            </td>
+                                        )}
+
+                                        {esEvaluador && criterios.map(crit => (
+                                            <td key={crit.id}>
+                                                {evalState.editando ? (
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="5"
+                                                        step="0.1"
+                                                        value={evalState.criterios[crit.id] ?? 0}
+                                                        onChange={(e) => handleCampoEvaluacionChange(poster.id, crit.id, e.target.value)}
+                                                        style={{ width: '60px' }}
+                                                    />
+                                                ) : (
+                                                    <span>{evalState.criterios[crit.id] ?? 0}</span>
+                                                )}
+                                            </td>
+                                        ))}
+
                                         {esEvaluador && (
                                             <>
                                                 <td>
-                                                    {evalState.editando ? (
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            max="5"
-                                                            step="0.1"
-                                                            value={evalState.contenido}
-                                                            onChange={(e) => handleCampoEvaluacionChange(poster.id, 'contenido', e.target.value)}
-                                                            style={{ width: '60px' }}
-                                                        />
-                                                    ) : (
-                                                        <span>{evalState.contenido}</span>
-                                                    )}
-                                                </td>
-
-                                                <td>
-                                                    {evalState.editando ? (
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            max="5"
-                                                            step="0.1"
-                                                            value={evalState.diseno}
-                                                            onChange={(e) => handleCampoEvaluacionChange(poster.id, 'diseno', e.target.value)}
-                                                            style={{ width: '60px' }}
-                                                        />
-                                                    ) : (
-                                                        <span>{evalState.diseno}</span>
-                                                    )}
-                                                </td>
-
-                                                <td>
-                                                    {evalState.editando ? (
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            max="5"
-                                                            step="0.1"
-                                                            value={evalState.exposicion}
-                                                            onChange={(e) => handleCampoEvaluacionChange(poster.id, 'exposicion', e.target.value)}
-                                                            style={{ width: '60px' }}
-                                                        />
-                                                    ) : (
-                                                        <span>{evalState.exposicion}</span>
-                                                    )}
-                                                </td>
-
-                                                <td>
                                                     <strong style={{ color: '#0056b3' }}>
-                                                        {evalState.promedio || '0.00'}
+                                                        {calcularPromedioDinamico(evalState.criterios)}
                                                     </strong>
                                                 </td>
 
@@ -361,7 +474,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                                                         <textarea
                                                             rows="2"
                                                             value={evalState.observaciones}
-                                                            onChange={(e) => handleCampoEvaluacionChange(poster.id, 'observaciones', e.target.value)}
+                                                            onChange={(e) => handleObservacionChange(poster.id, e.target.value)}
                                                             placeholder="Observaciones..."
                                                             style={{ width: '100%', fontSize: '0.85em' }}
                                                         />
@@ -420,7 +533,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             <div className="filtros">
                 <input
                     type="text"
-                    placeholder="Buscar por título, autores, categoría..."
+                    placeholder="Buscar por título, autores, categoría, ubicación..."
                     value={filtro}
                     onChange={(e) => setFiltro(e.target.value)}
                     className="input-filtro"
@@ -438,7 +551,6 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                 </div>
             )}
 
-            {/* Modal de Imagen / PDF */}
             {imagenSeleccionada && (
                 <div className="modal-imagen" onClick={() => setImagenSeleccionada(null)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -457,15 +569,36 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                 </div>
             )}
 
-            {/* Modal de Asignar Evaluador */}
             {posterAAsignar && (
                 <AsignarEvaluadorModal
                     poster={posterAAsignar}
                     cerrarModal={() => setPosterAAsignar(null)}
                 />
             )}
+
+            {modalDetalleEval && (
+                <DetallesCalificacionModal
+                    poster={modalDetalleEval.poster}
+                    evaluacion={modalDetalleEval.evaluacion}
+                    cerrarModal={() => setModalDetalleEval(null)}
+                />
+            )}
+
+            {posterParaQR && (
+                <div className="modal" onClick={() => setPosterParaQR(null)}>
+                    <section className="formularios" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+                        <button className="cerrar-formulario" onClick={() => setPosterParaQR(null)}>X</button>
+                        <h2>📱 Código QR del Póster</h2>
+                        <p>Escanea para ver la versión digital</p>
+                        <TarjetaPosterQR
+                            poster={posterParaQR}
+                            urlDigital={construirUrlArchivo(posterParaQR.imagen) || `${window.location.origin}/poster/${posterParaQR.id}`}
+                        />
+                    </section>
+                </div>
+            )}
         </section>
     );
 };
 
-export default MostrarPosters; 
+export default MostrarPosters;

@@ -4,7 +4,14 @@ header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: POST, GET, PUT, DELETE, OPTIONS");
 header("Content-Type: application/json; charset=UTF-8");
 
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 include '../Conexion.php';
+// Si el archivo está dentro de api/ y includes/ también está dentro de api/:
+include_once __DIR__ . '/includes/Correos.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -111,8 +118,8 @@ function actualizarUsuario()
         return;
     }
 
-    // Verificar usuario objetivo
-    $check_sql = "SELECT id_rol, correo FROM usuario WHERE id = ?";
+    // Verificar usuario objetivo (traemos correo y estado activo previo si lo necesitas)
+    $check_sql = "SELECT id_rol, correo, activo, nombres FROM usuario WHERE id = ?";
     $check_stmt = $conexion->prepare($check_sql);
     $check_stmt->bind_param('i', $id);
     $check_stmt->execute();
@@ -125,6 +132,9 @@ function actualizarUsuario()
 
     $usuarioObjetivo = $check_result->fetch_assoc();
     $rolObjetivo = intval($usuarioObjetivo['id_rol']);
+    $correoObjetivo = $usuarioObjetivo['correo'];
+    $nombreObjetivo = $usuarioObjetivo['nombres'];
+    $estadoAnterior = intval($usuarioObjetivo['activo']);
     $check_stmt->close();
 
     // Validar permisos
@@ -137,7 +147,7 @@ function actualizarUsuario()
         return;
     }
 
-    // CASO A: Solo cambiar Rol
+    // CASO A: Solo cambiar Rol u otros estados (como activar la cuenta si se envía el parámetro 'activo')
     if (isset($data['id_rol']) && !isset($data['nombres'])) {
         $id_rol = intval($data['id_rol']);
 
@@ -151,7 +161,9 @@ function actualizarUsuario()
         $stmt->bind_param('ii', $id_rol, $id);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Rol actualizado correctamente']);
+            $stmt->close();
+            responderJsonYNotificar(['success' => true, 'message' => 'Rol actualizado correctamente'], $correoObjetivo, "Tu rol ha sido actualizado", "<h2>Hola, {$nombreObjetivo}!</h2><p>Tu rol en la plataforma ha sido actualizado por el administrador.</p>");
+            return;
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar rol']);
         }
@@ -159,7 +171,39 @@ function actualizarUsuario()
         return;
     }
 
-    // CASO B: Editar datos personales (Nombres, Apellidos, Correo, Carrera)
+    // CASO B: Si en la petición viene explícitamente la activación de cuenta
+    $nuevoActivo = isset($data['activo']) ? $data['activo'] : null;
+
+    if ($nuevoActivo !== null) {
+        // Convertir boolean o int a 1 o 0 seguro
+        $valActivoInt = $nuevoActivo ? 1 : 0;
+
+        $sqlActivo = "UPDATE usuario SET activo = ? WHERE id = ?";
+        $stmtActivo = $conexion->prepare($sqlActivo);
+        $stmtActivo->bind_param('ii', $valActivoInt, $id);
+
+        if ($stmtActivo->execute()) {
+            $stmtActivo->close();
+            // ENVIAR CORREO SIEMPRE QUE SE ACTIVE LA CUENTA (después de responder)
+            if ($valActivoInt === 1) {
+                file_put_contents('/tmp/correo_debug.txt', "Disparando correo de admisión para: {$correoObjetivo}\n", FILE_APPEND);
+                responderJsonYNotificar(['success' => true, 'message' => 'Estado de activación actualizado correctamente'], $correoObjetivo, "¡Bienvenido! Has sido admitido en la plataforma", "
+                    <h2>¡Hola, {$nombreObjetivo}!</h2>
+                    <p>Nos complace informarte que tu cuenta ha sido <strong>admitida</strong> y activada exitosamente en la plataforma de pósteres.</p>
+                    <p>Ya puedes iniciar sesión con tus credenciales y comenzar a utilizar el sistema.</p>
+                ");
+            } else {
+                echo json_encode(['success' => true, 'message' => 'Estado de activación actualizado correctamente']);
+            }
+            return;
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar el estado de activación']);
+        }
+        $stmtActivo->close();
+        return;
+    }
+
+    // CASO C: Editar datos personales (Nombres, Apellidos, Correo, Carrera)
     $nombres = trim($data['nombres'] ?? '');
     $apellidos = trim($data['apellidos'] ?? '');
     $correo = trim($data['correo'] ?? '');
@@ -187,7 +231,9 @@ function actualizarUsuario()
     $stmt->bind_param('ssssi', $nombres, $apellidos, $correo, $carrera, $id);
 
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Información del usuario actualizada correctamente']);
+        $stmt->close();
+        responderJsonYNotificar(['success' => true, 'message' => 'Información del usuario actualizada correctamente'], $correo, "Tu información ha sido actualizada", "<h2>Hola, {$nombres}!</h2><p>Tu información personal ha sido modificada por el administrador.</p><p>Datos actualizados:<br>Nombres: {$nombres}<br>Apellidos: {$apellidos}<br>Correo: {$correo}<br>Carrera: {$carrera}</p>");
+        return;
     } else {
         echo json_encode(['success' => false, 'message' => 'Error al actualizar la información del usuario']);
     }

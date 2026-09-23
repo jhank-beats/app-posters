@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../Conexion.php';
+include_once __DIR__ . '/includes/Correos.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -40,6 +41,11 @@ function traerPosters()
                     p.descripcion,
                     p.categoria,
                     p.palabrasClave AS palabras_clave,
+                    e.nombre_espacio,
+                    COALESCE(NULLIF(e.ubicacion_detallada, ''), 
+                        (SELECT COUNT(*) FROM cargar_posters p2 
+                         WHERE p2.id_espacio = p.id_espacio AND p2.id <= p.id AND p2.activo = 1)
+                    ) AS ubicacion_detallada,
                     CASE
                         WHEN p.ruta_imagen LIKE 'http%' THEN p.ruta_imagen
                         WHEN p.ruta_imagen LIKE 'imgPosters/%' THEN CONCAT('http://localhost/app-posters/backend/', p.ruta_imagen)
@@ -49,7 +55,8 @@ function traerPosters()
                     DATE_FORMAT(p.fecha_registro, '%d/%m/%Y %H:%i') AS fecha_registro,
                     CONCAT(u.nombres, ' ', u.apellidos) AS nombre_usuario
                 FROM cargar_posters p
-                LEFT JOIN usuario u ON p.id_usuario = u.id";
+                LEFT JOIN usuario u ON p.id_usuario = u.id
+                LEFT JOIN espacios_fisicos e ON p.id_espacio = e.id_espacio";
 
         // Si se consulta como evaluador, filtramos solo los pósteres asignados
         if ($id_evaluador !== null) {
@@ -109,10 +116,25 @@ function modificarPoster()
     $sentencia->bind_param("sssssi", $titulo, $autores, $descripcion, $categoria, $palabrasClave, $id);
 
     if ($sentencia->execute()) {
-        echo json_encode([
+        $sentencia->close();
+        // Notificar al autor que el admin modificó su póster (tras responder)
+        $destPos = null; $asuntoPos = null; $mensajePos = null;
+        $sqlAut = "SELECT u.correo, CONCAT(u.nombres, ' ', u.apellidos) AS nombre_autor FROM cargar_posters p JOIN usuario u ON p.id_usuario = u.id WHERE p.id = ?";
+        $stmtAut = $conexion->prepare($sqlAut);
+        $stmtAut->bind_param("i", $id);
+        $stmtAut->execute();
+        $resAut = $stmtAut->get_result();
+        if ($rowAut = $resAut->fetch_assoc()) {
+            $destPos = $rowAut['correo'];
+            $asuntoPos = "Tu póster ha sido modificado por el administrador";
+            $mensajePos = "<h2>Hola, {$rowAut['nombre_autor']}!</h2><p>Tu póster <strong>'{$titulo}'</strong> ha sido modificado por el administrador.</p><p>Datos actualizados:<br>Título: {$titulo}<br>Autores: {$autores}<br>Descripción: {$descripcion}<br>Categoría: {$categoria}<br>Palabras clave: {$palabrasClave}</p>";
+        }
+        $stmtAut->close();
+        responderJsonYNotificar([
             "success" => true,
             "message" => "Póster modificado correctamente"
-        ]);
+        ], $destPos, $asuntoPos, $mensajePos);
+        return;
     } else {
         echo json_encode([
             "success" => false,
