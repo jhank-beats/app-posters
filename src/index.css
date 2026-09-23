@@ -12,6 +12,15 @@ COLORES UCC:
   line-height: 1.5;
   --max-ancho-contenedor: 3000px;
 
+  /* Paleta institucional UCC GensTI */
+  --azul-institucional: #132740;
+  --cian: #00acc9;
+  --verde: #80ba27;
+  --verde-claro: #cad400;
+  --gris: #5f5e5e;
+  --blanco: #ffffff;
+  --fondo: #f5f7f8;
+
 /*   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;  */

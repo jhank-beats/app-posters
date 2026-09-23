@@ -34,7 +34,7 @@ const TarjetaPosterQR = ({ poster, urlDigital }) => {
 
             <button
                 onClick={descargarQR}
-                className="solicitar-registro"
+                className="boton-primario"
                 type="button"
             >
                 ⬇ Descargar QR

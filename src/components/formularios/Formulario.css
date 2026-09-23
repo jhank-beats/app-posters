@@ -1,121 +1,507 @@
-.formularios {
-    position: relative;
-    background-color: white;
-    padding: 2rem;
-    margin: 2rem auto;
-    border: 1px solid #80ba27;
-    border-radius: 15px;
-    align-items: center;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.152);
-    width: 427px;
+/* =========================================================
+   FORMULARIOS — Lenguaje visual institucional UCC GensTI
+   ========================================================= */
 
+/* --- Overlay modal --- */
+.modal-registro {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(19, 39, 64, 0.5);
+  z-index: 9999;
+  padding: 1rem;
+  box-sizing: border-box;
+  backdrop-filter: blur(4px);
 }
 
+/* === TARJETA FORMULARIO === */
+.formularios {
+  background-color: #ffffff;
+  border-radius: 20px;
+  border-top: 4px solid #00acc9;
+  box-shadow: 0 6px 20px rgba(19, 39, 64, 0.08),
+              0 20px 50px rgba(19, 39, 64, 0.12);
+  padding: 2.5rem 2rem;
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Página standalone (CargarPosters) */
+.formularios-page {
+  min-height: calc(100vh - 84px);
+  padding: 3rem 1rem;
+  background-color: #f5f7f8;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.formularios-page .formularios {
+  max-width: 560px;
+  width: 100%;
+}
+
+/* Modal overlay dentro del header */
+.modal-registro .formularios {
+  max-width: 440px;
+}
+
+@media (max-width: 990px) {
+  .formularios-page {
+    padding: 2rem 0.75rem;
+  }
+
+  .formularios-page .formularios {
+    max-width: 440px;
+  }
+
+  .modal-registro .formularios {
+    max-width: calc(100% - 2rem);
+    margin: 0 1rem;
+  }
+}
+
+/* === BOTÓN CERRAR === */
 .cerrar-formulario {
-    position: absolute;
-    margin-top: -1.9rem;
-    right: 0.1rem;
-    color: #1f1e1e;
-    background: transparent;
-    border: none;
-    border-radius: 15px;
-    cursor: pointer;
-    font-size: 1.1rem;
-    margin-right: 0rem;
-    transition: transform 0.2s ease;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  color: #5f5e5e;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: 700;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  z-index: 2;
 }
 
 .cerrar-formulario:hover {
-    background-color: #3d3b3d24;
-    transform: scale(1.1);
+  background-color: rgba(19, 39, 64, 0.06);
+  color: #00acc9;
 }
 
-.formularios h2 {
-    margin-top: 0;
-    margin-bottom: 2rem;
-    font-weight: bold;
-    text-align: center;
-    color: #1f1e1e;
+/* === HEADER DEL FORMULARIO === */
+.formularios-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-top: 0.5rem;
 }
 
-.formularios p {
-    text-align: center;
-    color: #666;
-    margin-top: -1rem;
+.formularios-eyebrow {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #00acc9;
+  border: 1px solid rgba(0, 172, 201, 0.3);
+  border-radius: 999px;
+  background-color: rgba(0, 172, 201, 0.06);
 }
 
-.contenedor-formulario {
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    gap: 1.3rem;
+.formularios-header h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #132740;
+  line-height: 1.2;
 }
 
-input,
-select,
-textarea {
-    border: 2px solid #80ba27;
-    border-radius: 10px;
-    padding: 0.6rem 1rem;
-    font-size: 1rem;
-    width: 100%;
-    box-sizing: border-box;
+.formularios-header p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #5f5e5e;
+  line-height: 1.5;
 }
 
-textarea {
-    resize: none;
-    height: 4rem;
+/* === CUERPO DEL FORMULARIO === */
+.formularios-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
 }
 
-input[type="file"]::file-selector-button {
-    background-color: #80ba27;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 0.6rem 1rem;
-    cursor: pointer;
-    font-weight: bold;
+/* === CAMPO INDIVIDUAL === */
+.campo-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
-
-
-select.placeholder {
-    color: #757575;
+.campo-formulario label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #132740;
+  letter-spacing: 0.02em;
 }
 
-select {
-    color: #000;
+.campo-formulario input,
+.campo-formulario select,
+.campo-formulario textarea {
+  border: 2px solid #d5ddd3;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  color: #132740;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
 }
 
-.solicitar-registro,
-.tiene-cuenta {
-    border-radius: 10px;
-    padding: 0.6rem 1rem;
-    font-size: 1rem;
-    border: none;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-
+.campo-formulario input:focus,
+.campo-formulario select:focus,
+.campo-formulario textarea:focus {
+  border-color: #00acc9;
+  box-shadow: 0 0 0 3px rgba(0, 172, 201, 0.15);
 }
 
-.solicitar-registro:hover,
-.tiene-cuenta:hover {
-    opacity: 0.9;
+.campo-formulario input::placeholder,
+.campo-formulario select::placeholder,
+.campo-formulario textarea::placeholder {
+  color: #a0a8b0;
 }
 
-.solicitar-registro:active,
-.tiene-cuenta:active {
-    transform: scale(0.98);
+.campo-formulario input[type="file"] {
+  border: 2px solid #d5ddd3;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.tiene-cuenta {
-    background-color: #80ba27;
-    color: #333;
+.campo-formulario input[type="file"]:focus {
+  border-color: #00acc9;
+  box-shadow: 0 0 0 3px rgba(0, 172, 201, 0.15);
 }
 
-.formularios .error-mensaje {
-    color: red !important;
-    margin-top: 0.1rem;
-    text-align: center;
-    font-weight: 500;
+.campo-formulario input[type="file"]::file-selector-button {
+  background-color: #132740;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-right: 0.75rem;
+}
+
+.campo-formulario input[type="file"]::file-selector-button:hover {
+  background-color: #00acc9;
+}
+
+.campo-formulario select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235f5e5e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+.campo-formulario select option {
+  color: #132740;
+  background-color: #ffffff;
+  padding: 0.5rem;
+}
+
+.campo-formulario textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+/* === BOTONES === */
+.boton-primario {
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #00acc9;
+  border: 2px solid #00acc9;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 172, 201, 0.3);
+  width: 100%;
+  margin-top: 0.3rem;
+}
+
+.boton-primario:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 172, 201, 0.35);
+}
+
+.boton-primario:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 172, 201, 0.2);
+}
+
+.boton-secundario {
+  padding: 0.7rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #00acc9;
+  background-color: transparent;
+  border: 2px solid #00acc9;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.boton-secundario:hover {
+  background-color: rgba(0, 172, 201, 0.08);
+  color: #0093ad;
+}
+
+.boton-secundario:active {
+  transform: scale(0.98);
+}
+
+/* === ENLACE / TEXTO ADICIONAL === */
+.formulario-texto {
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.formulario-texto a,
+.formulario-texto button {
+  color: #00acc9;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.formulario-texto a:hover,
+.formulario-texto button:hover {
+  color: #0093ad;
+}
+
+/* === ERROR === */
+.error-mensaje {
+  color: #d32f2f;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  background-color: rgba(211, 47, 47, 0.06);
+  border-radius: 8px;
+  border: 1px solid rgba(211, 47, 47, 0.15);
+}
+
+/* === SEPARADOR === */
+.formulario-separador {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0;
+}
+
+.formulario-separador::before,
+.formulario-separador::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: #e0e4e8;
+}
+
+.formulario-separador span {
+  color: #5f5e5e;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 990px) {
+  .formularios {
+    padding: 2rem 1.5rem;
+    margin: 0 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+
+  .formularios-page {
+    padding: 2rem 0.75rem;
+  }
+
+  .formularios-page .formularios {
+    max-width: 440px;
+  }
+}
+
+@media (max-width: 640px) {
+  .formularios {
+    padding: 1.75rem 1.25rem;
+    border-radius: 16px;
+    border-top: 4px solid #00acc9;
+  }
+
+  .formularios-header h2 {
+    font-size: 1.35rem;
+  }
+
+  .campo-formulario input,
+  .campo-formulario select,
+  .campo-formulario textarea {
+    padding: 0.75rem 0.9rem;
+    font-size: 0.9rem;
+  }
+
+  .boton-primario {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* =========================================================
+   OVERRIDES vs roles.css
+   roles.css comparte selectores genéricos; usamos anclas
+   específicas para garantizar nuestros estilos.
+   ========================================================= */
+
+/* Asegurar que los inputs dentro de formularios no hereden estilos de roles.css */
+.formularios input,
+.formularios select,
+.formularios textarea {
+  border: 2px solid #d5ddd3;
+  border-radius: 12px;
+}
+
+.formularios input:focus,
+.formularios select:focus,
+.formularios textarea:focus {
+  border-color: #00acc9;
+  box-shadow: 0 0 0 3px rgba(0, 172, 201, 0.15);
+}
+
+/* Asegurar que los botones del formulario no sean afectados por roles.css */
+.formularios .boton-primario,
+.formularios .boton-secundario,
+.formularios .solicitar-registro,
+.formularios .tiene-cuenta {
+  background-color: #00acc9;
+  color: #ffffff;
+  border: 2px solid #00acc9;
+  border-radius: 12px;
+  padding: 0.9rem 1.5rem;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.formularios .boton-secundario,
+.formularios .tiene-cuenta {
+  background-color: transparent;
+  color: #00acc9;
+  border: 2px solid #00acc9;
+}
+
+.formularios .solicitar-registro,
+.formularios .tiene-cuenta:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
+  color: #ffffff;
+}
+
+/* El botón "tiene-cuenta" como secundario */
+.formularios .tiene-cuenta {
+  background-color: transparent;
+  color: #00acc9;
+  border: 2px solid #00acc9;
+  box-shadow: none;
+}
+
+.formularios .tiene-cuenta:hover {
+  background-color: rgba(0, 172, 201, 0.08);
+  color: #0093ad;
+}
+
+/* Overlay modal para formularios dentro de roles */
+.modal-formulario .formularios {
+  max-width: 440px;
+}
+
+/* Asegurar que el overlay no tenga el fondo gris de roles */
+.modal-registro {
+  background-color: rgba(19, 39, 64, 0.5) !important;
+}
+
+.formularios-page {
+  background-color: #f5f7f8;
+}
+
+.formularios-page .formularios {
+  border-top: 4px solid #00acc9;
+  box-shadow: 0 6px 20px rgba(19, 39, 64, 0.08);
+}
+
+.formularios-page .formularios-header {
+  padding-top: 0;
+}
+
+/* Para el header de roles que contiene formularios */
+.encabezado .formularios {
+  max-width: 400px;
+}
+
+@media (max-width: 990px) {
+  .encabezado .formularios {
+    max-width: calc(100% - 2rem);
+    margin: 0 1rem;
+  }
+}
+
+/* ===== ESTADOS DE INPUT ===== */
+.campo-formulario input:invalid:not(:placeholder-shown),
+.campo-formulario input.error {
+  border-color: #d32f2f;
+}
+
+.campo-formulario input.error:focus {
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.15);
+}
+
+/* ===== LOADING / DISABLED ===== */
+.boton-primario:disabled {
+  background-color: #a0c4c8;
+  border-color: #a0c4c8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.boton-secundario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

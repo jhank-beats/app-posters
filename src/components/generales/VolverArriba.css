@@ -1,0 +1,62 @@
+/* =========================================================
+   VOLVER ARRIBA — Botón flotante institucional UCC
+   ========================================================= */
+
+.boton-arriba {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  width: 48px;
+  height: 48px;
+
+  background-color: #132740;
+  color: #ffffff;
+  border: 2px solid #00acc9;
+  border-radius: 50%;
+
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  box-shadow: 0 4px 12px rgba(19, 39, 64, 0.3);
+
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+
+  z-index: 1000;
+}
+
+.boton-arriba-visible {
+  display: flex;
+}
+
+.boton-arriba:hover {
+  background-color: #00acc9;
+  color: #ffffff;
+  border-color: #00acc9;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 172, 201, 0.35);
+}
+
+.boton-arriba:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(19, 39, 64, 0.2);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .boton-arriba {
+    width: 40px;
+    height: 40px;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    font-size: 1rem;
+  }
+}

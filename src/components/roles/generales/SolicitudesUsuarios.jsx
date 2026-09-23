@@ -153,18 +153,15 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
                     onChange={(e) => setFiltro(e.target.value)}
                     className="input-filtro"
                 />
-            </div>
-
-            {limite && verMas && solicitudesFiltradas.length > limite && (
-                <div className="contenedor-vermas">
+                {limite && verMas && solicitudesFiltradas.length > limite && (
                     <a href="#" className="ver-mas" onClick={(e) => {
                         e.preventDefault();
                         verMas();
                     }}>
                         Ver más...
                     </a>
-                </div>
-            )}
+                )}
+            </div>
 
         </section>
     );

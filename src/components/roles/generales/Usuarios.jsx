@@ -254,20 +254,20 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                     <option value="1">Usuario</option>
                     <option value="2">Evaluador</option>
                 </select>
-            </div>
 
-            {limite && (
-                <a
-                    href="#"
-                    className="ver-mas"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        if (verMas) verMas();
-                    }}
-                >
-                    Ver más...
-                </a>
-            )}
+                {limite && (
+                    <a
+                        href="#"
+                        className="ver-mas"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (verMas) verMas();
+                        }}
+                    >
+                        Ver más...
+                    </a>
+                )}
+            </div>
 
             {/* Modal de edición de información de usuario */}
             {usuarioAEditar && (

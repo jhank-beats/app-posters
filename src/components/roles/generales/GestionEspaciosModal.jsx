@@ -17,7 +17,6 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
         try {
             const res = await fetch(`${SERVER_URL}/api/Espacios.php`);
             const data = await res.json();
-
             if (data.status === 'success' || data.success) {
                 setEspacios(data.data || []);
             }
@@ -29,30 +28,22 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
     const crearEspacio = async (e) => {
         e.preventDefault();
         setMensaje(null);
-
-        // Validar localmente antes de enviar
         if (!nombreEspacio.trim() || !capacidad) {
             setMensaje({ tipo: 'error', texto: 'Por favor complete todos los campos' });
             return;
         }
-
         try {
             const cuerpoPeticion = {
                 nombre_espacio: nombreEspacio.trim(),
                 capacidad: parseInt(capacidad, 10),
-                ubicacion_detallada: "" // Enviamos un campo extra por si la BD lo exige
+                ubicacion_detallada: ""
             };
-
             const res = await fetch(`${SERVER_URL}/api/Espacios.php`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(cuerpoPeticion)
             });
-
-            const textResponse = await res.text(); // Capturamos como texto primero por seguridad
+            const textResponse = await res.text();
             let data;
             try {
                 data = JSON.parse(textResponse);
@@ -61,7 +52,6 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
                 setMensaje({ tipo: 'error', texto: 'Error de formato en el servidor' });
                 return;
             }
-
             if (data.status === 'success' || data.success) {
                 setMensaje({ tipo: 'exito', texto: 'Espacio físico creado exitosamente' });
                 setNombreEspacio('');
@@ -79,58 +69,40 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
     return (
         <div className="modal">
             <div className="modal-espacios-contenido">
-                <button className="cerrar-modal" onClick={cerrarModal}>×</button>
-
+                <button className="cerrar-modal" onClick={cerrarModal} aria-label="Cerrar">×</button>
+                <span className="seccion-eyebrow">Ubicaciones</span>
                 <h2>🏛️ Gestión de Espacios Físicos</h2>
+                <p style={{ color: '#5f5e5e', margin: '0.5rem 0 0' }}>Crea salones y consulta ocupación</p>
 
                 {mensaje && (
-                    <div style={{ padding: '10px', marginBottom: '15px', borderRadius: '4px', background: mensaje.tipo === 'exito' ? '#d4edda' : '#f8d7da', color: mensaje.tipo === 'exito' ? '#155724' : '#721c24' }}>
+                    <div className={`mensaje-alerta ${mensaje.tipo}`}>
                         {mensaje.texto}
                     </div>
                 )}
 
                 <div className="grid-gestion-espacios">
-                    {/* Formulario de creación */}
                     <form onSubmit={crearEspacio} className="form-crear-espacio">
                         <h4>Crear Nuevo Salón / Pabellón / Estante</h4>
-                        <div style={{ marginBottom: '10px' }}>
-                            <label style={{ display: 'block', fontWeight: 'bold', fontSize: '13px', marginBottom: '5px' }}>Nombre del Espacio:</label>
-                            <input
-                                type="text"
-                                value={nombreEspacio}
-                                onChange={(e) => setNombreEspacio(e.target.value)}
-                                required
-                                placeholder="Ej. Salón 101 - Pabellón A"
-                                style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ccc' }}
-                            />
+                        <div className="campo-formulario">
+                            <label>Nombre del Espacio</label>
+                            <input type="text" value={nombreEspacio} onChange={(e) => setNombreEspacio(e.target.value)} required placeholder="Ej. Salón 101 - Pabellón A" />
                         </div>
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', fontWeight: 'bold', fontSize: '13px', marginBottom: '5px' }}>Capacidad Máxima de Pósters:</label>
-                            <input
-                                type="number"
-                                value={capacidad}
-                                onChange={(e) => setCapacidad(e.target.value)}
-                                required
-                                min="1"
-                                placeholder="Ej. 10"
-                                style={{ width: '100%', padding: '8px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ccc' }}
-                            />
+                        <div className="campo-formulario">
+                            <label>Capacidad Máxima de Pósters</label>
+                            <input type="number" value={capacidad} onChange={(e) => setCapacidad(e.target.value)} required min="1" placeholder="Ej. 10" />
                         </div>
-                        <button type="submit" style={{ background: '#28a745', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '4px', cursor: 'pointer', width: '100%', fontWeight: 'bold' }}>
-                            Guardar Espacio Físico
-                        </button>
+                        <button type="submit" className="boton-primario">Guardar Espacio Físico</button>
                     </form>
 
-                    {/* Listado de espacios */}
                     <div className="tabla-espacios-container">
                         <h4>Listado de Espacios Actuales</h4>
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '300px' }}>
+                        <div className="contenedor-tabla">
+                            <table>
                                 <thead>
-                                    <tr style={{ background: '#f1f1f1', textAlign: 'left' }}>
-                                        <th style={{ padding: '8px', border: '1px solid #ddd' }}>Nombre</th>
-                                        <th style={{ padding: '8px', border: '1px solid #ddd' }}>Capacidad</th>
-                                        <th style={{ padding: '8px', border: '1px solid #ddd' }}>Ocupados</th>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Capacidad</th>
+                                        <th>Ocupados</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -139,9 +111,9 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
                                     ) : (
                                         espacios.map(esp => (
                                             <tr key={esp.id_espacio}>
-                                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{esp.nombre_espacio}</td>
-                                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{esp.capacidad}</td>
-                                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{esp.ocupacion_actual !== undefined ? esp.ocupacion_actual : (esp.ocupados || 0)}</td>
+                                                <td>{esp.nombre_espacio}</td>
+                                                <td>{esp.capacidad}</td>
+                                                <td>{esp.ocupacion_actual !== undefined ? esp.ocupacion_actual : (esp.ocupados || 0)}</td>
                                             </tr>
                                         ))
                                     )}

@@ -79,19 +79,15 @@ const HomePageUsuario = () => {
 
             {/* Modal Cuenta */}
             {mostrarCuenta && (
-                <div className="modal-cuenta">
-                    <div className="modal">
-                        <Cuenta cerrarCuenta={() => setMostrarCuenta(false)} />
-                    </div>
+                <div className="modal">
+                    <Cuenta cerrarCuenta={() => setMostrarCuenta(false)} />
                 </div>
             )}
 
             {/* Modal Cargar Posters */}
             {mostrarCargarPosters && (
-                <div className="modal-cargar-posters">
-                    <div className="modal">
-                        <CargarPosters cerrarModal={() => setMostrarCargarPosters(false)} />
-                    </div>
+                <div className="modal">
+                    <CargarPosters cerrarModal={() => setMostrarCargarPosters(false)} />
                 </div>
             )}
 
@@ -106,13 +102,11 @@ const HomePageUsuario = () => {
             </section>
 
             {mostrarPosters && (
-                <div className="modal-posters">
-                    <div className="modal">
-                        <MostrarPosters 
-                            cerrarTabla={() => setMostrarPosters(false)} 
-                            soloMisPosters={true}
-                        />
-                    </div>
+                <div className="modal">
+                    <MostrarPosters 
+                        cerrarTabla={() => setMostrarPosters(false)} 
+                        soloMisPosters={true}
+                    />
                 </div>
             )}
 

@@ -77,35 +77,38 @@ const EditarUsuario = ({ usuario, cerrarModal, alGuardarExitoso }) => {
                     <button className="cerrar-formulario" onClick={cerrarModal}>X</button>
                 )}
 
-                <h2>✏️ Editar Usuario</h2>
-                <p>Modifica la información general del usuario seleccionado</p>
+                <div className="formularios-header">
+                    <span className="formularios-eyebrow">Edición</span>
+                    <h2>✏️ Editar Usuario</h2>
+                    <p>Modifica la información general del usuario seleccionado</p>
+                </div>
 
-                <form className="contenedor-formulario" onSubmit={handleSubmit}>
-                    <input
+                <form className="formularios-body" onSubmit={handleSubmit}>
+                    <div className="campo-formulario"><input
                         type="text"
                         name="nombres"
                         value={datosUsuario.nombres}
                         onChange={handleInputChange}
                         placeholder="📝 Nombres"
-                    />
+                    /></div>
 
-                    <input
+                    <div className="campo-formulario"><input
                         type="text"
                         name="apellidos"
                         value={datosUsuario.apellidos}
                         onChange={handleInputChange}
                         placeholder="📝 Apellidos"
-                    />
+                    /></div>
 
-                    <input
+                    <div className="campo-formulario"><input
                         type="email"
                         name="correo"
                         value={datosUsuario.correo}
                         onChange={handleInputChange}
                         placeholder="📧 Correo Electrónico"
-                    />
+                    /></div>
 
-                    <select
+                    <div className="campo-formulario"><select
                         name="carrera"
                         value={datosUsuario.carrera}
                         onChange={handleInputChange}
@@ -115,9 +118,9 @@ const EditarUsuario = ({ usuario, cerrarModal, alGuardarExitoso }) => {
                         <option value="civil">🏗️ Ingeniería Civil</option>
                         <option value="administracion">📊 Administración de Empresas</option>
                         <option value="derecho">⚖️ Derecho</option>
-                    </select>
+                    </select></div>
 
-                    <button className="solicitar-registro" type="submit" disabled={cargando}>
+                    <button className="boton-primario" type="submit" disabled={cargando}>
                         {cargando ? "Guardando..." : "Guardar Cambios"}
                     </button>
 

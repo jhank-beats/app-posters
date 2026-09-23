@@ -105,7 +105,8 @@ const HomePageAdmin = () => {
             )}
 
             {/* Usuarios pendientes */}
-            <section id="pendientes" className="pendientes">
+            <section id="pendientes">
+                <span className="seccion-eyebrow">Solicitudes</span>
                 <h2>Usuarios Pendientes por Aceptación</h2>
                 <SolicitudesUsuarios
                     limite={limite}
@@ -121,7 +122,8 @@ const HomePageAdmin = () => {
             )}
 
             {/* Posters publicados */}
-            <section id="posters" className="posters-publicados">
+            <section id="posters">
+                <span className="seccion-eyebrow">Contenido</span>
                 <h2>Posters Publicados</h2>
                 <MostrarPosters
                     limite={limite}
@@ -137,10 +139,11 @@ const HomePageAdmin = () => {
             )}
 
             {/* Gestión de Espacios Físicos (Resumen en Home) */}
-            <section id="espacios" className="eventos" style={{ marginTop: '30px' }}>
+            <section id="espacios">
+                <span className="seccion-eyebrow">Ubicaciones</span>
                 <h2>Gestión de Espacios Físicos y Capacidad</h2>
-                <div className="tabla-contenedor">
-                    <table className="tabla-general">
+                <div className="contenedor-tabla">
+                    <table>
                         <thead>
                             <tr>
                                 <th>Nombre del Salón / Pabellón / Estante</th>
@@ -167,9 +170,9 @@ const HomePageAdmin = () => {
                                             <td>{ocupacion}</td>
                                             <td>
                                                 {lleno ? (
-                                                    <span className="badge" style={{ background: '#dc3545', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>LLENO</span>
+                                                    <span className="badge-rol" style={{ background: 'rgba(211,47,47,0.1)', color: '#c62828', padding: '4px 8px', borderRadius: '999px' }}>LLENO</span>
                                                 ) : (
-                                                    <span className="badge" style={{ background: '#28a745', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>DISPONIBLE</span>
+                                                    <span className="badge-rol rol-2">DISPONIBLE</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -178,8 +181,8 @@ const HomePageAdmin = () => {
                             )}
                         </tbody>
                     </table>
-                    <div className="contenedor-ver-mas">
-                        <button className="btn-ver-mas" onClick={() => setMostrarGestionEspacios(true)}>
+                    <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                        <button className="boton-primario" onClick={() => setMostrarGestionEspacios(true)}>
                             Administrar / Crear Espacios Físicos
                         </button>
                     </div>
@@ -197,7 +200,8 @@ const HomePageAdmin = () => {
             )}
 
             {/* Usuarios */}
-            <section id="usuarios" className="usuarios">
+            <section id="usuarios">
+                <span className="seccion-eyebrow">Comunidad</span>
                 <h2>Gestión de Usuarios</h2>
                 <Usuarios
                     limite={limite}
@@ -217,7 +221,8 @@ const HomePageAdmin = () => {
             )}
 
             {/* Categorías */}
-            <section id="categorias" className="categorias">
+            <section id="categorias">
+                <span className="seccion-eyebrow">Clasificación</span>
                 <h2>Categorías</h2>
                 <Categorias
                     limite={limite}

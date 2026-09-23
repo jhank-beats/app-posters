@@ -12,7 +12,6 @@ const Registro = ({ setUser, cerrarRegistro, abrirLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Validar que no estén vacíos
     if (nombre === "" || apellidos === "" || email === "" || contrasena === "" || carrera === "") {
       setError(true)
       return
@@ -63,70 +62,81 @@ const Registro = ({ setUser, cerrarRegistro, abrirLogin }) => {
   }
 
   return (
-    <section className='formularios'>
-      <button className='cerrar-formulario' onClick={cerrarRegistro}>X</button>
-      <h2>📝 Solicitud de Registro</h2>
-      <p>Completa tus datos para comenzar 🚀</p>
+    <div className="formularios">
+      <button className="cerrar-formulario" onClick={cerrarRegistro}>X</button>
 
-      <form className="contenedor-formulario" onSubmit={handleSubmit}>
+      <div className="formularios-header">
+        <span className="formularios-eyebrow">Solicitud de Registro</span>
+        <h2>📝 Regístrate</h2>
+        <p>Completa tus datos para comenzar</p>
+      </div>
 
-        <input
-          type="text"
-          value={nombre}
-          onChange={e => setNombre(e.target.value)}
-          placeholder='👤 Nombres'
-        />
+      <form className="formularios-body" onSubmit={handleSubmit}>
+        <div className="campo-formulario">
+          <input
+            type="text"
+            value={nombre}
+            onChange={e => setNombre(e.target.value)}
+            placeholder="👤 Nombres"
+            required
+          />
+        </div>
 
-        <input
-          type="text"
-          value={apellidos}
-          onChange={e => setApellidos(e.target.value)}
-          placeholder='🧾 Apellidos'
-        />
+        <div className="campo-formulario">
+          <input
+            type="text"
+            value={apellidos}
+            onChange={e => setApellidos(e.target.value)}
+            placeholder="🧾 Apellidos"
+            required
+          />
+        </div>
 
-        <input
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          placeholder='📧 Correo Electrónico'
-        />
+        <div className="campo-formulario">
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="📧 Correo Electrónico"
+            required
+          />
+        </div>
 
-        <input
-          type="password"
-          value={contrasena}
-          onChange={e => setContrasena(e.target.value)}
-          placeholder='🔒 Contraseña'
-        />
+        <div className="campo-formulario">
+          <input
+            type="password"
+            value={contrasena}
+            onChange={e => setContrasena(e.target.value)}
+            placeholder="🔒 Contraseña"
+            required
+          />
+        </div>
 
-        <select
-          value={carrera}
-          onChange={e => setCarrera(e.target.value)}
-          required
-        >
-          <option value="">🎓 Selecciona tu carrera</option>
-          <option value="sistemas">💻 Ingeniería en Sistemas</option>
-          <option value="civil">🏗️ Ingeniería Civil</option>
-          <option value="administracion">📊 Administración de Empresas</option>
-          <option value="derecho">⚖️ Derecho</option>
-        </select>
-
-        <button className='solicitar-registro' type="submit">Solicitar Registro</button>
-
-        {/* ⚡ Cierra el formulario de registro y abre el de Login correctamente */}
-        <button
-          className='tiene-cuenta'
-          type="button"
-          onClick={() => {
-            if (abrirLogin) abrirLogin()
-            if (cerrarRegistro) cerrarRegistro()
-          }}
-        >
-          ¿Ya tienes Cuenta? Inicia Sesión
-        </button>
+        <div className="campo-formulario">
+          <select
+            value={carrera}
+            onChange={e => setCarrera(e.target.value)}
+            required
+          >
+            <option value="">🎓 Selecciona tu carrera</option>
+            <option value="sistemas">💻 Ingeniería en Sistemas</option>
+            <option value="civil">🏗️ Ingeniería Civil</option>
+            <option value="administracion">📊 Administración de Empresas</option>
+            <option value="derecho">⚖️ Derecho</option>
+          </select>
+        </div>
 
         {error && <p className="error-mensaje">Por favor, completa todos los campos.</p>}
+
+        <button className="boton-primario" type="submit">Solicitar Registro</button>
+
+        <div className="formulario-texto">
+          <button type="button" onClick={() => { if (abrirLogin) abrirLogin(); if (cerrarRegistro) cerrarRegistro(); }}>
+            ¿Ya tienes Cuenta? Inicia Sesión
+          </button>
+        </div>
       </form>
-    </section>
+    </div>
   )
 }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import "./roles.css";
 import AsignarEvaluadorModal from '../generales/AsignarEvaluadorModal.jsx';
 import DetallesCalificacionModal from './DetallesCalificacionModal.jsx';
+import ModalEvaluacion from './ModalEvaluacion.jsx';
 import TarjetaPosterQR from './TarjetaPosterQR.jsx';
 
 const SERVER_URL = `http://${window.location.hostname}:8000`;
@@ -31,6 +32,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
 
     // Modal código QR
     const [posterParaQR, setPosterParaQR] = useState(null);
+    const [posterAEvaluar, setPosterAEvaluar] = useState(null);
 
     // Contexto de usuario
     const [rolUsuario, setRolUsuario] = useState("");
@@ -147,7 +149,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                         criterios: notasCriterios,
                         observaciones: '',
                         existente: false,
-                        editando: true
+                        editando: false
                     };
                 }
             } catch (err) {
@@ -445,19 +447,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
 
                                         {esEvaluador && criterios.map(crit => (
                                             <td key={crit.id}>
-                                                {evalState.editando ? (
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max="5"
-                                                        step="0.1"
-                                                        value={evalState.criterios[crit.id] ?? 0}
-                                                        onChange={(e) => handleCampoEvaluacionChange(poster.id, crit.id, e.target.value)}
-                                                        style={{ width: '60px' }}
-                                                    />
-                                                ) : (
-                                                    <span>{evalState.criterios[crit.id] ?? 0}</span>
-                                                )}
+                                                <span style={{ fontWeight: evalState.existente ? 700 : 400, color: evalState.existente ? '#132740' : '#9aa0a6' }}>{(parseFloat(evalState.criterios[crit.id] ?? 0).toFixed(1))}</span>
                                             </td>
                                         ))}
 
@@ -470,40 +460,14 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                                                 </td>
 
                                                 <td>
-                                                    {evalState.editando ? (
-                                                        <textarea
-                                                            rows="2"
-                                                            value={evalState.observaciones}
-                                                            onChange={(e) => handleObservacionChange(poster.id, e.target.value)}
-                                                            placeholder="Observaciones..."
-                                                            style={{ width: '100%', fontSize: '0.85em' }}
-                                                        />
-                                                    ) : (
-                                                        <small>{evalState.observaciones || 'Sin observaciones'}</small>
-                                                    )}
+                                                    <small style={{ color: evalState.observaciones ? '#132740' : '#9aa0a6' }}>{evalState.observaciones ? (evalState.observaciones.slice(0, 42) + (evalState.observaciones.length > 42 ? '…' : '')) : '—'}</small>
                                                 </td>
 
                                                 <td>
-                                                    {evalState.editando ? (
-                                                        <button
-                                                            onClick={() => guardarEvaluacionFila(poster.id)}
-                                                            disabled={evalState.guardando}
-                                                            style={{ backgroundColor: '#28a745', color: '#fff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
-                                                        >
-                                                            {evalState.guardando ? '...' : 'Guardar'}
-                                                        </button>
+                                                    {evalState.existente ? (
+                                                        <button onClick={() => setPosterAEvaluar(poster)} className="btn-accion-tabla btn-evaluar">✏️ Editar</button>
                                                     ) : (
-                                                        <button
-                                                            onClick={() => alternarEditar(poster.id)}
-                                                            style={{ backgroundColor: '#ffc107', color: '#000', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
-                                                        >
-                                                            ✏️ Editar
-                                                        </button>
-                                                    )}
-                                                    {evalState.mensaje && (
-                                                        <span style={{ display: 'block', color: 'green', fontSize: '0.75em' }}>
-                                                            {evalState.mensaje}
-                                                        </span>
+                                                        <button onClick={() => setPosterAEvaluar(poster)} className="btn-accion-tabla btn-asignar">⭐ Calificar</button>
                                                     )}
                                                 </td>
                                             </>
@@ -538,18 +502,15 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                     onChange={(e) => setFiltro(e.target.value)}
                     className="input-filtro"
                 />
-            </div>
-
-            {limite && verMas && postersFiltrados.length > limite && (
-                <div className="contenedor-vermas">
+                {limite && verMas && postersFiltrados.length > limite && (
                     <a href="#" className="ver-mas" onClick={(e) => {
                         e.preventDefault();
                         verMas();
                     }}>
                         Ver más...
                     </a>
-                </div>
-            )}
+                )}
+            </div>
 
             {imagenSeleccionada && (
                 <div className="modal-imagen" onClick={() => setImagenSeleccionada(null)}>
@@ -582,6 +543,10 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                     evaluacion={modalDetalleEval.evaluacion}
                     cerrarModal={() => setModalDetalleEval(null)}
                 />
+            )}
+
+            {posterAEvaluar && (
+                <ModalEvaluacion poster={posterAEvaluar} criterios={criterios} evaluacionInicial={evaluacionesMap[posterAEvaluar.id]} idEvaluador={idUsuarioActual} onClose={() => setPosterAEvaluar(null)} onGuardado={() => cargarCriteriosYPosters()} />
             )}
 
             {posterParaQR && (

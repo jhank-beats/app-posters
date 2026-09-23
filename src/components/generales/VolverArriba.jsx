@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './VolverArriba.css';
 
 const VolverArriba = () => {
     const [visible, setVisible] = useState(false);
@@ -15,23 +16,8 @@ const VolverArriba = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const buttonStyle = {
-        position: 'fixed',
-        bottom: '30px',
-        right: '30px',
-        display: visible ? 'block' : 'none',
-        padding: '10px 15px',
-        fontSize: '18px',
-        borderRadius: '50%',
-        backgroundColor: '#3333338a',
-        color: '#fff',
-        border: 'none',
-        cursor: 'pointer',
-        zIndex: 1000,
-    };
-
     return (
-        <button style={buttonStyle} onClick={scrollToTop} aria-label="Volver arriba">
+        <button className={`boton-arriba ${visible ? 'boton-arriba-visible' : ''}`} onClick={scrollToTop} aria-label="Volver arriba">
             ↑
         </button>
     );

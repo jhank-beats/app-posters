@@ -1,104 +1,329 @@
 /* =========================================================
-   HOMEPAGE
+   HOMEPAGE — Paleta institucional UCC GensTI
    ========================================================= */
+
+.contenedor-pagina {
+  --azul-institucional: #132740;
+  --cian: #00acc9;
+  --cian-oscuro: #0093ad;
+  --verde: #80ba27;
+  --verde-claro: #cad400;
+  --gris: #5f5e5e;
+  --blanco: #ffffff;
+  --fondo: #f5f7f8;
+
+  background-color: var(--fondo);
+  min-height: 100vh;
+  overflow-x: clip;
+}
+
+
+/* Contenedor semántico de las secciones (Hero / Comunidad / Novedades / Posters).
+   Gancho para el rediseño por etapas; scroll-margin compensa el header fijo. */
+.contenido-home {
+  display: block;
+}
+
+.contenedor-pagina .seccion-home {
+  scroll-margin-top: 84px;
+}
 
 
 /* =========================================================
-   HEADER
+   HEADER — Institucional
+   Escritorio: logo izquierda / nav centrada / acciones derecha
    ========================================================= */
 
 .encabezado {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
 
-  margin-top: 1rem;
-  margin-left: 2rem;
-  margin-right: 2rem;
+  background-color: #132740;
+
+  margin: 0;
+
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.header-contenedor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+
+  max-width: 1280px;
+
+  margin: 0 auto;
+  padding: 0.7rem 2rem;
+
+  box-sizing: border-box;
 }
 
 .logo-nav {
   display: flex;
   align-items: center;
   gap: 20px;
+
+  justify-self: start;
+  min-width: 0;
 }
 
-.logo-ucc {
-  height: 50px;
-}
+.encabezado .logo-enlace {
+  display: inline-flex;
+  align-items: center;
 
-nav {
+  margin: 0;
+
   cursor: pointer;
 }
 
-a {
-  margin: 0 1rem;
+.logo-ucc {
+  height: 46px;
+
+  background-color: #ffffff;
+
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+/* Navegación central (centrada respecto al header) */
+.encabezado .menu-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  position: static;
+  justify-self: center;
+}
+
+.encabezado nav {
+  cursor: pointer;
+}
+
+.encabezado .menu-enlace {
+  margin: 0 0.9rem;
+  padding: 0.4rem 0.1rem;
+
   font-weight: 500;
-  color: #000000;
-  text-decoration: inherit;
+  font-size: 0.98rem;
+  color: #ffffff;
+  text-decoration: none;
+
+  border-bottom: 2px solid transparent;
+
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.encabezado .menu-enlace:hover {
+  color: #00acc9;
+  border-bottom-color: #00acc9;
+}
+
+/* Acciones a la derecha */
+.acciones-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+
+  justify-self: end;
+  min-width: 0;
+}
+
+/* Compresión para laptops (evita solapamiento logo/nav/acciones) */
+@media (min-width: 991px) and (max-width: 1199px) {
+  .header-contenedor {
+    padding: 0.7rem 1.25rem;
+  }
+
+  .encabezado .menu-enlace {
+    font-size: 0.9rem;
+    margin: 0 0.5rem;
+  }
+
+  .encabezado .menu-nav {
+    gap: 0;
+  }
+
+  .encabezado .enlace-login {
+    font-size: 0.9rem;
+  }
+
+  .encabezado .boton-registro {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+.encabezado .menu-usuario {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.encabezado .enlace-login {
+  margin: 0;
+
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #ffffff;
+  text-decoration: none;
+  white-space: nowrap;
+
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.encabezado .enlace-login:hover {
+  color: #00acc9;
+}
+
+.encabezado .boton-registro {
+  padding: 0.55rem 1.3rem;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+
+  background-color: #00acc9;
+
+  border: 1px solid #00acc9;
+  border-radius: 8px;
+
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.encabezado .boton-registro:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
+  transform: translateY(-1px);
 }
 
 /* Botones ocultos en escritorio */
 .boton-hamburguesa,
 .boton-usuario,
-.boton-cerrar {
+.encabezado .boton-cerrar {
   display: none;
+}
+
+/* Iconos de menú y usuario en blanco (gana a roles.css) */
+.encabezado .boton-hamburguesa button,
+.encabezado .boton-usuario button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.4rem;
+
+  color: #ffffff;
+  background-color: transparent;
+
+  border: none;
+  border-radius: 8px;
+
+  cursor: pointer;
+}
+
+.encabezado .boton-hamburguesa button:hover,
+.encabezado .boton-usuario button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
 
 /* =========================================================
-   HEADER - RESPONSIVE
+   HEADER - RESPONSIVE (se conserva la funcionalidad:
+   menú hamburguesa + menú de usuario desplegables)
    ========================================================= */
 
 @media (max-width: 990px) {
 
-  /* Menú de navegación móvil */
-  .menu-nav {
+  /* Con el menú en panel flotante, la grilla pasa a 2 columnas:
+     logo a la izquierda, botones de acción alineados a la derecha */
+  .header-contenedor {
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    padding: 0.7rem 1rem;
+  }
+
+  /* Menú de navegación móvil: panel flotante bajo el header */
+  .encabezado .menu-nav {
     display: none;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: stretch;
 
     position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
+    left: auto;
+    top: 56px;
+    right: 0.75rem;
+    bottom: auto;
+    transform: none;
 
-    background: #fbfafa;
+    min-width: 212px;
+
+    background: #132740;
     padding: 1rem;
 
-    border: 1px solid #ccc;
-    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
 
-    gap: 10px;
+    gap: 6px;
 
-    box-shadow: 0 0 0 100vmax #41414135;
+    box-shadow:
+      0 14px 32px rgba(0, 0, 0, 0.28),
+      0 0 0 100vmax rgba(19, 39, 64, 0.4);
+  }
+
+  .encabezado .menu-enlace {
+    margin: 0;
+    padding: 0.6rem 0.85rem;
+
+    color: #ffffff;
+
+    border-left: 3px solid transparent;
+    border-bottom: none;
+
+    border-radius: 6px;
+  }
+
+  .encabezado .menu-enlace:hover {
+    color: #00acc9;
+
+    background-color: rgba(255, 255, 255, 0.08);
+    border-left-color: #00acc9;
   }
 
   .menu-nav button:hover {
-    background-color: #3d3d3d24;
+    background-color: rgba(255, 255, 255, 0.12);
     transform: scale(1.1);
   }
 
 
   /* Menú del usuario */
-  .menu-usuario {
+  .encabezado .menu-usuario {
     display: none;
     flex-direction: column;
     align-items: center;
 
     position: absolute;
-    top: 70px;
-    right: 80px;
+    top: 56px;
+    right: 0.75rem;
 
-    background: #fff;
-    padding: 2rem 1rem 1rem;
+    min-width: 190px;
 
-    border: 1px solid #ccc;
-    border-radius: 8px;
+    background: #132740;
+    padding: 2rem 1rem 1.1rem;
+
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
 
     gap: 10px;
 
-    box-shadow: 0 0 0 100vmax #41414135;
+    box-shadow:
+      0 14px 32px rgba(0, 0, 0, 0.28),
+      0 0 0 100vmax rgba(19, 39, 64, 0.4);
   }
 
 
@@ -111,6 +336,7 @@ a {
 
     font-size: 20px;
 
+    color: #ffffff;
     background: transparent;
     border: none;
 
@@ -123,8 +349,8 @@ a {
 
 
   /* Mostrar menú activo */
-  .menu-nav.activo,
-  .menu-usuario.activo {
+  .encabezado .menu-nav.activo,
+  .encabezado .menu-usuario.activo {
     display: flex;
   }
 
@@ -142,7 +368,7 @@ a {
   /* Mostrar botones móviles */
   .boton-hamburguesa,
   .boton-usuario,
-  .boton-cerrar {
+  .encabezado .boton-cerrar {
     display: flex;
   }
 
@@ -150,7 +376,7 @@ a {
   .boton-hamburguesa button,
   .boton-usuario button,
   .boton-cerrar {
-    color: #000000;
+    color: #ffffff;
     background-color: transparent;
 
     border: none;
@@ -160,141 +386,255 @@ a {
 
 
 /* =========================================================
-   SECCIÓN DE INICIO
+   HERO PRINCIPAL
+   Tarjeta institucional de dos columnas
    ========================================================= */
 
 .inicio {
+  max-width: 1280px;
+
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+}
+
+.hero-tarjeta {
   display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  align-items: center;
+  gap: 3rem;
 
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto;
+  position: relative;
+  overflow: hidden;
 
-  gap: 1rem;
-  column-gap: 5rem;
+  padding: 3.5rem;
 
-  padding: 3rem;
+  background: linear-gradient(135deg, #132740 0%, #1a3a56 55%, #14505f 100%);
+
+  border-radius: 24px;
+
+  box-shadow: 0 20px 45px rgba(19, 39, 64, 0.28);
+}
+
+
+/* Detalles decorativos: resplandores cian y verde */
+.hero-tarjeta::before {
+  content: "";
+
+  position: absolute;
+  top: -120px;
+  right: -100px;
+
+  width: 340px;
+  height: 340px;
+
+  background: radial-gradient(circle, rgba(0, 172, 201, 0.35) 0%, rgba(0, 172, 201, 0) 70%);
+
+  pointer-events: none;
+}
+
+.hero-tarjeta::after {
+  content: "";
+
+  position: absolute;
+  bottom: -140px;
+  left: -80px;
+
+  width: 320px;
+  height: 320px;
+
+  background: radial-gradient(circle, rgba(128, 186, 39, 0.28) 0%, rgba(128, 186, 39, 0) 70%);
+
+  pointer-events: none;
 }
 
 
 /* Texto de bienvenida */
 .texto-inicio {
+  position: relative;
+  z-index: 1;
+
   max-width: clamp(250px, 90%, 700px);
   flex-shrink: 0;
 
   text-align: left;
 }
 
+.hero-eyebrow {
+  display: inline-block;
+
+  margin-bottom: 1rem;
+  padding: 0.35rem 0.9rem;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+
+  color: #cad400;
+
+  border: 1px solid rgba(202, 212, 0, 0.45);
+  border-radius: 999px;
+
+  background-color: rgba(202, 212, 0, 0.08);
+}
+
+.texto-inicio h1 {
+  margin: 0 0 1rem;
+
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.12;
+
+  color: #ffffff;
+}
+
+.texto-inicio p {
+  margin: 0;
+
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  line-height: 1.65;
+
+  color: rgba(255, 255, 255, 0.84);
+}
+
 
 /* Contenedor de botones */
 .botones-inicio {
   display: flex;
+  align-items: center;
   gap: 1rem;
 
-  margin-top: 2.5rem;
+  margin-top: 2.25rem;
 }
 
 
-/* Botón de preguntas frecuentes */
-.boton-preguntas-frecuentes {
-  background-color: #fdfdfd;
-  color: #000000;
+/* Botón principal: Regístrate */
+.botones-inicio .boton-primario {
+  padding: 0.8rem 2rem;
 
-  border: 1px solid #5f5e5e;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+
+  background-color: #00acc9;
+
+  border: 1px solid #00acc9;
+  border-radius: 10px;
+
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 20px rgba(0, 172, 201, 0.35);
 }
 
-.boton-preguntas-frecuentes:hover {
-  background-color: #eeeded;
-  border-color: #4db1c3;
+.botones-inicio .boton-primario:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
+  transform: translateY(-2px);
 }
 
 
-/* Imagen principal */
+/* Botón secundario: Preguntas Frecuentes */
+.botones-inicio .boton-preguntas-frecuentes {
+  padding: 0.8rem 1.6rem;
+
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+
+  background-color: transparent;
+
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.botones-inicio .boton-preguntas-frecuentes:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
+}
+
+
+/* Columna visual */
 .imagen-inicio {
-  margin-top: 2rem;
+  position: relative;
+  z-index: 1;
+
+  margin-top: 0;
 }
 
 .imagen-inicio img {
-  max-width: 100%;
-  height: auto;
+  display: block;
 
-  border-radius: 10px;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+
+  border-radius: 16px;
+
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.35);
 }
 
+.hero-detalle {
+  position: absolute;
 
-/* Redes sociales */
-.imagenes-redes {
-  grid-column: 1 / span 2;
+  border-radius: 50%;
 
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-
-  gap: clamp(2rem, 6vw, 8rem);
-
-  padding: 1rem;
-  margin-top: 2rem;
+  pointer-events: none;
 }
 
-.imagenes-redes .cuadros {
-  font-size: clamp(1.6rem, 5vw, 3.5rem);
+.hero-detalle-cian {
+  top: -18px;
+  right: -14px;
 
-  transition: transform 0.3s ease,
-    color 0.3s ease;
+  width: 74px;
+  height: 74px;
+
+  background: radial-gradient(circle, #00acc9 0%, rgba(0, 172, 201, 0) 72%);
+  opacity: 0.85;
 }
 
-.imagenes-redes .cuadros:hover {
-  transform: scale(1.15);
-  color: #4db1c3;
+.hero-detalle-verde {
+  bottom: -20px;
+  left: -16px;
+
+  width: 92px;
+  height: 92px;
+
+  background: radial-gradient(circle, #80ba27 0%, rgba(128, 186, 39, 0) 72%);
+  opacity: 0.8;
 }
 
 
 /* =========================================================
-   INICIO - RESPONSIVE
+   HERO - RESPONSIVE
    ========================================================= */
 
 @media (max-width: 1020px) {
 
   .inicio {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    padding: 1.5rem 1rem;
+  }
+
+  .hero-tarjeta {
+    grid-template-columns: 1fr;
+
+    gap: 2rem;
+    padding: 2.25rem 1.5rem;
 
     text-align: center;
-
-    margin-top: -2rem;
-    padding: 2rem 1rem;
   }
 
 
   .texto-inicio {
     max-width: 95%;
+    margin: 0 auto;
     text-align: center;
   }
 
 
-  .texto-inicio h1 {
-    font-size: clamp(2rem, 7vw, 2.8rem);
-    line-height: 1.25;
-
-    font-weight: 700;
-    color: #0f0f0f;
-
-    margin-bottom: 1rem;
-  }
-
-
-  .texto-inicio p {
-    font-size: clamp(1rem, 4vw, 1.3rem);
-    line-height: 1.5;
-
-    color: #333;
-
-    margin: 0 auto;
-    max-width: 90%;
-  }
-
-
-  /* Botones en columna */
+  /* Botones adaptados al ancho */
   .botones-inicio {
     flex-direction: column;
     align-items: center;
@@ -304,7 +644,8 @@ a {
   }
 
 
-  .botones-inicio button {
+  .botones-inicio .boton-primario,
+  .botones-inicio .boton-preguntas-frecuentes {
     width: 85%;
     max-width: 280px;
 
@@ -317,30 +658,14 @@ a {
   /* Imagen debajo del texto */
   .imagen-inicio {
     width: 100%;
-    margin-top: 2rem;
+    margin-top: 0;
   }
 
 
   .imagen-inicio img {
     width: 100%;
     max-width: 600px;
-
-    border-radius: 12px;
-  }
-
-
-  /* Redes sociales */
-  .imagenes-redes {
-    justify-content: center;
-    flex-wrap: wrap;
-
-    gap: 2.5rem;
-    margin-top: 2rem;
-  }
-
-
-  .imagenes-redes .cuadros {
-    font-size: clamp(2rem, 8vw, 3rem);
+    margin: 0 auto;
   }
 }
 
@@ -350,8 +675,40 @@ a {
    ========================================================= */
 
 .comunidad-gensti {
-  padding: 1rem 2rem;
-  align-items: center;
+  max-width: 1280px;
+
+  margin: 0 auto;
+  padding: 3.5rem 2rem 1.5rem;
+
+  text-align: center;
+}
+
+.subtitulo-texto-comunidad h2 {
+  margin: 0 0 0.75rem;
+
+  color: #132740;
+}
+
+.subtitulo-texto-comunidad p {
+  max-width: 640px;
+
+  margin: 0 auto;
+
+  color: #5f5e5e;
+}
+
+/* Etiqueta pequeña sobre el título de sección */
+.seccion-eyebrow {
+  display: inline-block;
+
+  margin-bottom: 0.75rem;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+
+  color: #00acc9;
 }
 
 
@@ -359,31 +716,78 @@ a {
 .cuadros-texto {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  flex-wrap: nowrap;
+  align-items: stretch;
+  flex-wrap: wrap;
 
-  gap: 2rem;
-  padding: 2rem;
+  gap: 1.5rem;
+  padding: 2.5rem 0 1rem;
 }
 
 
-/* Tarjetas de comunidad */
-.cuadros-texto>div {
-  border: 1px solid #4db1c31d;
-  border-radius: 25px;
-
-  box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.25);
-
-  flex: 1 1 25%;
-
-  max-width: 350px;
+/* Tarjeta de comunidad */
+.tarjeta-comunidad {
+  flex: 1 1 30%;
+  max-width: 360px;
   min-width: 250px;
 
-  transition: all 0.3s ease;
+  padding: 2.25rem 1.75rem;
+
+  background-color: #ffffff;
+
+  border: 1px solid rgba(19, 39, 64, 0.08);
+  border-top: 4px solid var(--acento-tarjeta, #00acc9);
+  border-radius: 20px;
+
+  box-shadow: 0 6px 20px rgba(19, 39, 64, 0.08);
+
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.tarjeta-comunidad:hover {
+  transform: translateY(-8px);
+
+  box-shadow: 0 16px 35px rgba(19, 39, 64, 0.16);
 }
 
 
-/* Imagen de cada tarjeta */
+/* Icono de cada tarjeta */
+.icono-tarjeta-comunidad {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 64px;
+  height: 64px;
+
+  margin-bottom: 1.25rem;
+
+  font-size: 1.6rem;
+
+  color: var(--acento-tarjeta, #00acc9);
+  background-color: #eef4f6;
+  background-color: color-mix(in srgb, var(--acento-tarjeta, #00acc9) 14%, #ffffff);
+
+  border-radius: 18px;
+}
+
+.subtitulo-cuadro-comunidad {
+  margin: 0 0 0.75rem;
+
+  font-size: 1.3rem;
+
+  color: #132740;
+}
+
+.descripcion-comunidad {
+  margin: 0;
+
+  line-height: 1.65;
+
+  color: #5f5e5e;
+}
+
+
+/* Imagen de respaldo (compatibilidad con tarjetas antiguas) */
 .imagen-cuadro-comunidad {
   width: 120px;
   height: 120px;
@@ -402,12 +806,12 @@ a {
 @media (max-width: 850px) {
 
   .comunidad-gensti {
-    margin-top: -3rem;
+    padding: 2.5rem 1rem 1rem;
   }
 
 
   .subtitulo-cuadro-comunidad {
-    font-size: clamp(1.4rem, 4vw, 1.5rem);
+    font-size: clamp(1.3rem, 4vw, 1.5rem);
     margin-bottom: 0.8rem;
   }
 
@@ -418,13 +822,28 @@ a {
 
 
   .cuadros-texto {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: stretch;
+
+    gap: 1.2rem;
   }
 
 
-  .cuadros-texto>div {
-    flex: 1 1 45%;
-    min-width: 220px;
+  .tarjeta-comunidad {
+    width: auto;
+    max-width: none;
+    min-width: 0;
+
+    padding: 1.75rem 1.4rem;
+  }
+}
+
+/* Celular: una columna compacta (igual que las tarjetas de posters) */
+@media (max-width: 640px) {
+
+  .cuadros-texto {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -432,6 +851,31 @@ a {
 /* =========================================================
    NOVEDADES - CARRUSEL
    ========================================================= */
+
+.novedades {
+  max-width: 1280px;
+
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.titulo-texto-novedades {
+  text-align: center;
+}
+
+.titulo-texto-novedades h2 {
+  margin: 0 0 0.75rem;
+
+  color: #132740;
+}
+
+.titulo-texto-novedades p {
+  max-width: 640px;
+
+  margin: 0 auto;
+
+  color: #5f5e5e;
+}
 
 .carrusel-separacion {
   margin-top: 2rem;
@@ -442,15 +886,36 @@ a {
 .carousel {
   position: relative;
 
-  max-width: 850px;
+  max-width: 1080px;
 
   margin: auto;
 
   overflow: hidden;
 
-  border-radius: 16px;
+  background-color: #e8eef2;
 
-  box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.25);
+  border-radius: 24px;
+
+  box-shadow: 0 18px 45px rgba(19, 39, 64, 0.18);
+}
+
+
+/* Degradado de lectura sobre la imagen (base de los indicadores) */
+.carousel::after {
+  content: "";
+
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 140px;
+
+  background: linear-gradient(to top, rgba(19, 39, 64, 0.5), rgba(19, 39, 64, 0));
+
+  pointer-events: none;
+
+  z-index: 1;
 }
 
 
@@ -460,20 +925,21 @@ a {
 
   width: 100%;
 
+  aspect-ratio: 16 / 9;
+
   object-fit: cover;
 
-  border: 3px solid #42494a33;
-  border-radius: 16px;
+  border-radius: 24px;
 
   opacity: 0.95;
 
   transition: opacity 0.4s ease-in-out,
-    transform 0.3s ease-in-out;
+    transform 0.45s ease-in-out;
 }
 
 .carousel img:hover {
   opacity: 1;
-  transform: scale(1.02);
+  transform: scale(1.03);
 }
 
 
@@ -492,7 +958,9 @@ a {
 
   pointer-events: none;
 
-  padding: 0 10px;
+  padding: 0 16px;
+
+  z-index: 2;
 }
 
 
@@ -503,38 +971,47 @@ a {
   align-items: center;
   justify-content: center;
 
-  width: 45px;
-  height: 45px;
-
-  background-color: #5f5e5e;
-
-  border-radius: 50%;
-
-  cursor: pointer;
-
-  opacity: 75%;
+  width: 52px;
+  height: 52px;
 
   pointer-events: auto;
 
-  transition: 0.3s;
+  color: #132740;
+
+  background-color: rgba(255, 255, 255, 0.92);
+
+  border: none;
+  border-radius: 50%;
+
+  box-shadow: 0 4px 14px rgba(19, 39, 64, 0.25);
+
+  cursor: pointer;
+
+  transition: background-color 0.25s ease, color 0.25s ease,
+    transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 
 /* Iconos de las flechas */
 .left svg,
 .right svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 
-  fill: #fff;
+  fill: currentColor;
 }
 
 
 /* Hover flechas */
 .left:hover,
 .right:hover {
-  background-color: #4db1c3;
-  transform: scale(1.15);
+  color: #ffffff;
+
+  background-color: #00acc9;
+
+  transform: scale(1.12);
+
+  box-shadow: 0 6px 20px rgba(0, 172, 201, 0.45);
 }
 
 
@@ -542,45 +1019,43 @@ a {
 .carousel-indicator {
   position: absolute;
 
-  bottom: 18px;
+  bottom: 22px;
 
   width: 100%;
 
   display: flex;
   justify-content: center;
 
-  gap: 12px;
+  gap: 10px;
+
+  z-index: 2;
 }
 
 
 /* Puntos del carrusel */
 .dot {
-  width: 12px;
-  height: 12px;
+  width: 26px;
+  height: 6px;
 
-  background-color: #5f5e5e;
+  background-color: rgba(255, 255, 255, 0.6);
 
-  border-radius: 50%;
+  border-radius: 999px;
 
   cursor: pointer;
 
-  opacity: 75%;
-
-  transition: 0.3s;
+  transition: background-color 0.25s ease, width 0.25s ease;
 }
 
 .dot:hover {
-  width: 14px;
-  height: 14px;
-
-  background-color: #4db1c3;
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
 
 /* Punto activo */
 .active {
-  background-color: #80ba27;
-  transform: scale(1.2);
+  width: 36px;
+
+  background-color: #00acc9;
 }
 
 
@@ -590,179 +1065,149 @@ a {
 
 @media (max-width: 850px) {
 
+  .novedades {
+    padding: 2.5rem 1rem;
+  }
+
   .carousel {
-    max-width: 95%;
+    max-width: 100%;
+  }
+
+  .left,
+  .right {
+    width: 42px;
+    height: 42px;
   }
 }
 
 
 /* =========================================================
-   SECCIÓN DE POSTERS
+   SECCIÓN DE POSTERS (proceso informativo)
    ========================================================= */
 
-/*
-   Contenedor principal de las dos tarjetas:
-   - Poster del semestre
-   - Recomendaciones
-*/
-.posters-separacion {
-  display: flex;
-  justify-content: center;
+.posters {
+  max-width: 1280px;
 
-  /* Las tarjetas tienen la misma altura visual */
-  align-items: stretch;
-
-  gap: 2rem;
-
-  padding: 2rem;
+  margin: 0 auto;
+  padding: 3rem 2rem;
 }
 
-
-/*
-   Estilo general de ambas tarjetas
-*/
-.poster-card,
-.recomendaciones-poster {
-  display: flex;
-  flex-direction: column;
-
-  flex: 1 1 45%;
-
-  max-width: 500px;
-  min-width: 250px;
-
-  padding: 2rem;
-
-  box-sizing: border-box;
-
-  border: 1px solid #4db1c31d;
-  border-radius: 25px;
-
-  box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.25);
-}
-
-
-/* =========================================================
-   TARJETA DEL POSTER DEL SEMESTRE
-   ========================================================= */
-
-/*
-   Centra horizontalmente todos los elementos:
-   título, imagen y botón de descarga
-*/
-.poster-card {
-  align-items: center;
-}
-
-
-/* Título */
-.poster-card h3 {
-  width: 100%;
-
+.titulo-texto-posters {
   text-align: center;
+}
 
-  margin-top: 0;
-  margin-bottom: 1.5rem;
+.titulo-texto-posters h2 {
+  margin: 0 0 0.75rem;
+
+  color: #132740;
+}
+
+.titulo-texto-posters p {
+  max-width: 640px;
+
+  margin: 0 auto;
+
+  color: #5f5e5e;
 }
 
 
-/*
-   Imagen del poster
-   Se mantiene centrada y con un tamaño máximo
-*/
-.imagen-poster {
-  display: block;
+/* Contenedor de las cuatro tarjetas del proceso */
+.proceso-posters {
+  display: grid;
 
-  width: 100%;
-  max-width: 350px;
+  grid-template-columns: repeat(4, 1fr);
 
-  height: auto;
+  gap: 1.5rem;
 
-  object-fit: contain;
-
-  margin: 0 auto 1.5rem;
-
-  border-radius: 8px;
+  padding: 2.5rem 0 1rem;
 }
 
 
-/*
-   Enlace para descargar el poster
-   Se ubica debajo de la imagen
-*/
-.link-descarga-poster {
-  display: inline-block;
-
-  margin: 0;
-
-  padding: 0.8rem 1.5rem;
-
-  color: #00acc9;
-
-  font-weight: 600;
-  text-align: center;
-
-  text-decoration: none;
-
-  border: 1px solid #00acc9;
-  border-radius: 8px;
-
-  transition: all 0.3s ease;
-}
-
-
-/* Efecto al pasar el mouse */
-.link-descarga-poster:hover {
-  background-color: #00acc9;
-  color: #ffffff;
-}
-
-
-/* =========================================================
-   RECOMENDACIONES PARA SUBIR POSTERS
-   ========================================================= */
-
-/* Título de recomendaciones */
-.recomendaciones-poster h3 {
-  text-align: center;
-
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-}
-
-
-/*
-   Contenedor de todas las recomendaciones
-   Permite mantener espacios iguales entre ellas
-*/
-.lista-recomendaciones {
+/* Tarjeta del proceso */
+.tarjeta-proceso {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 
-  width: 100%;
-
-  gap: 0.8rem;
-}
-
-
-/*
-   Cada recomendación ocupa exactamente
-   el mismo ancho y mantiene una alineación uniforme
-*/
-.lista-recomendaciones p {
-  width: 100%;
-
-  margin: 0;
-
-  padding: 1rem;
-
-  box-sizing: border-box;
+  padding: 2rem 1.6rem;
 
   text-align: left;
 
-  background-color: #f7f7f7;
+  background-color: #ffffff;
 
-  border-radius: 8px;
+  border: 1px solid rgba(19, 39, 64, 0.08);
+  border-top: 4px solid var(--acento-proceso, #00acc9);
+  border-radius: 18px;
+
+  box-shadow: 0 6px 20px rgba(19, 39, 64, 0.08);
+
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.tarjeta-proceso:hover {
+  transform: translateY(-7px);
+
+  box-shadow: 0 16px 35px rgba(19, 39, 64, 0.16);
+}
+
+
+/* Icono de cada tarjeta */
+.icono-proceso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 58px;
+  height: 58px;
+
+  margin-bottom: 1.2rem;
+
+  font-size: 1.45rem;
+
+  color: var(--acento-proceso, #00acc9);
+  background-color: color-mix(in srgb, var(--acento-proceso, #00acc9) 14%, #ffffff);
+
+  border-radius: 16px;
+}
+
+.tarjeta-proceso h3 {
+  margin: 0 0 0.6rem;
+
+  font-size: 1.15rem;
+
+  color: #132740;
+}
+
+.tarjeta-proceso p {
+  margin: 0;
+
+  line-height: 1.6;
+
+  color: #5f5e5e;
+}
+
+
+/* Advertencia informativa */
+.aviso-proceso {
+  max-width: 720px;
+
+  margin: 1.5rem auto 0;
+
+  padding: 0.9rem 1.3rem;
+
+  text-align: center;
+
+  font-size: 0.92rem;
+
+  color: #5f5e5e;
+
+  background-color: #ffffff;
+
+  border: 1px solid rgba(19, 39, 64, 0.08);
+  border-left: 4px solid #00acc9;
+  border-radius: 10px;
+
+  box-shadow: 0 4px 14px rgba(19, 39, 64, 0.06);
 }
 
 
@@ -770,63 +1215,65 @@ a {
    POSTERS - RESPONSIVE
    ========================================================= */
 
-@media (max-width: 850px) {
+/* Tablet: 2x2 */
+@media (max-width: 1020px) {
 
-  /*
-       En pantallas pequeñas las tarjetas
-       pasan de horizontal a vertical
-    */
-  .posters-separacion {
-    flex-direction: column;
-    align-items: center;
+  .posters {
+    padding: 2.5rem 1.5rem;
   }
 
+  .proceso-posters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
-  /* Tarjetas a ancho completo */
-  .poster-card,
-  .recomendaciones-poster {
-    width: 100%;
-    max-width: 500px;
+
+/* Móvil: 1x1 */
+@media (max-width: 640px) {
+
+  .posters {
+    padding: 2rem 1rem;
   }
 
-
-  /* Reducir un poco el poster en celular */
-  .imagen-poster {
-    max-width: 300px;
+  .proceso-posters {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
   }
 }
 
 
 /* =========================================================
-   FOOTER
+   POSTER DEL SEMESTRE (maqueta pública + recomendaciones)
    ========================================================= */
 
-.footer {
-  margin-top: 4rem;
-
-  background-color: #132740;
-  color: #ffffff;
-
-  padding: 2rem 1rem 1rem;
-
-  font-family: Arial, sans-serif;
-
-  text-align: center;
-}
-
-
-/* Contenedor de columnas */
-.contenedor-footer {
+.poster-semestre {
   display: grid;
+  grid-template-columns: minmax(0, 420px) 1fr;
+  align-items: center;
+  gap: 2.5rem;
 
-  grid-template-columns: repeat(4, 1fr);
+  margin-top: 3rem;
+  padding: 2.5rem;
 
-  margin: 0 auto;
+  background-color: #ffffff;
+
+  border: 1px solid rgba(19, 39, 64, 0.08);
+  border-radius: 20px;
+
+  box-shadow: 0 10px 30px rgba(19, 39, 64, 0.1);
+}
+
+.poster-semestre h3 {
+  margin: 0 0 1rem;
+
+  font-size: 1.3rem;
+
+  color: #132740;
 }
 
 
-/* Cada columna */
-.footer-columna {
+/* Columna maqueta */
+.tarjeta-maqueta {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -834,124 +1281,281 @@ a {
   text-align: center;
 }
 
+.imagen-poster {
+  width: 100%;
+  max-width: 220px;
 
-.footer-texto {
-  max-width: 300px;
-  color: #bcbcbc;
+  margin: 1rem 0;
+
+  border-radius: 12px;
+
+  box-shadow: 0 12px 28px rgba(19, 39, 64, 0.2);
+}
+
+.boton-descargar-poster {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  padding: 0.75rem 1.6rem;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  color: #ffffff;
+  background-color: #00acc9;
+
+  border: 1px solid #00acc9;
+  border-radius: 10px;
+
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.boton-descargar-poster:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
+
+  transform: translateY(-2px);
 }
 
 
-/* Logo */
-.footer .logo-ucc {
-  width: 120px;
-
-  margin-bottom: 0.8rem;
-}
-
-
-/* Títulos */
-.footer-columna h4 {
-  margin-bottom: 0.8rem;
-
-  font-size: 1rem;
-
-  color: #00acc9;
-}
-
-
-/* Lista */
-.footer-columna ul {
+/* Columna recomendaciones */
+.tarjeta-recomendaciones ul {
   padding: 0;
+  margin: 0;
+
   list-style: none;
 }
 
+.tarjeta-recomendaciones li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
 
-.footer-columna ul li {
-  margin-bottom: 0.5rem;
+  padding: 0.7rem 0;
+
+  font-size: 0.98rem;
+  line-height: 1.5;
+
+  color: #5f5e5e;
+
+  border-bottom: 1px solid #eef2f5;
 }
 
+.tarjeta-recomendaciones li::before {
+  content: "✔";
 
-.footer-columna ul li a {
-  margin: 0;
-
-  color: #fdfdfd;
+  margin-top: 0.05rem;
 
   font-size: 0.9rem;
 
-  text-decoration: none;
-
-  transition: 0.3s;
+  color: #80ba27;
 }
 
+.tarjeta-recomendaciones li:last-child {
+  border-bottom: none;
+}
+
+
+/* =========================================================
+   POSTER DEL SEMESTRE - RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 850px) {
+
+  .poster-semestre {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+
+    margin-top: 2.5rem;
+    padding: 1.75rem 1.25rem;
+  }
+}
+
+
+/* =========================================================
+    footer 
+    -------------------------------------------------------------------- */
+
+.seccion-footer {
+  margin-top: 4rem;
+  background-color: #132740;
+  color: #ffffff;
+  padding: 3.5rem 2rem 1.5rem;
+  text-align: center;
+  border-top: 4px solid #00acc9;
+  box-shadow: 0 -4px 20px rgba(19, 39, 64, 0.2);
+}
+
+.footer {
+  margin-top: 4rem;
+  background-color: #132740;
+  color: #ffffff;
+  padding: 3.5rem 2rem 1.5rem;
+  text-align: center;
+  border-top: 4px solid #00acc9;
+}
+
+.contenedor-footer {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.footer-columna {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.footer-columna-marca {
+  align-items: flex-start;
+}
+
+.footer .logo-ucc {
+  width: 120px;
+  margin-bottom: 1rem;
+  padding: 6px 12px;
+  background-color: #ffffff;
+  border-radius: 10px;
+}
+
+.footer-marca-nombre {
+  margin: 0 0 0.6rem;
+  font-size: 1.15rem;
+  color: #ffffff;
+}
+
+.footer-texto {
+  max-width: 300px;
+  color: #b9c2d0;
+  line-height: 1.6;
+  font-size: 0.92rem;
+}
+
+.footer-columna h4 {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #00acc9;
+}
+
+.footer-columna ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.footer-columna ul li {
+  margin-bottom: 0.6rem;
+}
+
+.footer-columna ul li a {
+  text-decoration: none;
+  color: #dfe5ee;
+  font-size: 0.92rem;
+  transition: color 0.2s ease;
+}
 
 .footer-columna ul li a:hover {
   color: #80ba27;
 }
 
-
-/* Texto */
-.footer-columna p {
-  font-size: 0.9rem;
-  color: #cccccc;
+.footer-info-item {
+  color: #dfe5ee;
+  font-size: 0.92rem;
 }
 
+.footer-redes li a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
 
-/* Parte inferior del footer */
+.footer-redes svg {
+  font-size: 1.05rem;
+}
+
+.footer-columna p {
+  font-size: 0.9rem;
+  color: #b9c2d0;
+}
+
 .footer-copy-creditos {
   display: flex;
   justify-content: space-between;
   align-items: center;
-
-  margin-top: 2rem;
-  padding-top: 1rem;
-
+  max-width: 1280px;
+  margin: 2.5rem auto 0;
+  padding-top: 1.25rem;
   font-size: 0.85rem;
   text-align: center;
-
-  border-top: 1px solid #5f5e5e;
+  color: #aeb8c7;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
-
 
 .footer-copy-creditos strong {
   margin-top: 0.3rem;
-
   font-size: 0.8rem;
-
   color: #80ba27;
 }
 
+.creditos {
+  color: #aeb8c7;
+  font-size: 0.85rem;
+}
 
 /* =========================================================
-   FOOTER - RESPONSIVE
-   ========================================================= */
+    FOOTER - RESPONSIVE
+    ========================================================= */
 
 @media (max-width: 992px) {
+  .seccion-footer,
+  .footer {
+    padding: 3rem 1.5rem 1.5rem;
+  }
 
   .contenedor-footer {
     grid-template-columns: repeat(2, 1fr);
+    gap: 2rem 1.5rem;
   }
 }
 
-
 @media (max-width: 600px) {
-
   .contenedor-footer {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.1rem;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
   }
 
-
-  .footer-columna {
-    margin-bottom: 1rem;
+  .footer-columna,
+  .footer-columna-marca {
+    align-items: center;
+    text-align: center;
   }
 
+  .footer-redes {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .footer-redes li a {
+    justify-content: center;
+  }
 
   .footer-copy-creditos {
     flex-direction: column;
-    gap: 0.1rem;
+    gap: 0.4rem;
   }
 }
-
 
 /* =========================================================
    MODALES
@@ -974,7 +1578,7 @@ a {
 
   background-color: rgba(0, 0, 0, 0.5);
 
-  z-index: 100;
+  z-index: 9999;
 }
 
 
@@ -1011,13 +1615,14 @@ a {
 
   overflow-y: auto;
 
-  background: white;
+  background: #ffffff;
 
-  border-radius: 12px;
+  border-radius: 20px;
 
   box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    0 24px 45px rgba(19, 39, 64, 0.18);
+
+  border: 1px solid rgba(19, 39, 64, 0.06);
 }
 
 
@@ -1025,33 +1630,45 @@ a {
 .faq-cerrar {
   position: absolute;
 
-  top: 0.1rem;
-  right: 0.1rem;
+  top: 0.6rem;
+  right: 0.8rem;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
 
   background: none;
 
   border: none;
-  border-radius: 10%;
+  border-radius: 10px;
 
-  font-size: 2rem;
+  font-size: 1.6rem;
+  line-height: 1;
 
-  color: #000000;
+  color: #5f5e5e;
 
   cursor: pointer;
+
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 
 .faq-cerrar:hover {
-  background-color: #f3f4f6;
+  background-color: #f5f7f8;
+
+  color: #00acc9;
 }
 
+
+/* Eyebrow del FAQ (mismo lenguaje que el resto de secciones) */
+.faq-eyebrow {
+  display: block;
+
+  margin-bottom: 0.85rem;
+}
 
 /* Título */
 .faq-titulo {
@@ -1062,7 +1679,22 @@ a {
 
   text-align: center;
 
-  color: #111827;
+  color: #132740;
+}
+
+/* Eyebrow del FAQ (mismo lenguaje que el resto de secciones) */
+.faq-eyebrow {
+  display: block;
+
+  margin-bottom: 0.85rem;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: center;
+
+  color: #00acc9;
 }
 
 
@@ -1100,20 +1732,22 @@ a {
   border: none;
 
   font-size: 1.125rem;
-  font-weight: 500;
+  font-weight: 600;
 
   text-align: left;
 
-  color: #111827;
+  color: #132740;
 
   cursor: pointer;
 
-  transition: all 0.5s ease;
+  transition: all 0.4s ease;
 }
 
 
 .faq-pregunta:hover {
-  background-color: #f9fafb;
+  background-color: #f5f7f8;
+
+  color: #00acc9;
 }
 
 
@@ -1164,7 +1798,7 @@ a {
 .faq-respuesta {
   padding: 0 2.5rem;
 
-  color: #4b5563;
+  color: #5f5e5e;
 
   line-height: 1.7;
 
@@ -1175,21 +1809,6 @@ a {
 /* Ajuste al abrir */
 .faq-item[data-state="open"] .faq-respuesta {
   padding: 0 1.5rem;
-}
-
-
-/* Enlaces */
-.faq-link {
-  color: #4db1c3;
-
-  font-weight: 600;
-
-  text-decoration: underline;
-}
-
-
-.faq-link:hover {
-  color: #80ba27;
 }
 
 
@@ -1218,5 +1837,174 @@ a {
   .faq-item[data-state="open"] .faq-respuesta {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
+  }
+}
+
+
+/* =========================================================
+   AJUSTES FINOS - TELÉFONOS (≤480px)
+   Responsive limpio: sin overflow, sin bloques pesados
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+  /* Header más compacto */
+  .header-contenedor {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .acciones-header {
+    gap: 4px;
+    margin-right: -0.5rem;
+  }
+
+  .encabezado .menu-usuario {
+    right: 62px;
+  }
+
+  .logo-ucc {
+    height: 40px;
+    padding: 3px 10px;
+  }
+
+  /* Hero ligero y compacto: menos bloque oscuro */
+  .inicio {
+    padding: 1rem 0.75rem;
+  }
+
+  .hero-tarjeta {
+    gap: 1.5rem;
+    padding: 1.75rem 1.25rem;
+
+    border-radius: 18px;
+  }
+
+  .hero-tarjeta::before,
+  .hero-tarjeta::after {
+    display: none;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.68rem;
+    padding: 0.3rem 0.7rem;
+  }
+
+  .texto-inicio h1 {
+    font-size: clamp(1.9rem, 8.5vw, 2.4rem);
+  }
+
+  .texto-inicio p {
+    font-size: 0.98rem;
+  }
+
+  .botones-inicio {
+    gap: 0.8rem;
+    margin-top: 1.75rem;
+  }
+
+  .botones-inicio .boton-primario,
+  .botones-inicio .boton-preguntas-frecuentes {
+    width: 100%;
+    max-width: none;
+
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .imagen-inicio img {
+    max-height: 250px;
+
+    border-radius: 12px;
+  }
+
+  /* Texto de secciones */
+  .subtitulo-texto-comunidad p,
+  .titulo-texto-novedades p,
+  .titulo-texto-posters p {
+    font-size: 0.95rem;
+  }
+
+  /* Tarjetas */
+  .tarjeta-comunidad {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .tarjeta-proceso {
+    padding: 1.6rem 1.25rem;
+  }
+
+  .aviso-proceso {
+    font-size: 0.85rem;
+    padding: 0.8rem 1rem;
+  }
+
+  /* Footer más contenido */
+  .footer {
+    padding: 2.5rem 1rem 1.25rem;
+  }
+}
+
+
+/* =========================================================
+   OVERRIDES vs roles.css
+   roles.css (páginas de roles) se empaqueta de forma global y
+   comparte nombres de clase (.inicio, .texto-inicio) con la
+   Homepage. Con un ancla exclusiva de la Homepage
+   (.contenedor-pagina > .contenido-home) la Homepage recupera
+   su diseño sin alterar las páginas internas.
+   ========================================================= */
+
+.contenido-home .inicio {
+  display: block;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+
+  text-align: left;
+}
+
+/* El header de la Homepage es el único con .header-contenedor;
+   roles.css lo fuerza a flex con márgenes y la Homepage lo recupera */
+.encabezado:has(> .header-contenedor) {
+  display: block;
+
+  margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.contenido-home .texto-inicio {
+  display: block;
+  height: auto;
+  min-height: 0;
+  text-align: left;
+}
+
+.contenido-home .texto-inicio h1 {
+  color: #ffffff;
+}
+
+.contenido-home .texto-inicio p {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+@media (max-width: 1020px) {
+
+  .contenido-home .inicio {
+    margin-top: 0;
+    padding: 1.5rem 1rem;
+    text-align: center;
+  }
+
+  .contenido-home .texto-inicio {
+    margin: 0 auto;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .contenido-home .inicio {
+    padding: 1rem 0.75rem;
   }
 }

@@ -86,27 +86,30 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
                     <button className="cerrar-formulario" onClick={cerrarModal}>X</button>
                 )}
 
-                <h2>📌 Editar Póster</h2>
-                <p>Actualiza la información técnica del póster</p>
+                <div className="formularios-header">
+                    <span className="formularios-eyebrow">Edición</span>
+                    <h2>📌 Editar Póster</h2>
+                    <p>Actualiza la información técnica del póster</p>
+                </div>
 
-                <form className="contenedor-formulario" onSubmit={handleSubmit}>
-                    <input
+                <form className="formularios-body" onSubmit={handleSubmit}>
+                    <div className="campo-formulario"><input
                         type="text"
                         name="titulo"
                         value={datosPoster.titulo}
                         onChange={handleInputChange}
                         placeholder="📝 Título del póster"
-                    />
+                    /></div>
 
-                    <input
+                    <div className="campo-formulario"><input
                         type="text"
                         name="autores"
                         value={datosPoster.autores}
                         onChange={handleInputChange}
                         placeholder="👥 Autores"
-                    />
+                    /></div>
 
-                    <select
+                    <div className="campo-formulario"><select
                         name="categoria"
                         value={datosPoster.categoria}
                         onChange={handleInputChange}
@@ -117,25 +120,25 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
                                 {cat.nombre_categorias}
                             </option>
                         ))}
-                    </select>
+                    </select></div>
 
-                    <textarea
+                    <div className="campo-formulario"><textarea
                         name="descripcion"
                         value={datosPoster.descripcion}
                         onChange={handleInputChange}
                         placeholder="📄 Descripción del póster"
                         rows="4"
-                    />
+                    ></textarea></div>
 
-                    <input
+                    <div className="campo-formulario"><input
                         type="text"
                         name="palabrasClave"
                         value={datosPoster.palabrasClave}
                         onChange={handleInputChange}
                         placeholder="🏷️ Palabras clave"
-                    />
+                    /></div>
 
-                    <button className="solicitar-registro" type="submit" disabled={cargandoGuardar}>
+                    <button className="boton-primario" type="submit" disabled={cargandoGuardar}>
                         {cargandoGuardar ? "Guardando..." : "Guardar Cambios"}
                     </button>
 

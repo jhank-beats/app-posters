@@ -1,116 +1,250 @@
-/* =========================
-  homepage Super Admin
-   Header
-   ========================= */
+/* =========================================================
+   ROLES — Lenguaje visual institucional UCC GensTI
+   ========================================================= */
+
+/* ----------------------
+   HEADER — Institucional
+   ---------------------- */
 
 .encabezado {
-  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background-color: #132740;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  margin: 0;
+}
+
+.header-contenedor {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 1rem;
-  margin-left: 2rem;
-  margin-right: 2rem;
+  gap: 0.75rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0.7rem 1.25rem;
+  box-sizing: border-box;
 }
 
 .logo-nav {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
+  justify-self: start;
+  min-width: 0;
 }
 
-.logo-ucc {
-  height: 50px;
-}
-
-nav {
+.encabezado .logo-enlace {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
   cursor: pointer;
 }
 
-a {
-  margin: 0 1rem;
-  font-weight: 500;
-  color: #000000;
-  text-decoration: inherit;
+.logo-ucc {
+  height: 46px;
+  background-color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 8px;
 }
 
-.boton-hamburguesa {
+.encabezado .menu-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  position: static;
+  justify-self: center;
+  flex-wrap: nowrap;
+}
+
+.encabezado nav {
+  cursor: pointer;
+}
+
+.encabezado .menu-enlace {
+  margin: 0 0.45rem;
+  padding: 0.4rem 0.2rem;
+  font-weight: 500;
+  font-size: 0.88rem;
+  color: #ffffff;
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.encabezado .menu-enlace:hover {
+  color: #00acc9;
+  border-bottom-color: #00acc9;
+}
+
+.acciones-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  justify-self: end;
+  min-width: 0;
+}
+
+.encabezado .menu-usuario {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.encabezado .enlace-login {
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #ffffff;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.encabezado .enlace-login:hover {
+  color: #00acc9;
+}
+
+.encabezado .boton-registro {
+  padding: 0.55rem 1.3rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  background-color: #00acc9;
+  border: 1px solid #00acc9;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.encabezado .boton-registro:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
+  transform: translateY(-1px);
+}
+
+/* Botones ocultos en escritorio */
+.boton-hamburguesa,
+.boton-usuario,
+.encabezado .boton-cerrar {
   display: none;
 }
 
-.boton-usuario button {
-  color: #5f5e5e;
+/* Iconos de menú y usuario en blanco */
+.encabezado .boton-hamburguesa button,
+.encabezado .boton-usuario button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  color: #ffffff;
+  background-color: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
+.encabezado .boton-hamburguesa button:hover,
+.encabezado .boton-usuario button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Links globales */
+a {
+  margin: 0 1rem;
+  font-weight: 500;
+  color: #00acc9;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #0093ad;
+}
 
 /* =========================
-   RESPONSIVE
+   RESPONSIVE HEADER
    ========================= */
-@media (max-width:990px) {
+@media (max-width: 990px) {
+  .header-contenedor {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 0.7rem 1rem;
+  }
 
-  /* El nav se oculta y se despliega con hamburguesa */
-  .menu-nav {
+  .encabezado .menu-nav {
     display: none;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: stretch;
     position: absolute;
-    top: 0;
-    /* debajo del header */
-    right: 0px;
-    bottom: 0;
-    background: #fbfafa;
+    left: auto;
+    top: 56px;
+    right: 0.75rem;
+    bottom: auto;
+    min-width: 212px;
+    background: #132740;
     padding: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    gap: 10px;
-    box-shadow: 0 0 0 100vmax #41414135;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    gap: 6px;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28), 0 0 0 100vmax rgba(19, 39, 64, 0.4);
   }
 
-  link {
+  .encabezado .menu-enlace {
+    margin: 0;
+    padding: 0.6rem 0.85rem;
+    color: #ffffff;
+    border-left: 3px solid transparent;
+    border-bottom: none;
+    border-radius: 6px;
+  }
+
+  .encabezado .menu-enlace:hover {
     color: #00acc9;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-left-color: #00acc9;
   }
 
-  .menu-nav button:hover {
-    background-color: #3d3d3d24;
-    transform: scale(1.1);
-  }
-
-  .menu-usuario {
+  .encabezado .menu-usuario {
     display: none;
     flex-direction: column;
     align-items: center;
     position: absolute;
-    top: 70px;
-    right: 80px;
-    background: #fff;
-    padding: 2rem 1rem 1rem 1rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
+    top: 56px;
+    right: 0.75rem;
+    min-width: 190px;
+    background: #132740;
+    padding: 2rem 1rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
     gap: 10px;
-    box-shadow: 0 0 0 100vmax #41414135;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28), 0 0 0 100vmax rgba(19, 39, 64, 0.4);
   }
 
-  .menu-usuario .boton-cerrar {
+  .encabezado .menu-usuario .boton-cerrar {
     position: absolute;
     top: -10px;
     right: -10px;
-    /* lo sacamos un poco hacia la derecha */
     font-size: 20px;
+    color: #ffffff;
     background: transparent;
     border: none;
     cursor: pointer;
   }
 
-  .menu-usuario .boton-cerrar:hover {
+  .encabezado .menu-usuario .boton-cerrar:hover {
     color: #00acc9;
   }
 
-  .menu-nav.activo,
-  .menu-usuario.activo {
+  .encabezado .menu-nav.activo,
+  .encabezado .menu-usuario.activo {
     display: flex;
-
   }
 
-  /* La parte derecha: Sesión + Registro + Hamburguesa */
   .acciones-header {
     display: flex;
     align-items: center;
@@ -120,33 +254,59 @@ a {
 
   .boton-hamburguesa,
   .boton-usuario,
-  .boton-cerrar {
+  .encabezado .boton-cerrar {
     display: flex;
   }
 
-
-  .boton-hamburguesa button {
-    color: #000000;
+  .boton-hamburguesa button,
+  .boton-usuario button,
+  .boton-cerrar {
+    color: #ffffff;
     background-color: transparent;
     border: none;
     cursor: pointer;
   }
+}
+/* Compresión para laptops / headers con muchos enlaces (Super Admin) */
+@media (min-width: 991px) and (max-width: 1300px) {
+  .header-contenedor {
+    padding: 0.7rem 1rem;
+    gap: 0.5rem;
+  }
+  .encabezado .menu-enlace {
+    font-size: 0.82rem;
+    margin: 0 0.32rem;
+    padding: 0.4rem 0.15rem;
+  }
+  .encabezado .menu-nav {
+    gap: 0;
+  }
+  .logo-nav {
+    gap: 8px;
+  }
+}
 
+@media (min-width: 1301px) and (max-width: 1450px) {
+  .encabezado .menu-enlace {
+    font-size: 0.86rem;
+    margin: 0 0.38rem;
+  }
 }
 
 
-/* 
--------------------------------------------------------------------- 
-inicio 
--------------------------------------------------------------------- 
-*/
+/* =========================
+   INICIO — Homepage overrides
+   ========================= */
 .inicio {
-  padding: 3rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 1rem;
-  column-gap: 5rem;
+  gap: 2rem;
+  column-gap: 3rem;
+  box-sizing: border-box;
+  background-color: #f5f7f8;
 }
 
 .texto-inicio {
@@ -161,106 +321,143 @@ inicio
   min-height: 300px;
 }
 
+.texto-inicio h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 800;
+  color: #132740;
+  line-height: 1.2;
+}
 
+.texto-inicio p {
+  margin: 0;
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  color: #5f5e5e;
+  line-height: 1.6;
+}
+
+.texto-tarjetas h3 {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #132740;
+}
+
+/* =========================
+   TARJETAS — Institucional
+   ========================= */
 
 .grupo-tarjetas {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  margin: 2rem 0;
+  grid-template-columns: repeat(2, 1fr);
+  margin: 1.5rem 0 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tarjeta {
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 1rem;
+  background-color: #ffffff;
+  border: 1px solid rgba(19, 39, 64, 0.08);
+  border-top: 4px solid #00acc9;
+  border-radius: 20px;
+  padding: 2rem 1.5rem;
   text-align: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 20px rgba(19, 39, 64, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
   cursor: pointer;
 }
 
 .tarjeta:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px);
+  box-shadow: 0 16px 35px rgba(19, 39, 64, 0.16);
 }
 
 .icono {
   font-size: 2rem;
   margin-bottom: 0.5rem;
+  color: #00acc9;
 }
 
 /* =========================
-   INICIO - RESPONSIVE UNIFICADO
+   CONTENEDOR DE TABLA
    ========================= */
-@media (max-width:1020px) {
-  .inicio {
-    margin-top: -2rem;
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 2rem 1rem;
-  }
 
-  .texto-inicio {
-    max-width: 95%;
-    text-align: center;
-  }
-
-  .texto-inicio h1 {
-    font-size: clamp(2rem, 7vw, 2.8rem);
-    line-height: 1.25;
-    font-weight: 700;
-    color: #0f0f0f;
-    margin-bottom: 1rem;
-  }
-
-  .texto-inicio p {
-    font-size: clamp(1rem, 4vw, 1.3rem);
-    line-height: 1.5;
-    color: #333;
-    margin: 0 auto;
-    max-width: 90%;
-  }
-}
-
-
-/* 
--------------------------------------------------------------------- 
-Usuarios pendientes 
--------------------------------------------------------------------- 
-*/
 .contenedor-tabla {
   padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   overflow-x: auto;
-  /* Cambiado de 'overlay' a 'auto' para asegurar compatibilidad en todos los navegadores */
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
   width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
 }
 
 .contenedor-tabla a {
   text-align: right;
+  color: #00acc9;
 }
 
 .contenedor-tabla button {
   background-color: transparent;
 }
 
+/* =========================
+   TABLA — Institucional
+   ========================= */
+
 table {
   width: 100%;
-  min-width: 1300px;
-  /* Incrementamos el ancho mínimo para garantizar espacio para las 13 columnas */
   border-collapse: separate;
-  border-spacing: 0.5rem;
+  border-spacing: 0;
   margin-bottom: 1rem;
   box-sizing: border-box;
+  background-color: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(19, 39, 64, 0.08);
 }
+
+thead {
+  background-color: #132740;
+}
+
+thead th {
+  padding: 0.85rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-align: left;
+  border-bottom: 2px solid #00acc9;
+}
+
+tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(0, 172, 201, 0.04);
+}
+
+tbody td {
+  padding: 0.75rem 1rem;
+  font-size: 0.92rem;
+  color: #132740;
+  border-bottom: 1px solid rgba(19, 39, 64, 0.06);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* =========================
+   TOGGLE SWITCH
+   ========================= */
 
 .toggle-switch {
   position: relative;
@@ -299,242 +496,496 @@ table {
   border-radius: 50%;
 }
 
-input:checked+.slider {
-  background-color: #80ba27;
+input:checked + .slider {
+  background-color: #00acc9;
 }
 
-input:checked+.slider:before {
+input:checked + .slider:before {
   transform: translateX(26px);
 }
 
-.btn-rechazar {
-  background: none;
-  border: none;
-  color: #ff0000;
-  cursor: pointer;
+/* =========================
+   BOTONES — Institucional
+   ========================= */
 
+/* Botón principal cian */
+.boton-primario {
+  padding: 0.7rem 1.3rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #00acc9;
+  border: 2px solid #00acc9;
+  border-radius: 10px;
   cursor: pointer;
-  padding: 8px;
-  transition: color 0.3s;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 172, 201, 0.3);
+}
+
+.boton-primario:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 172, 201, 0.35);
+}
+
+.boton-primario:active {
+  transform: translateY(0);
+}
+
+/* Botón secundario */
+.boton-secundario {
+  padding: 0.7rem 1.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #00acc9;
+  background-color: transparent;
+  border: 2px solid #00acc9;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.boton-secundario:hover {
+  background-color: rgba(0, 172, 201, 0.08);
+}
+
+/* Botón rechazar (rojo institucional) */
+.btn-rechazar {
+  background: transparent;
+  border: 2px solid #d32f2f;
+  color: #d32f2f;
+  cursor: pointer;
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
 
 .btn-rechazar:hover {
-  color: #e04747;
+  background-color: #d32f2f;
+  color: #ffffff;
+  transform: translateY(-2px);
 }
 
+/* Botón agregar (ahora cian) */
+.boton-agregar-mas {
+  padding: 0.7rem 1.3rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #00acc9;
+  border: 2px solid #00acc9;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 172, 201, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.boton-agregar-mas:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
+  transform: translateY(-2px);
+}
+
+/* Compatibilidad: alias para formularios existentes */
+.solicitar-registro {
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #00acc9;
+  border: 2px solid #00acc9;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 172, 201, 0.3);
+  width: 100%;
+}
+
+.solicitar-registro:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 172, 201, 0.35);
+}
+
+.solicitar-registro:active {
+  transform: translateY(0);
+}
+
+.solicitar-registro:disabled {
+  background-color: #a0c4c8;
+  border-color: #a0c4c8;
+  cursor: not-allowed;
+}
+
+/* Contenedor de formulario */
+.contenedor-formulario {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.tiene-cuenta {
+  padding: 0.7rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #00acc9;
+  background-color: transparent;
+  border: 2px solid #00acc9;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+}
+
+.tiene-cuenta:hover {
+  background-color: rgba(0, 172, 201, 0.08);
+}
+
+/* Botón agregar en Estilos.css de super_admin */
+
+/* Ver más */
 .ver-mas {
-  display: block;
-  width: fit-content;
-  margin-left: auto;
-  margin-top: -1rem;
-  margin-right: 9%;
+  display: inline-block;
   color: #00acc9;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+  transition: color 0.2s ease;
 }
 
 .ver-mas:hover {
+  color: #0093ad;
   text-decoration: underline;
 }
+
+/* =========================
+   CONTENEDORES DE SECCIÓN
+   ========================= */
 
 .todos-pendientes,
 .todos-posters,
 .todos-usuarios {
   position: relative;
-  background-color: white;
+  background-color: #ffffff;
   padding: 2rem;
   margin: 2rem auto;
-  border: 1px solid #80ba27;
-  border-radius: 15px;
-  align-items: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.152);
+  border: 1px solid rgba(19, 39, 64, 0.08);
+  border-top: 4px solid #00acc9;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(19, 39, 64, 0.08);
+  max-width: 1280px;
 }
 
+/* Botón cerrar tabla */
 .cerrar-tabla {
   position: absolute;
-  margin-top: -1rem;
-  right: 0.1rem;
-  color: #1f1e1e;
+  top: 0.75rem;
+  right: 0.75rem;
+  color: #5f5e5e;
   background: transparent;
-  border: none;
-  border-radius: 15px;
+  border: 2px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 1.1rem;
-  margin-right: 0rem;
-  transition: transform 0.2s ease;
+  font-size: 1.2rem;
+  font-weight: 700;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  z-index: 2;
 }
 
 .cerrar-tabla:hover {
-  background-color: #3d3b3d24;
-  transform: scale(1.1);
+  background-color: rgba(19, 39, 64, 0.06);
+  color: #00acc9;
+  border-color: rgba(0, 172, 201, 0.3);
 }
+
+/* =========================
+   FILTROS — Institucional
+   ========================= */
 
 .filtros {
   display: flex;
   gap: 1rem;
-  margin-left: 2rem;
+  margin-left: 0;
   margin-bottom: 1rem;
   align-items: center;
   justify-content: flex-start;
   margin-top: 1rem;
+  flex-wrap: wrap;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1rem;
 }
 
-.filtros input {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+.filtros input,
+.filtros select,
+table input,
+table select {
+  padding: 0.75rem 1rem;
+  border: 2px solid #d5ddd3;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background-color: #ffffff;
+  color: #132740;
   width: clamp(180px, 25vw, 300px);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.filtros input:focus,
+.filtros select:focus,
+table input:focus,
+table select:focus {
+  border-color: #00acc9;
+  box-shadow: 0 0 0 3px rgba(0, 172, 201, 0.15);
+}
+
+.filtros .ver-mas {
+  margin-left: auto;
+  white-space: nowrap;
+  align-self: center;
 }
 
 .filtros select,
 table select {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  width: clamp(130px, 12vw, 180px);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235f5e5e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
 }
 
-
-/* 
--------------------------------------------------------------------- 
-Tabla posters 
--------------------------------------------------------------------- 
-*/
+/* =========================
+   IMAGEN MINIATURA
+   ========================= */
 
 .img-miniatura {
-  width: 80%;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(19, 39, 64, 0.1);
+  border: 1px solid rgba(19, 39, 64, 0.08);
 }
 
-/* 
--------------------------------------------------------------------- 
-Agregar Más
--------------------------------------------------------------------- 
-*/
+/* =========================
+   BADGE ROL
+   ========================= */
 
-.boton-agregar-mas {
-  margin-top: -2rem;
-  background-color: #80ba27;
-}
-
-/* -------------------------------------------------------------------- 
-footer 
--------------------------------------------------------------------- */
-
-.footer {
-  margin-top: 4rem;
-  background-color: #132740;
-  color: #ffffff;
-  padding: 2rem 1rem 1rem;
-  font-family: Arial, sans-serif;
-  text-align: center;
-}
-
-.contenedor-footer {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin: 0 auto;
-}
-
-/* Centrar el contenido de cada columna */
-.footer-columna {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.footer-texto {
-  color: #bcbcbc;
-  max-width: 300px;
-}
-
-.footer .logo-ucc {
-  width: 120px;
-  margin-bottom: 0.8rem;
-}
-
-.footer-columna h4 {
-  margin-bottom: 0.8rem;
-  font-size: 1rem;
-  color: #00acc9;
-  /* Azul diversidad */
-}
-
-.footer-columna ul {
-  list-style: none;
-  padding: 0;
-}
-
-.footer-columna ul li {
-  margin-bottom: 0.5rem;
-}
-
-.footer-columna ul li a {
-  text-decoration: none;
-  color: #fdfdfd;
-  font-size: 0.9rem;
-  transition: 0.3s;
-}
-
-.footer-columna ul li a:hover {
-  color: #80ba27;
-  /* Verde solidario */
-}
-
-.footer-columna p {
-  font-size: 0.9rem;
-  color: #cccccc;
-}
-
-.footer-copy-creditos {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  text-align: center;
-  margin-top: 2rem;
-  font-size: 0.85rem;
-  border-top: 1px solid #5f5e5e;
-  padding-top: 1rem;
-}
-
-.footer-copy-creditos strong {
-  margin-top: 0.3rem;
+.badge-rol {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
   font-size: 0.8rem;
-  color: #80ba27;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* -------------------------------------------------------------------- 
-Responsive 
--------------------------------------------------------------------- */
-@media (max-width: 992px) {
-  .contenedor-footer {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.rol-1 { background-color: rgba(0, 172, 201, 0.1); color: #00acc9; }
+.rol-2 { background-color: rgba(128, 186, 39, 0.1); color: #80ba27; }
+.rol-3 { background-color: rgba(19, 39, 64, 0.1); color: #132740; }
+.rol-4 { background-color: rgba(19, 39, 64, 0.2); color: #00acc9; }
+
+/* Eyebrow institucional para secciones de roles */
+.seccion-eyebrow {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #00acc9;
 }
 
-@media (max-width: 600px) {
-  .contenedor-footer {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.1rem;
+
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 1020px) {
+  .inicio {
+    margin-top: -2rem;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem 1rem;
   }
 
-  .footer-columna {
+  .texto-inicio {
+    max-width: 95%;
+    text-align: center;
+  }
+
+  .texto-inicio h1 {
+    font-size: clamp(2rem, 7vw, 2.8rem);
+    line-height: 1.25;
+    font-weight: 700;
+    color: #132740;
     margin-bottom: 1rem;
   }
 
-  .footer-copy-creditos {
-    flex-direction: column;
-    gap: 0.1rem;
+  .texto-inicio p {
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    line-height: 1.5;
+    color: #5f5e5e;
+    margin: 0 auto;
+    max-width: 90%;
+  }
+
+  .contenedor-tabla {
+    padding: 0.5rem;
+  }
+  .grupo-tarjetas {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
+@media (max-width: 640px) {
+  .todos-pendientes,
+  .todos-posters,
+  .todos-usuarios {
+    padding: 1.5rem 1rem;
+    margin: 1rem 0.5rem;
+  }
 
+  .filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-/* -------------------------------------------------------------------- 
+  .filtros input,
+  .filtros select,
+  table input,
+  table select {
+    width: 100%;
+  }
+
+  .cerrar-tabla {
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  .grupo-tarjetas {
+    grid-template-columns: 1fr;
+  }
+  .inicio {
+    padding: 2rem 1rem;
+  }
+}
+
+/* =========================
+   HOMEPAGE OVERRIDES
+   (No aplicar estilos de roles a la Homepage)
+   ========================= */
+
+.contenido-home .inicio {
+  display: block;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+  text-align: left;
+}
+
+.contenido-home .texto-inicio {
+  display: block;
+  height: auto;
+  min-height: 0;
+  text-align: left;
+}
+
+.contenido-home .texto-inicio h1 {
+  color: #ffffff;
+}
+
+.contenido-home .texto-inicio p {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+/* El header de la Homepage es el único con .header-contenedor */
+.encabezado:has(> .header-contenedor) {
+  display: block;
+  margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* =========================
+   PREVIEW SECTIONS
+   ========================= */
+
+#criterios .boton-primario,
+#espacios .boton-primario,
+#eventos .boton-primario {
+  background-color: #00acc9 !important;
+  color: #ffffff !important;
+  border-color: #00acc9 !important;
+}
+
+.preview-posters,
+.preview-usuarios,
+.preview-pendientes {
+  padding: 0;
+  max-width: 1280px;
+  margin: 0 auto;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.preview-posters h2,
+.preview-usuarios h2,
+.preview-pendientes h2 {
+  margin: 0 0 1rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #132740;
+}
+
+.grupo-botones-espacios {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .grupo-botones-espacios {
+    gap: 0.6rem;
+  }
+  .grupo-botones-espacios .boton-primario,
+  .grupo-botones-espacios .boton-secundario {
+    font-size: 0.82rem;
+    padding: 0.6rem 0.8rem;
+    white-space: nowrap;
+  }
+}
+
+/* --------------------------------------------------------------------
 Overlay Formularios
 -------------------------------------------------------------------- */
 
@@ -544,44 +995,41 @@ Overlay Formularios
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(19, 39, 64, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 100;
+  z-index: 9999;
   padding: 1rem;
   box-sizing: border-box;
   overflow: auto;
+  backdrop-filter: blur(4px);
 }
 
 .modal .todos-pendientes,
 .modal .todos-posters,
 .modal .todos-usuarios,
 .modal-formulario {
-  background-color: white;
-  border-radius: 12px;
-  padding: 1rem;
+  background-color: #ffffff;
+  border-top: 4px solid #00acc9;
+  border-radius: 20px;
+  padding: 2rem;
   width: 100%;
   max-width: 1100px;
   max-height: 90vh;
   overflow: auto;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 30px rgba(19, 39, 64, 0.25);
   box-sizing: border-box;
   margin: 0;
 }
-
-
 
 /* Contenedor de la imagen en el modal */
 .modal-contenido {
   position: relative;
   max-width: 20%;
-  /* Máximo 90% del ancho de la pantalla */
   max-height: 10%;
-  /* Máximo 90% del alto de la pantalla */
   background: #fff;
-  /* Opcional: fondo blanco */
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 0.5rem;
   display: flex;
   justify-content: center;
@@ -591,38 +1039,50 @@ Overlay Formularios
 /* Imagen grande dentro del modal */
 .imagen-grande {
   max-width: 60%;
-  /* Se ajusta al ancho del contenedor */
   max-height: 60%;
-  /* Se ajusta al alto del contenedor */
   object-fit: contain;
-  /* Mantiene proporciones sin recortar */
-  border-radius: 10px;
+  border-radius: 16px;
 }
 
 /* Botón cerrar */
 .cerrar-modal {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 0.75rem;
+  right: 0.75rem;
   font-size: 1.5rem;
   background: transparent;
-  border: none;
+  border: 2px solid transparent;
   cursor: pointer;
-  color: #000;
+  color: #5f5e5e;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.cerrar-modal:hover {
+  background-color: rgba(19, 39, 64, 0.06);
+  color: #00acc9;
+  border-color: rgba(0, 172, 201, 0.3);
 }
 
 /* ====================================================================
-   Corrección de Estilos para el Modal de Gestión de Espacios Físicos
+   Modal de Gestión de Espacios Físicos
    ==================================================================== */
+
 .modal-espacios-contenido {
-  background-color: white;
-  border-radius: 12px;
-  padding: 30px;
+  background-color: #ffffff;
+  border-top: 4px solid #00acc9;
+  border-radius: 20px;
+  padding: 2rem;
   width: 90%;
   max-width: 900px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 30px rgba(19, 39, 64, 0.25);
   position: relative;
   box-sizing: border-box;
 }
@@ -630,15 +1090,15 @@ Overlay Formularios
 .grid-gestion-espacios {
   display: grid;
   grid-template-columns: 1fr 1.5fr;
-  gap: 20px;
-  margin-top: 20px;
+  gap: 2rem;
+  margin-top: 2rem;
 }
 
 .form-crear-espacio {
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
+  background: #f5f7f8;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 39, 64, 0.08);
   height: fit-content;
 }
 
@@ -647,7 +1107,6 @@ Overlay Formularios
   padding: 0;
 }
 
-/* Responsividad para pantallas pequeñas */
 @media (max-width: 768px) {
   .grid-gestion-espacios {
     grid-template-columns: 1fr;
@@ -655,31 +1114,34 @@ Overlay Formularios
 }
 
 /* ====================================================================
-   Estilos específicos para el Modal de Asignación de Espacios
+   Modal de Asignación de Espacios
    ==================================================================== */
+
 .modal-overlay-asignar {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(19, 39, 64, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
   padding: 1rem;
   box-sizing: border-box;
+  backdrop-filter: blur(4px);
 }
 
 .modal-contenido-asignar {
   position: relative;
-  background: #fff;
+  background: #ffffff;
   max-width: 480px;
   width: 100%;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  padding: 2rem;
+  border-radius: 20px;
+  border-top: 4px solid #00acc9;
+  box-shadow: 0 8px 30px rgba(19, 39, 64, 0.25);
   max-height: 90vh;
   overflow-y: auto;
   box-sizing: border-box;
@@ -687,22 +1149,24 @@ Overlay Formularios
 
 .modal-contenido-asignar h2 {
   margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 20px;
-  color: #333;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #132740;
 }
 
 .poster-info-box {
-  margin-bottom: 15px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border-left: 4px solid #0056b3;
-  font-size: 14px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f5f7f8;
+  border-radius: 12px;
+  border-left: 4px solid #00acc9;
+  font-size: 0.9rem;
 }
 
 .poster-info-box p {
-  margin: 0 0 5px 0;
+  margin: 0 0 0.4rem 0;
+  color: #5f5e5e;
 }
 
 .poster-info-box p:last-child {
@@ -710,72 +1174,111 @@ Overlay Formularios
 }
 
 .mensaje-alerta {
-  margin-bottom: 12px;
-  padding: 10px;
-  border-radius: 4px;
-  font-size: 14px;
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
 }
 
 .mensaje-alerta.exito {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(128, 186, 39, 0.1);
+  color: #2e7d32;
+  border: 1px solid rgba(128, 186, 39, 0.3);
 }
 
 .mensaje-alerta.error {
-  background: #f8d7da;
-  color: #721c24;
+  background: rgba(211, 47, 47, 0.1);
+  color: #c62828;
+  border: 1px solid rgba(211, 47, 47, 0.3);
 }
 
 .form-group-asignar {
-  margin-bottom: 15px;
+  margin-bottom: 1rem;
 }
 
 .form-group-asignar label {
   display: block;
-  font-weight: bold;
-  margin-bottom: 5px;
-  font-size: 14px;
-  color: #495057;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  color: #132740;
 }
 
 .form-group-asignar select {
   width: 100%;
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 2px solid #d5ddd3;
   box-sizing: border-box;
-  font-size: 14px;
-  background-color: #fff;
+  font-size: 0.9rem;
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group-asignar select:focus {
+  border-color: #00acc9;
+  box-shadow: 0 0 0 3px rgba(0, 172, 201, 0.15);
 }
 
 .modal-botones-acciones {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
 }
 
 .btn-cancelar {
-  padding: 9px 16px;
+  padding: 0.65rem 1.2rem;
   cursor: pointer;
-  background: #6c757d;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-weight: 500;
+  background: transparent;
+  color: #5f5e5e;
+  border: 2px solid #d5ddd3;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-cancelar:hover {
+  background-color: rgba(19, 39, 64, 0.06);
+  color: #132740;
+  border-color: #5f5e5e;
 }
 
 .btn-guardar {
-  padding: 9px 16px;
-  background: #0056b3;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
+  padding: 0.65rem 1.2rem;
+  background-color: #00acc9;
+  color: #ffffff;
+  border: 2px solid #00acc9;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 172, 201, 0.3);
+}
+
+.btn-guardar:hover {
+  background-color: #0093ad;
+  border-color: #0093ad;
 }
 
 .btn-guardar:disabled {
-  background: #a0c4ed;
+  background-color: #a0c4c8;
+  border-color: #a0c4c8;
   cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------
+Overlay Formularios - Registro/Login (dentro de modal-registro)
+-------------------------------------------------------------------- */
+
+.modal-registro {
+  background-color: rgba(19, 39, 64, 0.5) !important;
+  backdrop-filter: blur(4px);
+}
+
+.modal-formulario .formularios {
+  max-width: 440px;
 }

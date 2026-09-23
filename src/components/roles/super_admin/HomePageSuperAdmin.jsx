@@ -157,7 +157,8 @@ const HomePageSuperAdmin = () => {
             )}
 
             {/* Usuarios pendientes */}
-            <section id="pendientes" className="pendientes">
+            <section id="pendientes">
+                <span className="seccion-eyebrow">Solicitudes</span>
                 <h2>Usuarios Pendientes por Aceptación</h2>
                 <SolicitudesUsuarios
                     limite={limite}
@@ -171,10 +172,11 @@ const HomePageSuperAdmin = () => {
             )}
 
             {/* Criterios de Evaluación Dinámicos */}
-            <section id="criterios" className="eventos" style={{ marginTop: '30px' }}>
+            <section id="criterios">
+                <span className="seccion-eyebrow">Parametrización</span>
                 <h2>Criterios de Evaluación Dinámicos</h2>
-                <div className="tabla-contenedor">
-                    <table className="tabla-general">
+                <div className="contenedor-tabla">
+                    <table>
                         <thead>
                             <tr>
                                 <th>Criterio</th>
@@ -195,17 +197,15 @@ const HomePageSuperAdmin = () => {
                                         <td><strong>{crit.nombre}</strong></td>
                                         <td>{crit.descripcion || 'Sin descripción'}</td>
                                         <td>
-                                            <span className="badge" style={{ background: '#28a745', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>
-                                                ACTIVO
-                                            </span>
+                                            <span className="badge-rol rol-2">ACTIVO</span>
                                         </td>
                                     </tr>
                                 ))
                             )}
                         </tbody>
                     </table>
-                    <div className="contenedor-ver-mas">
-                        <button className="btn-ver-mas" onClick={() => setMostrarCriterios(true)}>
+                    <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                        <button className="boton-primario" onClick={() => setMostrarCriterios(true)}>
                             Administrar / Crear Criterios
                         </button>
                     </div>
@@ -225,7 +225,8 @@ const HomePageSuperAdmin = () => {
             )}
 
             {/* Posters publicados */}
-            <section id="posters" className="posters-publicados">
+            <section id="posters">
+                <span className="seccion-eyebrow">Contenido</span>
                 <h2>Posters Publicados</h2>
                 <MostrarPosters
                     limite={limite}
@@ -240,10 +241,11 @@ const HomePageSuperAdmin = () => {
             )}
 
             {/* Gestión de Espacios Físicos (Resumen en Home) */}
-            <section id="espacios" className="eventos" style={{ marginTop: '30px' }}>
+            <section id="espacios">
+                <span className="seccion-eyebrow">Ubicaciones</span>
                 <h2>Gestión de Espacios Físicos y Capacidad</h2>
-                <div className="tabla-contenedor">
-                    <table className="tabla-general">
+                <div className="contenedor-tabla">
+                    <table>
                         <thead>
                             <tr>
                                 <th>Nombre del Salón / Pabellón / Estante</th>
@@ -270,9 +272,9 @@ const HomePageSuperAdmin = () => {
                                             <td>{ocupacion}</td>
                                             <td>
                                                 {lleno ? (
-                                                    <span className="badge" style={{ background: '#dc3545', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>LLENO</span>
+                                                    <span className="badge-rol" style={{ background: 'rgba(211,47,47,0.1)', color: '#c62828', padding: '4px 8px', borderRadius: '999px' }}>LLENO</span>
                                                 ) : (
-                                                    <span className="badge" style={{ background: '#28a745', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>DISPONIBLE</span>
+                                                    <span className="badge-rol rol-2">DISPONIBLE</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -281,15 +283,11 @@ const HomePageSuperAdmin = () => {
                             )}
                         </tbody>
                     </table>
-                    <div className="contenedor-ver-mas" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                        <button className="btn-ver-mas" onClick={() => setMostrarGestionEspacios(true)}>
+                    <div className="grupo-botones-espacios">
+                        <button className="boton-primario" onClick={() => setMostrarGestionEspacios(true)}>
                             Administrar / Crear Espacios Físicos
                         </button>
-                        <button
-                            className="btn-ver-mas"
-                            onClick={() => setMostrarListadoUbicaciones(true)}
-                            style={{ background: '#17a2b8' }}
-                        >
+                        <button className="boton-secundario" onClick={() => setMostrarListadoUbicaciones(true)}>
                             📍 Ver Listado Completo por Ubicaciones
                         </button>
                     </div>
@@ -316,7 +314,8 @@ const HomePageSuperAdmin = () => {
             )}
 
             {/* Usuarios */}
-            <section id="usuarios" className="usuarios">
+            <section id="usuarios">
+                <span className="seccion-eyebrow">Comunidad</span>
                 <h2>Gestión de Usuarios</h2>
                 <Usuarios
                     limite={limite}
@@ -331,7 +330,8 @@ const HomePageSuperAdmin = () => {
             )}
 
             {/* Categorías */}
-            <section id="categorias" className="categorias">
+            <section id="categorias">
+                <span className="seccion-eyebrow">Clasificación</span>
                 <h2>Categorías</h2>
                 <Categorias
                     limite={limite}
@@ -345,13 +345,14 @@ const HomePageSuperAdmin = () => {
             )}
 
             {/* Eventos y Semestres */}
-            <section id="eventos" className="eventos">
+            <section id="eventos">
+                <span className="seccion-eyebrow">Calendario académico</span>
                 <h2>Eventos y Semestres Académicos</h2>
                 {loadingEventos ? (
                     <p>Cargando lista de eventos...</p>
                 ) : (
-                    <div className="tabla-contenedor">
-                        <table className="tabla-general">
+                    <div className="contenedor-tabla">
+                        <table>
                             <thead>
                                 <tr>
                                     <th>Nombre del Evento</th>
@@ -377,9 +378,9 @@ const HomePageSuperAdmin = () => {
                                             </td>
                                             <td>
                                                 {ev.activo == 1 ? (
-                                                    <span className="badge bg-success">ACTIVO</span>
+                                                    <span className="badge-rol rol-2">ACTIVO</span>
                                                 ) : (
-                                                    <span className="badge bg-secondary">Inactivo / Histórico</span>
+                                                    <span className="badge-rol rol-1">Inactivo / Histórico</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -387,8 +388,8 @@ const HomePageSuperAdmin = () => {
                                 )}
                             </tbody>
                         </table>
-                        <div className="contenedor-ver-mas">
-                            <button className="btn-ver-mas" onClick={() => setMostrarEventos(true)}>
+                        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                            <button className="boton-primario" onClick={() => setMostrarEventos(true)}>
                                 Administrar / Ver todos los eventos
                             </button>
                         </div>

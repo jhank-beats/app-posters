@@ -13,7 +13,6 @@ const Login = ({ setUser, cerrarLogin }) => {
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        // Validar campos vacíos
         if (email === "" || contrasena === "") {
             setError(true)
             return
@@ -42,7 +41,6 @@ const Login = ({ setUser, cerrarLogin }) => {
             }
 
             if (data.status === "success") {
-                // Guardar datos del usuario
                 setUser({
                     id: data.usuario.id,
                     nombres: data.usuario.nombres,
@@ -59,25 +57,13 @@ const Login = ({ setUser, cerrarLogin }) => {
                 if (cerrarLogin) cerrarLogin()
                 alert("✅ " + data.message)
 
-                // Redireccionar según el rol
                 switch (parseInt(data.usuario.id_rol)) {
-                    case 1:
-                        navigate('/usuario')
-                        break
-                    case 2:
-                        navigate('/evaluador')
-                        break
-                    case 3:
-                        navigate('/admin')
-                        break
-                    case 4:
-                        navigate('/superadmin')
-                        break
-                    default:
-                        navigate('/')
-                        console.error("Rol no reconocido:", data.usuario.id_rol)
+                    case 1: navigate('/usuario'); break
+                    case 2: navigate('/evaluador'); break
+                    case 3: navigate('/admin'); break
+                    case 4: navigate('/superadmin'); break
+                    default: navigate('/'); console.error("Rol no reconocido:", data.usuario.id_rol)
                 }
-
             } else {
                 alert("❌ " + data.message)
             }
@@ -88,28 +74,47 @@ const Login = ({ setUser, cerrarLogin }) => {
     }
 
     return (
-        <section className='formularios'>
-            {/* Botón para cerrar el formulario */}
-            <button className='cerrar-formulario' onClick={cerrarLogin}>X</button>
-            <h2>🔐 Inicio de Sesión</h2>
-            <p>Introduce tus datos para continuar 🚀</p>
-            <form className="contenedor-formulario" onSubmit={handleSubmit}>
-                <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder='📧 Correo Electrónico'
-                />
-                <input
-                    type="password"
-                    value={contrasena}
-                    onChange={e => setContrasena(e.target.value)}
-                    placeholder='🔒 Contraseña'
-                />
-                <button className='solicitar-registro' type="submit">Iniciar Sesión</button>
+        <div className="formularios">
+            <button className="cerrar-formulario" onClick={cerrarLogin}>X</button>
+
+            <div className="formularios-header">
+                <span className="formularios-eyebrow">Inicio de Sesión</span>
+                <h2>🔐 Bienvenido</h2>
+                <p>Introduce tus datos para continuar</p>
+            </div>
+
+            <form className="formularios-body" onSubmit={handleSubmit}>
+                <div className="campo-formulario">
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="📧 Correo Electrónico"
+                        required
+                    />
+                </div>
+
+                <div className="campo-formulario">
+                    <input
+                        type="password"
+                        value={contrasena}
+                        onChange={e => setContrasena(e.target.value)}
+                        placeholder="🔒 Contraseña"
+                        required
+                    />
+                </div>
+
                 {error && <p className="error-mensaje">Por favor, completa todos los campos.</p>}
+
+                <button className="boton-primario" type="submit">Iniciar Sesión</button>
+
+                <div className="formulario-texto">
+                    <button type="button" onClick={() => { if (cerrarLogin) cerrarLogin(); }}>
+                        ¿Ya tienes Cuenta? Inicia Sesión
+                    </button>
+                </div>
             </form>
-        </section>
+        </div>
     )
 }
 
