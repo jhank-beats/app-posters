@@ -7,6 +7,7 @@ import HomePageUsuario from './components/roles/usuario/HomePageUsuario.jsx';
 import HomePageAdmin from './components/roles/admin/HomePageAdmin.jsx';
 import HomePageEvaluador from './components/roles/evaluador/HomePageEvaluador.jsx';
 import CargarPosters from './components/formularios/CargarPosters';
+import ProtectedRoute from './components/ProtectedRoute';
 import { useState, useEffect } from 'react';
 import { logPageView } from './analytics.js';
 import './App.css';
@@ -58,11 +59,11 @@ function App() {
               : <HomePage user={user} />
           }
         />
-        <Route path="/CargarPosters" element={<CargarPosters user={user} />} />
-        <Route path="/superadmin" element={<HomePageSuperAdmin />} />
-        <Route path="/admin" element={<HomePageAdmin />} />
-        <Route path="/evaluador" element={<HomePageEvaluador />} />
-        <Route path="/usuario" element={<HomePageUsuario />} />
+        <Route path="/CargarPosters" element={<ProtectedRoute roles={[1, 2, 3, 4]}><CargarPosters user={user} /></ProtectedRoute>} />
+        <Route path="/superadmin" element={<ProtectedRoute roles={[4]}><HomePageSuperAdmin /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute roles={[3]}><HomePageAdmin /></ProtectedRoute>} />
+        <Route path="/evaluador" element={<ProtectedRoute roles={[2]}><HomePageEvaluador /></ProtectedRoute>} />
+        <Route path="/usuario" element={<ProtectedRoute roles={[1]}><HomePageUsuario /></ProtectedRoute>} />
       </Routes>
     </Layout>
   );

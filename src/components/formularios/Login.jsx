@@ -3,6 +3,8 @@
 import './Formulario.css'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { saveSession } from '../../auth.js'
+import { API_BASE } from '../../config.js'
 
 const Login = ({ setUser, cerrarLogin }) => {
     const [email, setEmail] = useState("")
@@ -20,7 +22,7 @@ const Login = ({ setUser, cerrarLogin }) => {
         setError(false)
 
         try {
-            const response = await fetch("http://localhost:8000/api/InicioSesion.php", {
+            const response = await fetch(`${API_BASE}/InicioSesion.php`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -41,6 +43,11 @@ const Login = ({ setUser, cerrarLogin }) => {
             }
 
             if (data.status === "success") {
+                if (!data.token) {
+                    alert("⚠️ El servidor no emitió token de sesión. Avisa al administrador.");
+                    return;
+                }
+                saveSession({ token: data.token, usuario: data.usuario });
                 setUser({
                     id: data.usuario.id,
                     nombres: data.usuario.nombres,
@@ -48,11 +55,6 @@ const Login = ({ setUser, cerrarLogin }) => {
                     correo: data.usuario.correo,
                     id_rol: data.usuario.id_rol
                 })
-
-                const nombreCompleto = data.usuario.nombres + " " + data.usuario.apellidos
-
-                localStorage.setItem("idUsuario", data.usuario.id);
-                localStorage.setItem("nombreUsuario", nombreCompleto);
 
                 if (cerrarLogin) cerrarLogin()
                 alert("✅ " + data.message)
@@ -69,7 +71,7 @@ const Login = ({ setUser, cerrarLogin }) => {
             }
         } catch (error) {
             console.error("Error al iniciar sesión:", error)
-            alert("⚠️ Error al conectar con el servidor")
+            alert("⚠️ Error al conectar con el servidor (" + API_BASE + "): " + (error?.message || error))
         }
     }
 

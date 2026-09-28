@@ -3,6 +3,7 @@ import { FaTrashAlt } from "react-icons/fa";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import EditarUsuario from './EditarUsuario';
 import "./roles.css";
+import { API_BASE } from '../../../config.js';
 
 const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
     const [usuarios, setUsuarios] = useState([]);
@@ -33,8 +34,8 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
             const adminId = localStorage.getItem("idUsuario");
 
             const url = limite
-                ? `http://localhost:8000/api/TablaUsuarios.php?admin_id=${adminId}&limite=${limite}`
-                : `http://localhost:8000/api/TablaUsuarios.php?admin_id=${adminId}`;
+                ? `${API_BASE}/TablaUsuarios.php?admin_id=${adminId}&limite=${limite}`
+                : `${API_BASE}/TablaUsuarios.php?admin_id=${adminId}`;
 
             const respuesta = await fetch(url);
             const datos = await respuesta.json();
@@ -101,7 +102,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
         const adminId = localStorage.getItem("idUsuario");
 
         try {
-            const respuesta = await fetch('http://localhost:8000/api/TablaUsuarios.php', {
+            const respuesta = await fetch(`${API_BASE}/TablaUsuarios.php`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, id_rol: nuevoRol, admin_id: adminId }),
@@ -125,7 +126,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
         if (!window.confirm("¿Eliminar este usuario?")) return;
 
         try {
-            const respuesta = await fetch('http://localhost:8000/api/TablaUsuarios.php', {
+            const respuesta = await fetch(`${API_BASE}/TablaUsuarios.php`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id }),

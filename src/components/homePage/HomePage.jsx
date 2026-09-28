@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -31,11 +32,33 @@ const images = [
     "https://images.pexels.com/photos/777059/pexels-photo-777059.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
 ];
 
+const NOMBRES_ROL = {
+    superadmin: 'Super Admin',
+    admin: 'Administrador',
+    evaluador: 'Evaluador',
+    usuario: 'Usuario',
+};
+
 const HomePage = () => {
     const [mostrarRegistro, setMostrarRegistro] = useState(false);
     const [mostrarLogin, setMostrarLogin] = useState(false); // 👈 2. ESTADO PARA LOGIN
-    const [user, setUser] = useState(null);
+    const [, setUser] = useState(null);
     const [mostrarPreguntasFrecuentes, setMostrarPreguntasFrecuentes] = useState(false);
+    const [avisoAcceso, setAvisoAcceso] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Si se llegó aquí por un acceso denegado (?acceso=denegado&rol=admin),
+    // abrir el modal de login y mostrar el aviso una sola vez.
+    useEffect(() => {
+        if (searchParams.get('acceso') === 'denegado') {
+            const rol = NOMBRES_ROL[searchParams.get('rol')] || 'este panel';
+            setAvisoAcceso(`🔒 Debes iniciar sesión para acceder al panel de ${rol}.`);
+            setMostrarLogin(true);
+            searchParams.delete('acceso');
+            searchParams.delete('rol');
+            setSearchParams(searchParams, { replace: true });
+        }
+    }, []);
 
     return (
         <div className='contenedor-pagina'>
@@ -217,6 +240,47 @@ const HomePage = () => {
 
             {/*Footer de las paginas  */}
             <Footer />
+
+            {/* Aviso de acceso denegado (se descarta al cerrar) */}
+            {avisoAcceso && (
+                <div
+                    role="alert"
+                    style={{
+                        position: 'fixed',
+                        top: '12px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 10000,
+                        background: '#132740',
+                        color: '#fff',
+                        borderLeft: '6px solid #cad400',
+                        borderRadius: '12px',
+                        padding: '0.8rem 1rem',
+                        boxShadow: '0 6px 20px rgba(19,39,64,0.35)',
+                        maxWidth: 'min(92vw, 560px)',
+                        display: 'flex',
+                        gap: '0.75rem',
+                        alignItems: 'center',
+                    }}
+                >
+                    <span style={{ flex: 1 }}>{avisoAcceso}</span>
+                    <button
+                        onClick={() => setAvisoAcceso('')}
+                        aria-label="Cerrar aviso"
+                        style={{
+                            background: '#00acc9',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '0.3rem 0.7rem',
+                            cursor: 'pointer',
+                            fontWeight: 700,
+                        }}
+                    >
+                        X
+                    </button>
+                </div>
+            )}
 
             {/* Modal de registro */}
             {mostrarRegistro && (

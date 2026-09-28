@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './roles.css';
 import '../../formularios/Formulario.css';
+import { API_BASE } from '../../../config.js';
 
 const Cuenta = ({ cerrarCuenta }) => {
     const [datosUsuario, setDatosUsuario] = useState({ nombres: "", apellidos: "", correo: "", carrera: "" });
@@ -17,11 +18,11 @@ const Cuenta = ({ cerrarCuenta }) => {
         const idUsuario = localStorage.getItem("idUsuario");
         if (!idUsuario) { setError("No se encontró el ID de usuario en el almacenamiento local"); setLoading(false); return; }
         try {
-            const response = await fetch(`http://localhost:8000/api/GestionarCuenta.php?id=${idUsuario}`);
+            const response = await fetch(`${API_BASE}/GestionarCuenta.php?id=${idUsuario}`);
             const data = await response.json();
             if (data.success) setDatosUsuario({ nombres: data.usuario.nombres || "", apellidos: data.usuario.apellidos || "", correo: data.usuario.correo || "", carrera: data.usuario.carrera || "" });
             else setError(data.message);
-        } catch (error) { setError("Error al conectar con el servidor"); }
+        } catch { setError("Error al conectar con el servidor"); }
         finally { setLoading(false); }
     };
 
@@ -43,7 +44,7 @@ const Cuenta = ({ cerrarCuenta }) => {
         try {
             const payload = { id: idUsuario, nombres: datosUsuario.nombres, apellidos: datosUsuario.apellidos, correo: datosUsuario.correo, carrera: datosUsuario.carrera };
             if (cambiarContrasena) { payload.contrasenaActual = contrasenaActual; payload.contrasenaNueva = contrasenaNueva; }
-            const response = await fetch("http://localhost:8000/api/GestionarCuenta.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            const response = await fetch(`${API_BASE}/GestionarCuenta.php`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
             const data = await response.json();
             if (data.success) {
                 alert("✅ " + data.message);
@@ -51,7 +52,7 @@ const Cuenta = ({ cerrarCuenta }) => {
                 setContrasenaActual(""); setContrasenaNueva(""); setConfirmarContrasena(""); setCambiarContrasena(false);
                 if (cerrarCuenta) cerrarCuenta();
             } else setError(data.message);
-        } catch (error) { setError("Error al conectar con el servidor"); }
+        } catch { setError("Error al conectar con el servidor"); }
     };
 
     if (loading) {

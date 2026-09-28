@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTrashAlt } from "react-icons/fa";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import "./roles.css";
+import { API_BASE } from '../../../config.js';
 
 const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
     const [solicitudesRegistro, setSolicitudesRegistro] = useState([]);
@@ -18,7 +19,7 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
 
     const cargarCategorias = async () => {
         try {
-            const respuesta = await fetch('http://localhost:8000/api/Categorias.php');
+            const respuesta = await fetch(`${API_BASE}/Categorias.php`);
             const datos = await respuesta.json();
             if (datos.success) setSolicitudesRegistro(datos.data);
         } catch (error) {
@@ -39,7 +40,7 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
         if (!window.confirm("¿Eliminar categoría?")) return;
 
         try {
-            const respuesta = await fetch('http://localhost:8000/api/Categorias.php', {
+            const respuesta = await fetch(`${API_BASE}/Categorias.php`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id }),
@@ -70,7 +71,7 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
         try {
             const metodo = categoriaSeleccionada ? "PUT" : "POST";
 
-            const respuesta = await fetch("http://localhost:8000/api/Categorias.php", {
+            const respuesta = await fetch(`${API_BASE}/Categorias.php`, {
                 method: metodo,
                 headers: {
                     "Content-Type": "application/json"
@@ -213,6 +214,14 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
                     onChange={(e) => setFiltro(e.target.value)}
                     className="input-filtro"
                 />
+                {limite && verMas && categoriasFiltradas.length > limite && (
+                    <a href="#" className="ver-mas" onClick={(e) => {
+                        e.preventDefault();
+                        verMas();
+                    }}>
+                        Ver más...
+                    </a>
+                )}
             </div>
 
         </section>

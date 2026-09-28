@@ -12,7 +12,7 @@ const Header = () => {
     const [mostrarRegistro, setMostrarRegistro] = useState(false);
     const [mostrarLogin, setMostrarLogin] = useState(false);
 
-    const [user, setUser] = useState(null);
+    const [, setUser] = useState(null);
 
     const cerrarMenus = () => {
         setMenuAbierto(false);
@@ -118,6 +118,10 @@ const Header = () => {
                 <div className="modal-registro">
                     <Registro setUser={setUser}
                     cerrarRegistro={() => setMostrarRegistro(false)}
+                    abrirLogin={() => {
+                        setMostrarRegistro(false);
+                        setMostrarLogin(true);
+                    }}
                     />
                 </div>
             )}

@@ -47,7 +47,7 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
             let data;
             try {
                 data = JSON.parse(textResponse);
-            } catch (err) {
+            } catch {
                 console.error("El servidor no devolvió un JSON válido:", textResponse);
                 setMensaje({ tipo: 'error', texto: 'Error de formato en el servidor' });
                 return;

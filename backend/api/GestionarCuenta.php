@@ -1,12 +1,13 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Content-Type: application/json; charset=UTF-8");
+require_once __DIR__ . '/includes/Auth.php';
+cors_headers("GET, POST, OPTIONS");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
+// Toda operación exige sesión válida; el acceso a datos ajenos solo para admin/superadmin.
+$auth = require_login();
+function cuenta_puede_acceder($targetId) {
+    $a = $GLOBALS['auth'];
+    if ((int)$targetId === (int)$a['id']) return true;
+    return in_array($a['rol'], [3, 4], true);
 }
 
 include '../Conexion.php';
@@ -24,6 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $id = intval($_GET['id']);
+    if (!cuenta_puede_acceder($id)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Sin permiso']);
+        exit;
+    }
     
     $stmt = $conexion->prepare("SELECT id, nombres, apellidos, correo, carrera FROM usuario WHERE id = ?");
     $stmt->bind_param("i", $id);
@@ -64,6 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $id = intval($input['id']);
+    if (!cuenta_puede_acceder($id)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Sin permiso']);
+        exit;
+    }
     $nombres = trim($input['nombres']);
     $apellidos = trim($input['apellidos']);
     $correo = trim($input['correo']);

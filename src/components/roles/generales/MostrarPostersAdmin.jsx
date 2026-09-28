@@ -268,17 +268,17 @@ const MostrarPostersAdmin = ({ cerrarTabla }) => {
 
             {/* Modal de visualización de archivo / imagen / PDF */}
             {imagenSeleccionada && (
-                <div className="modal-imagen" onClick={() => setImagenSeleccionada(null)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ background: '#fff', padding: '20px', borderRadius: '8px', position: 'relative', maxWidth: '80%', maxHeight: '85vh', overflow: 'auto' }}>
-                        <button className="cerrar-modal" onClick={() => setImagenSeleccionada(null)} style={{ position: 'absolute', top: '10px', right: '15px', background: 'transparent', border: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
+                <div className="modal-imagen" onClick={() => setImagenSeleccionada(null)}>
+                    <div className="modal-preview" onClick={(e) => e.stopPropagation()}>
+                        <button className="cerrar-modal" onClick={() => setImagenSeleccionada(null)}>×</button>
                         {imagenSeleccionada.toLowerCase().endsWith('.pdf') ? (
                             <iframe
                                 src={imagenSeleccionada}
+                                className="pdf-grande"
                                 title="Póster PDF"
-                                style={{ width: '80vw', height: '80vh', border: 'none' }}
                             />
                         ) : (
-                            <img src={imagenSeleccionada} alt="Póster completo" style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
+                            <img src={imagenSeleccionada} alt="Póster completo" className="imagen-grande" />
                         )}
                     </div>
                 </div>

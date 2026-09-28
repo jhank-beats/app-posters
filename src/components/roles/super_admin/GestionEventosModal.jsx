@@ -46,7 +46,7 @@ const GestionEventosModal = ({ cerrarTabla }) => {
             const data = await respuesta.json();
             if (data.status === 'success') { alert("✅ Evento activado correctamente"); cargarEventos(); }
             else alert("❌ Error: " + data.message);
-        } catch (err) { alert("❌ Error de conexión al activar evento"); }
+        } catch { alert("❌ Error de conexión al activar evento"); }
     };
 
     const guardarEvento = async (e) => {
@@ -62,7 +62,7 @@ const GestionEventosModal = ({ cerrarTabla }) => {
                 alert(`✅ ${data.message}`);
                 setMostrarModal(false); setNombreEvento(""); setCodigoEvento(""); setFechaInicio(""); setFechaFin(""); setEventoSeleccionado(null); cargarEventos();
             } else setError(data.message || "Error al guardar el evento");
-        } catch (err) { setError("Error al conectar con el servidor"); }
+        } catch { setError("Error al conectar con el servidor"); }
     };
 
     const eventosFiltrados = eventos.filter(ev =>

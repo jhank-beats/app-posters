@@ -54,7 +54,7 @@ const AsignarEspacioModal = ({ poster, cerrarModal, alActualizar }) => {
             } else {
                 setMensaje({ tipo: 'error', texto: data.message || 'Error al asignar espacio' });
             }
-        } catch (error) {
+        } catch {
             setMensaje({ tipo: 'error', texto: 'Error de conexión con el servidor' });
         } finally {
             setCargando(false);

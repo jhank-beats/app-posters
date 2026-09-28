@@ -54,7 +54,7 @@ const GestionCriterios = ({ cerrarTabla }) => {
             if (data.success) {
                 setNombre(''); setDescripcion(''); setIdEditando(null); setMostrarForm(false); cargarCriterios();
             } else setError(data.message || 'Error al guardar el criterio');
-        } catch (err) { setError('Error de conexión con el servidor'); }
+        } catch { setError('Error de conexión con el servidor'); }
     };
 
     const eliminar = async (id) => {
@@ -64,7 +64,7 @@ const GestionCriterios = ({ cerrarTabla }) => {
             const data = await res.json();
             if (data.success) cargarCriterios();
             else alert('❌ Error al eliminar: ' + (data.message || 'Ocurrió un problema'));
-        } catch (err) { alert('❌ Error de conexión al eliminar'); }
+        } catch { alert('❌ Error de conexión al eliminar'); }
     };
 
     const criteriosFiltrados = criterios.filter(crit =>

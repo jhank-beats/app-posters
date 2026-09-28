@@ -1,5 +1,6 @@
 import './Formulario.css'
 import { useState } from 'react'
+import { API_BASE } from '../../config.js'
 
 const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
   const [titulo, setTitulo] = useState("")
@@ -38,7 +39,7 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
     formData.append("id_usuario", idUsuario);
 
     try {
-      const response = await fetch("http://localhost:8000/api/SubirPosters.php", {
+      const response = await fetch(`${API_BASE}/SubirPosters.php`, {
         method: "POST",
         body: formData,
       });

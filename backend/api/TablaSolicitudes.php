@@ -1,8 +1,9 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: POST, GET, PUT, DELETE, OPTIONS");
-header("Content-Type: application/json; charset=UTF-8");
+require_once __DIR__ . '/includes/Auth.php';
+cors_headers("POST, GET, PUT, DELETE, OPTIONS");
+
+// Solo admin / superadmin (identidad verificada por token).
+$auth = require_role([3, 4]);
 
 include '../Conexion.php';
 include_once __DIR__ . '/includes/Correos.php'; // <-- 1. Importamos el archivo de correos

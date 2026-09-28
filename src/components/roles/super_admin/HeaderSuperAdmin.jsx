@@ -2,6 +2,8 @@ import '../generales/roles.css';
 import { Link } from "react-scroll";
 import { useState } from "react";
 import { useNavigate } from 'react-router-dom';
+import NotificacionesBell from '../generales/NotificacionesBell.jsx';
+import { clearSession } from '../../../auth.js';
 
 const HeaderSuperAdmin = ({ abrirCuenta }) => {
     const [menuAbierto, setMenuAbierto] = useState(false);
@@ -9,12 +11,7 @@ const HeaderSuperAdmin = ({ abrirCuenta }) => {
     const navigate = useNavigate();
 
     const cerrarSesion = () => {
-        if (window.localStorage) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('idUsuario');
-            localStorage.removeItem('nombreUsuario');
-        }
+        clearSession();
         setMenuUsuario(false);
         navigate('/solo-home');
     };
@@ -35,9 +32,12 @@ const HeaderSuperAdmin = ({ abrirCuenta }) => {
                         <button onClick={() => setMenuAbierto(false)} className='boton-cerrar' aria-label="Cerrar menú">X</button>
                         <Link className='menu-enlace' to="inicio" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Inicio</Link>
                         <Link className='menu-enlace' to="pendientes" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Usuarios Pendientes</Link>
+                        <Link className='menu-enlace' to="criterios" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Criterios</Link>
                         <Link className='menu-enlace' to="posters" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Posters</Link>
+                        <Link className='menu-enlace' to="espacios" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Espacios</Link>
                         <Link className='menu-enlace' to="usuarios" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Usuarios</Link>
                         <Link className='menu-enlace' to="categorias" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Categorías</Link>
+                        <Link className='menu-enlace' to="eventos" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Eventos</Link>
                     </nav>
                 </div>
 
@@ -45,11 +45,12 @@ const HeaderSuperAdmin = ({ abrirCuenta }) => {
                     <div className={`menu-usuario ${menuUsuario ? 'activo' : ''}`}>
                         <button onClick={() => setMenuUsuario(false)} className='boton-cerrar' aria-label="Cerrar menú usuario">&times;</button>
                         <a className='enlace-login' href="#" onClick={(e) => { e.preventDefault(); setMenuUsuario(false); if (abrirCuenta) abrirCuenta(); }}>Mi Cuenta</a>
-                        <a className='enlace-login' href="#" onClick={(e) => e.preventDefault()}>Notificaciones</a>
                         <button className='boton-registro' onClick={cerrarSesion}>Cerrar Sesión</button>
                     </div>
 
-                    <div className='boton-usuario'>
+                    <NotificacionesBell tipo="super_admin" />
+
+                <div className='boton-usuario'>
                         <button onClick={() => setMenuUsuario(!menuUsuario)} aria-label="Abrir menú de usuario">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="24" height="24" fill="currentColor"><path d="M470.5 463.6C451.4 416.9 405.5 384 352 384L288 384C234.5 384 188.6 416.9 169.5 463.6C133.9 426.3 112 375.7 112 320C112 205.1 205.1 112 320 112C434.9 112 528 205.1 528 320C528 375.7 506.1 426.2 470.5 463.6zM430.4 496.3C398.4 516.4 360.6 528 320 528C279.4 528 241.6 516.4 209.5 496.3C216.8 459.6 249.2 432 288 432L352 432C390.8 432 423.2 459.6 430.5 496.3zM320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM320 304C297.9 304 280 286.1 280 264C280 241.9 297.9 224 320 224C342.1 224 360 241.9 360 264C360 286.1 342.1 304 320 304zM232 264C232 312.6 271.4 352 320 352C368.6 352 408 312.6 408 264C408 215.4 368.6 176 320 176C271.4 176 232 215.4 232 264z"/></svg>
                         </button>

@@ -1,16 +1,17 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
-header("Content-Type: application/json; charset=UTF-8");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
+require_once __DIR__ . '/includes/Auth.php';
+cors_headers("POST, OPTIONS");
 
 include '../Conexion.php';
 $conexion->set_charset('utf8mb4');
+
+// Anti fuerza-bruta por IP
+$ipKey = 'login_' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+if (!auth_rate_limit($ipKey, 10, 300)) {
+    http_response_code(429);
+    echo json_encode(["status" => "error", "message" => "Demasiados intentos. Espera 5 minutos."]);
+    exit;
+}
 
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -36,7 +37,8 @@ $result = $stmt->get_result();
 
 if ($result->num_rows !== 1) {
     http_response_code(401);
-    echo json_encode(["status" => "error", "message" => "Usuario o contraseña incorrectos"]);
+    // Mensaje genérico: no revela si el correo existe
+    echo json_encode(["status" => "error", "message" => "Credenciales inválidas"]);
     exit;
 }
 
@@ -45,14 +47,14 @@ $user = $result->fetch_assoc();
 // Verificar si está activo
 if ((int)$user['activo'] !== 1) {
     http_response_code(403);
-    echo json_encode(["status" => "error", "message" => "El usuario no ha sido activado por un administrador"]);
+    echo json_encode(["status" => "error", "message" => "Credenciales inválidas o cuenta inactiva"]);
     exit;
 }
 
-// Verificar contraseña
+// Verificar contraseña (tiempo aprox. constante contra enumeración)
 if (!password_verify($contrasena, $user['pass_hash'])) {
     http_response_code(401);
-    echo json_encode(["status" => "error", "message" => "Usuario o contraseña incorrectos"]);
+    echo json_encode(["status" => "error", "message" => "Credenciales inválidas"]);
     exit;
 }
 
@@ -60,11 +62,15 @@ if (!password_verify($contrasena, $user['pass_hash'])) {
 unset($user['pass_hash']);
 unset($user['activo']);
 
+// Emitir token HMAC (12h) — el frontend lo guarda y lo envía en cada petición
+$token = auth_issue_token($user['id'], (int)$user['id_rol']);
+
 http_response_code(200);
 echo json_encode([
     "status" => "success",
     "message" => "Inicio de sesión exitoso",
-    "usuario" => $user  // Ahora incluye id_rol
+    "token" => $token,
+    "usuario" => $user  // incluye id_rol
 ]);
 exit;
 ?>

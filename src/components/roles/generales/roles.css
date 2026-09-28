@@ -87,6 +87,225 @@
   justify-self: end;
   min-width: 0;
 }
+/* =========================
+   NOTIFICACIONES — Bell institucional (blanco) + Modal centrado
+   ========================= */
+.notif-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.notif-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: #ffffff;
+  background-color: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.notif-bell:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.notif-bell--blanco {
+  color: #ffffff;
+}
+
+.notif-bell--blanco svg {
+  fill: #ffffff;
+  color: #ffffff;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #00acc9;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  border-radius: 999px;
+  border: 2px solid #132740;
+  line-height: 1;
+}
+
+.notif-panel {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  width: 340px;
+  max-width: 92vw;
+  background-color: #ffffff;
+  border: 1px solid rgba(19, 39, 64, 0.08);
+  border-top: 4px solid #00acc9;
+  border-radius: 16px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22), 0 0 0 100vmax rgba(19, 39, 64, 0.38);
+  overflow: hidden;
+  z-index: 320;
+}
+
+.notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(19, 39, 64, 0.08);
+  font-size: 0.9rem;
+  color: #132740;
+}
+
+.notif-marcar {
+  background: transparent;
+  border: none;
+  color: #00acc9;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.notif-marcar:hover {
+  color: #0093ad;
+}
+
+.notif-lista {
+  max-height: 340px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.notif-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(19, 39, 64, 0.06);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.notif-item:hover {
+  background-color: rgba(0, 172, 201, 0.06);
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background-color: rgba(0, 172, 201, 0.08);
+  color: #00acc9;
+  font-size: 1rem;
+}
+
+.notif-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-titulo {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #132740;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notif-desc {
+  font-size: 0.78rem;
+  color: #5f5e5e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-notif {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(19, 39, 64, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.notif-modal {
+  position: relative;
+  background-color: #ffffff;
+  border-top: 4px solid #00acc9;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 30px rgba(19, 39, 64, 0.25);
+  padding: 1.75rem 1.5rem 1.25rem;
+  box-sizing: border-box;
+}
+
+.notif-lista--modal {
+  max-height: 52vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-right: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .notif-panel {
+    width: 300px;
+    right: -6px;
+  }
+  .notif-modal {
+    max-width: 92vw;
+    padding: 1.5rem 1.1rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .notif-panel {
+    width: 280px;
+    right: -10px;
+  }
+  .notif-bell {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+
 
 .encabezado .menu-usuario {
   display: flex;
@@ -1067,6 +1286,68 @@ Overlay Formularios
   background-color: rgba(19, 39, 64, 0.06);
   color: #00acc9;
   border-color: rgba(0, 172, 201, 0.3);
+}
+
+/* --------------------------------------------------------------------
+   Modal de previsualización de posters (imagen / PDF)
+-------------------------------------------------------------------- */
+
+.modal-imagen {
+  position: fixed;
+  inset: 0;
+  background: rgba(19, 39, 64, 0.78);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 1.25rem;
+  box-sizing: border-box;
+  overflow: auto;
+  backdrop-filter: blur(4px);
+}
+
+/* Tarjeta: banda superior reservada para el botón cerrar (fuera del medio) */
+.modal-preview {
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2.85rem 1rem 1rem;
+  box-shadow: 0 8px 30px rgba(19, 39, 64, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  max-height: calc(100vh - 2.5rem);
+  box-sizing: border-box;
+}
+
+.modal-preview .cerrar-modal {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.55rem;
+  z-index: 1;
+}
+
+/* Imagen a tamaño natural proporcional (tope: viewport) */
+.imagen-grande {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 7.5rem);
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* PDF ocupa el área bajo la banda del botón cerrar */
+.pdf-grande {
+  width: min(90vw, 1100px);
+  height: calc(100vh - 7.5rem);
+  max-height: calc(100vh - 7.5rem);
+  border: none;
+  border-radius: 8px;
+  background: #f5f7f8;
 }
 
 /* ====================================================================

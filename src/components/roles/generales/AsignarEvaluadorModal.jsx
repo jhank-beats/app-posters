@@ -65,7 +65,7 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal }) => {
             } else {
                 setMensaje({ tipo: 'error', texto: data.message || 'Error al guardar la asignación' });
             }
-        } catch (error) {
+        } catch {
             setMensaje({ tipo: 'error', texto: 'Error al conectar con el servidor PHP' });
         }
     };

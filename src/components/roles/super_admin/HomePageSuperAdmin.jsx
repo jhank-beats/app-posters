@@ -42,11 +42,15 @@ const HomePageSuperAdmin = () => {
     const [idRolActual, setIdRolActual] = useState(null);
 
     const obtenerUrlApi = async () => {
+        const urlPrincipal = `${SERVER_URL}/backend/api/Eventos.php`;
+        const urlAlternativa = `${SERVER_URL}/api/Eventos.php`;
+
         try {
-            const resPrincipal = await fetch(`${SERVER_URL}/backend/api/Eventos.php`);
-            if (resPrincipal.ok) return `${SERVER_URL}/backend/api/Eventos.php`;
-        } catch (e) { }
-        return `${SERVER_URL}/api/Eventos.php`;
+            const resPrincipal = await fetch(urlPrincipal);
+            return resPrincipal.ok ? urlPrincipal : urlAlternativa;
+        } catch {
+            return urlAlternativa;
+        }
     };
 
     const cargarEventosResumen = async () => {

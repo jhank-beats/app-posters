@@ -13,15 +13,18 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
         const inicial = {};
         criterios.forEach(c => {
             const v = evaluacionInicial?.criterios?.[c.id];
-            inicial[c.id] = v !== undefined && v !== null ? parseFloat(v) : 0;
+            if (evaluacionInicial?.existente && v !== undefined && v !== null) {
+                inicial[c.id] = String(v);
+            } else {
+                inicial[c.id] = '';
+            }
         });
         setValores(inicial);
         setObservaciones(evaluacionInicial?.observaciones || '');
     }, [criterios, evaluacionInicial, poster]);
 
     const handleValorChange = (idCriterio, valor) => {
-        const num = parseFloat(valor);
-        setValores(prev => ({ ...prev, [idCriterio]: isNaN(num) ? 0 : num }));
+        setValores(prev => ({ ...prev, [idCriterio]: valor }));
     };
 
     const calcularPromedio = () => {
@@ -101,8 +104,10 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
                                         <input
                                             type="number"
                                             min="0" max="5" step="0.1"
-                                            value={valores[crit.id] ?? 0}
+                                            value={valores[crit.id] ?? ''}
                                             onChange={e => handleValorChange(crit.id, e.target.value)}
+                                            placeholder="0"
+                                            inputMode="decimal"
                                             style={{
                                                 width: '78px',
                                                 padding: '0.65rem 0.6rem',

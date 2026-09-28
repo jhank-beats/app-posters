@@ -1,5 +1,6 @@
 import './Formulario.css'
 import { useState } from 'react'
+import { API_BASE } from '../../config.js'
 
 const Registro = ({ setUser, cerrarRegistro, abrirLogin }) => {
   const [nombre, setNombre] = useState("")
@@ -19,7 +20,7 @@ const Registro = ({ setUser, cerrarRegistro, abrirLogin }) => {
     setError(false)
 
     try {
-      const response = await fetch("http://localhost:8000/api/Registro.php", {
+      const response = await fetch(`${API_BASE}/Registro.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -131,9 +131,12 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                 const data = await res.json();
 
                 const notasCriterios = {};
-                if (data.success && data.evaluaciones) {
+                const ev = data.evaluaciones;
+                const tieneNotas = !!ev && (Array.isArray(ev) ? ev.length : Object.keys(ev).length) > 0;
+
+                if (data.success && tieneNotas) {
                     listaCriterios.forEach(c => {
-                        const val = parseFloat(data.evaluaciones[c.id]);
+                        const val = parseFloat(ev[c.id]);
                         notasCriterios[c.id] = !isNaN(val) ? val : 0;
                     });
 
@@ -177,100 +180,12 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
         return (suma / valores.length).toFixed(2);
     };
 
-    const handleCampoEvaluacionChange = (posterId, criterioId, valor) => {
-        setEvaluacionesMap(prev => {
-            const actual = prev[posterId] || { criterios: {}, observaciones: '', editando: true };
-            return {
-                ...prev,
-                [posterId]: {
-                    ...actual,
-                    criterios: {
-                        ...actual.criterios,
-                        [criterioId]: parseFloat(valor) || 0
-                    }
-                }
-            };
-        });
-    };
-
-    const handleObservacionChange = (posterId, valor) => {
-        setEvaluacionesMap(prev => ({
-            ...prev,
-            [posterId]: { ...prev[posterId], observaciones: valor }
-        }));
-    };
-
     const calcularPromedioDinamico = (criteriosObj) => {
         if (!criteriosObj) return '0.00';
         const listaValores = Object.values(criteriosObj);
         if (listaValores.length === 0) return '0.00';
         const suma = listaValores.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
         return (suma / listaValores.length).toFixed(2);
-    };
-
-    const alternarEditar = (posterId) => {
-        setEvaluacionesMap(prev => ({
-            ...prev,
-            [posterId]: { ...prev[posterId], editando: !prev[posterId]?.editando }
-        }));
-    };
-
-    const guardarEvaluacionFila = async (posterId) => {
-        const ev = evaluacionesMap[posterId];
-        if (!ev) return;
-
-        setEvaluacionesMap(prev => ({
-            ...prev,
-            [posterId]: { ...prev[posterId], guardando: true, mensaje: null }
-        }));
-
-        const payload = {
-            id_poster: posterId,
-            id_evaluador: idUsuarioActual,
-            criterios: ev.criterios,
-            observaciones: ev.observaciones || ''
-        };
-
-        try {
-            const res = await fetch(`${SERVER_URL}/api/Evaluaciones.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                setEvaluacionesMap(prev => ({
-                    ...prev,
-                    [posterId]: {
-                        ...prev[posterId],
-                        existente: true,
-                        editando: false,
-                        guardando: false,
-                        mensaje: '✓ Guardado'
-                    }
-                }));
-                setTimeout(() => {
-                    setEvaluacionesMap(prev => ({
-                        ...prev,
-                        [posterId]: { ...prev[posterId], mensaje: null }
-                    }));
-                }, 2000);
-            } else {
-                alert(data.message || 'Error al guardar la evaluación');
-                setEvaluacionesMap(prev => ({
-                    ...prev,
-                    [posterId]: { ...prev[posterId], guardando: false }
-                }));
-            }
-        } catch (error) {
-            alert('Error de conexión al guardar evaluación');
-            setEvaluacionesMap(prev => ({
-                ...prev,
-                [posterId]: { ...prev[posterId], guardando: false }
-            }));
-        }
     };
 
     const postersFiltrados = posters.filter(p =>
@@ -394,13 +309,40 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
 
                                         <td>
                                             {poster.imagen ? (
-                                                <button
-                                                    className="btn-ver-archivo"
-                                                    onClick={() => setImagenSeleccionada(construirUrlArchivo(poster.imagen))}
-                                                    style={{ padding: '4px 8px', cursor: 'pointer' }}
-                                                >
-                                                    👁️ Ver
-                                                </button>
+                                                poster.imagen.toLowerCase().endsWith('.pdf') ? (
+                                                    <div
+                                                        className="pdf-miniatura"
+                                                        onClick={() => setImagenSeleccionada(construirUrlArchivo(poster.imagen))}
+                                                        title="Ver póster"
+                                                        style={{
+                                                            cursor: 'pointer',
+                                                            width: '48px',
+                                                            height: '48px',
+                                                            borderRadius: '8px',
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '1px',
+                                                            border: '1px solid rgba(19, 39, 64, 0.12)',
+                                                            boxShadow: '0 4px 12px rgba(19, 39, 64, 0.1)',
+                                                            background: '#f5f7f8',
+                                                            color: '#132740'
+                                                        }}
+                                                    >
+                                                        <span style={{ fontSize: '1.35rem', lineHeight: 1 }}>📄</span>
+                                                        <span style={{ fontSize: '0.5rem', fontWeight: 700, letterSpacing: '0.08em' }}>PDF</span>
+                                                    </div>
+                                                ) : (
+                                                    <img
+                                                        src={construirUrlArchivo(poster.imagen)}
+                                                        alt={poster.titulo}
+                                                        className="img-miniatura"
+                                                        title="Ver póster"
+                                                        onClick={() => setImagenSeleccionada(construirUrlArchivo(poster.imagen))}
+                                                        style={{ cursor: 'pointer', width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }}
+                                                    />
+                                                )
                                             ) : (
                                                 <span>Sin archivo</span>
                                             )}
@@ -447,16 +389,24 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
 
                                         {esEvaluador && criterios.map(crit => (
                                             <td key={crit.id}>
-                                                <span style={{ fontWeight: evalState.existente ? 700 : 400, color: evalState.existente ? '#132740' : '#9aa0a6' }}>{(parseFloat(evalState.criterios[crit.id] ?? 0).toFixed(1))}</span>
+                                                {evalState.existente ? (
+                                                    <span style={{ fontWeight: 700, color: '#132740' }}>{(parseFloat(evalState.criterios[crit.id] ?? 0).toFixed(1))}</span>
+                                                ) : (
+                                                    <span style={{ color: '#9aa0a6' }}>—</span>
+                                                )}
                                             </td>
                                         ))}
 
                                         {esEvaluador && (
                                             <>
                                                 <td>
-                                                    <strong style={{ color: '#0056b3' }}>
-                                                        {calcularPromedioDinamico(evalState.criterios)}
-                                                    </strong>
+                                                    {evalState.existente ? (
+                                                        <strong style={{ color: '#0056b3' }}>
+                                                            {calcularPromedioDinamico(evalState.criterios)}
+                                                        </strong>
+                                                    ) : (
+                                                        <span style={{ color: '#9aa0a6' }}>—</span>
+                                                    )}
                                                 </td>
 
                                                 <td>
@@ -514,14 +464,13 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
 
             {imagenSeleccionada && (
                 <div className="modal-imagen" onClick={() => setImagenSeleccionada(null)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-preview" onClick={(e) => e.stopPropagation()}>
                         <button className="cerrar-modal" onClick={() => setImagenSeleccionada(null)}>×</button>
                         {imagenSeleccionada.toLowerCase().endsWith('.pdf') ? (
                             <iframe
                                 src={imagenSeleccionada}
                                 className="pdf-grande"
                                 title="Póster PDF"
-                                style={{ width: '100%', height: '80vh', border: 'none' }}
                             />
                         ) : (
                             <img src={imagenSeleccionada} alt="Póster completo" className="imagen-grande" />

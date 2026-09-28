@@ -50,7 +50,7 @@ const EvaluarPosterModal = ({ poster, idEvaluador, cerrarModal }) => {
                 setMensaje({ tipo: 'exito', texto: 'Evaluación guardada correctamente' });
                 setTimeout(() => cerrarModal(), 1200);
             } else setMensaje({ tipo: 'error', texto: data.message || 'Error al guardar calificación' });
-        } catch (error) {
+        } catch {
             setMensaje({ tipo: 'error', texto: 'Error de conexión con el servidor' });
         } finally { setCargando(false); }
     };

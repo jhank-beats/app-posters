@@ -1,13 +1,9 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: POST, GET, PUT, DELETE, OPTIONS");
-header("Content-Type: application/json; charset=UTF-8");
+require_once __DIR__ . '/includes/Auth.php';
+cors_headers("POST, GET, PUT, DELETE, OPTIONS");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+// La identidad/rol vienen del token verificado, NO de parámetros del cliente.
+$auth = require_role([3, 4]);
 
 include '../Conexion.php';
 // Si el archivo está dentro de api/ y includes/ también está dentro de api/:
@@ -31,7 +27,8 @@ function obtenerUsuarios()
 {
     global $conexion;
 
-    $adminId = isset($_GET['admin_id']) ? intval($_GET['admin_id']) : 0;
+    // Identidad verificada por token (ignora cualquier admin_id del cliente)
+    $adminId = $GLOBALS['auth']['id'];
 
     $rolQuery = "SELECT id_rol FROM usuario WHERE id = ?";
     $stmtRol = $conexion->prepare($rolQuery);
@@ -90,7 +87,8 @@ function actualizarUsuario()
 
     $data = json_decode(file_get_contents('php://input'), true);
     $id = isset($data['id']) ? intval($data['id']) : 0;
-    $adminId = isset($data['admin_id']) ? intval($data['admin_id']) : 0;
+    // Identidad verificada por token (ignora admin_id del cliente)
+    $adminId = $GLOBALS['auth']['id'];
 
     if (!$id || !$adminId) {
         echo json_encode(['success' => false, 'message' => 'Datos incompletos']);

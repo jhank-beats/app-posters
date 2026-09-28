@@ -100,7 +100,7 @@ const EvaluacionPosters = ({ poster, idEvaluador, cerrarModal, alGuardar }) => {
             } else {
                 setMensaje({ tipo: 'error', texto: data.message || 'Error al guardar calificación' });
             }
-        } catch (error) {
+        } catch {
             setMensaje({ tipo: 'error', texto: 'Error de conexión con el servidor' });
         } finally {
             setCargando(false);
