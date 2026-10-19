@@ -76,17 +76,17 @@ INSERT INTO roles (id_rol, nombre_rol, descripcion, nivel_acceso) VALUES
 
 -- ---------------------------------------------------------------------
 -- 3) USUARIOS — 5 en total, todos con contraseña "demo1234"
---    IDs: 1=super_admin, 2=admin, 3=evaluador, 4 y 5=usuarios
+--    1 Super Admin, 2 Admins (1 Sistemas, 1 Civil), 2 Usuarios (1 Sistemas, 1 Civil)
 -- ---------------------------------------------------------------------
 SET @hash = '$2y$12$hljN0aU2J37F9iGYB37X0OfjAfytZuwbaXps9OIKfN8b3/WPHQ0gW';
 
-INSERT INTO usuario (id, nombres, apellidos, correo, `contraseña`, carrera, id_rol, activo, desactivado) VALUES
-  (1, 'Camilo Andrés',  'Moncaleano Murillo', 'camilo.murillo@campusucc.edu.co',  @hash, 'Ingeniería de Sistemas', 4, 1, 0),
-  (2, 'Valentina',      'Torres Gómez',       'valentina.torres@campusucc.edu.co', @hash, 'Ingeniería de Sistemas', 3, 1, 0),
-  (3, 'Diego Alejandro','Fernández Cruz',     'diego.fernandez@campusucc.edu.co',  @hash, 'Ingeniería de Sistemas', 2, 1, 0),
-  (4, 'Sofía',          'Herrera López',      'sofia.herrera@campusucc.edu.co',    @hash, 'Ingeniería Civil',       1, 1, 0),
-  (5, 'Mateo',          'Ríos Acosta',        'mateo.rios@campusucc.edu.co',       @hash, 'Ingeniería de Sistemas', 1, 1, 0);
-ALTER TABLE usuario AUTO_INCREMENT = 6;
+INSERT INTO usuario (id, nombres, apellidos, correo, `contraseña`, carrera, id_rol, id_evento, activo, desactivado) VALUES
+  (1, 'Camilo Andrés',  'Moncaleano Murillo', 'camilo.murillo@campusucc.edu.co',  @hash, 'Ingeniería de Sistemas', 4, NULL, 1, 0),
+  (2, 'Valentina',      'Torres Gómez',       'valentina.torres@campusucc.edu.co', @hash, 'Ingeniería de Sistemas', 3, 1,    1, 0),
+  (3, 'Carlos',         'Mendoza Vargas',     'civil.admin@campusucc.edu.co',      @hash, 'Ingeniería Civil',       3, 3,    1, 0),
+  (10, 'Sofía',         'Herrera López',      'sofia.herrera@campusucc.edu.co',    @hash, 'Ingeniería de Sistemas', 1, 1,    1, 0),
+  (30, 'Juan Camilo',   'Murillo Rojas',      'juan.murillo@campusucc.edu.co',     @hash, 'Ingeniería Civil',       1, 3,    1, 0);
+
 
 -- ---------------------------------------------------------------------
 -- 4) EVENTOS — 1 activo (el que se usa en la demo) + 1 futuro inactivo
