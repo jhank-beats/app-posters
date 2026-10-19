@@ -72,42 +72,43 @@ echo " CARGA DEMO POR LA API REAL (SubirPosters.php)"
 echo "======================================================"
 
 echo ""
-echo "▶ Login como SOFÍA (usuario real, id 4)…"
+echo "▶ Login como SOFÍA (Ingeniería de Sistemas, id=10)…"
 SES_SOFIA=$(login "sofia.herrera@campusucc.edu.co")
 echo "   Sesión iniciada → id_usuario=${SES_SOFIA%%|*}"
 
 echo ""
-echo "▶ Sofía sube sus 2 pósters:"
+echo "▶ Sofía sube sus 2 pósters (Ingeniería de Sistemas):"
 subir "$SES_SOFIA" "$IMG/Sistema de Seguridad.pdf" "Sistema-Seguridad-Perimetral.pdf" \
-  "Sistema de Seguridad Perimetral con Visión Artificial" \
-  "Sofía Herrera, Camilo Muñoz" \
-  "Prototipo de un sistema de vigilancia que detecta intrusos en tiempo real mediante visión artificial y notifica al responsable del espacio." \
-  "backend" "seguridad, visión artificial, IoT"
+  "Arquitectura de Microservicios Resilientes en Kubernetes" \
+  "Sofía Herrera López, Camilo Moncaleano" \
+  "Diseño e implementación de una malla de servicios con tolerancia a fallos y autoescalado predictivo." \
+  "backend" "kubernetes, microservicios, resiliencia"
 
 subir "$SES_SOFIA" "$IMG/Nuevo modelo frontend.png" "Panel-Frontend-Servicios.png" \
-  "Panel de Control Frontend para Servicios Públicos" \
-  "Sofía Herrera, Valentina Torres" \
-  "Interfaz web responsiva que centraliza la consulta y el pago de servicios públicos, con accesibilidad y modo móvil." \
-  "frontend" "UI/UX, accesibilidad, responsive"
+  "Detección Temprana de Intrusiones en Redes Campus con Deep Learning" \
+  "Sofía Herrera López, Valentina Torres" \
+  "Modelo neuronal recurrente entrenado sobre tráfico de red para identificar anomalías en tiempo real." \
+  "programacion" "ciberseguridad, deep learning, redes"
 
 echo ""
-echo "▶ Login como MATEO (usuario real, id 5)…"
-SES_MATEO=$(login "mateo.rios@campusucc.edu.co")
-echo "   Sesión iniciada → id_usuario=${SES_MATEO%%|*}"
+echo "▶ Login como JUAN CAMILO (Ingeniería Civil, id=30)…"
+SES_JUAN=$(login "juan.murillo@campusucc.edu.co")
+echo "   Sesión iniciada → id_usuario=${SES_JUAN%%|*}"
 
 echo ""
-echo "▶ Mateo sube sus 2 pósters:"
-subir "$SES_MATEO" "$IMG/VideoJuego Adaptativo.pdf" "Videojuego-Educativo-Adaptativo.pdf" \
-  "Videojuego Educativo Adaptativo para Aprendizaje" \
-  "Mateo Ríos, Diego Fernández" \
-  "Juego serio que ajusta la dificultad según el desempeño del estudiante para reforzar conceptos de programación." \
-  "programacion" "gamificación, educación, adaptativo"
+echo "▶ Juan Camilo sube sus 2 pósters (Ingeniería Civil):"
+subir "$SES_JUAN" "$IMG/violin-key-gb819f8b04_640.png" "Hormigon-Autoreparable.png" \
+  "Hormigón Autoreparable con Bacterias Calcificantes en Clima Tropical" \
+  "Juan Camilo Murillo Rojas, Carlos Mendoza" \
+  "Evaluación experimental de resistencia a compresión y sellado de fisuras con Bacillus subtilis." \
+  "calculo" "hormigón, materiales, biotecnología civil"
 
-subir "$SES_MATEO" "$IMG/Estadistica de pandemia.pdf" "Modelo-Prediccion-Pandemias.pdf" \
-  "Modelo Estadístico de Predicción de Pandemias" \
-  "Mateo Ríos, Sofía Herrera" \
-  "Aplicación de series de tiempo y regresión para anticipar la propagación de enfermedades y apoyar la toma de decisiones." \
-  "estadistica" "series de tiempo, regresión, salud pública"
+subir "$SES_JUAN" "$IMG/Nuevo modelo frontend.png" "Vulnerabilidad-Sismica.png" \
+  "Análisis de Vulnerabilidad Sísmica en Edificaciones Patrimoniales de Mampostería" \
+  "Juan Camilo Murillo Rojas, Camilo Moncaleano" \
+  "Modelación por elementos finitos de estructuras históricas bajo espectros de diseño NSR-10." \
+  "calculo" "nsr-10, mampostería, vulnerabilidad sísmica"
+
 
 echo ""
 echo "======================================================"
