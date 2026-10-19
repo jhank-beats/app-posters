@@ -11,6 +11,7 @@ function cuenta_puede_acceder($targetId) {
 }
 
 include '../Conexion.php';
+include_once __DIR__ . '/includes/PostersHelper.php';
 $conexion->set_charset('utf8mb4');
 
 // GET: Obtener datos del usuario
@@ -31,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
     
-    $stmt = $conexion->prepare("SELECT id, nombres, apellidos, correo, carrera FROM usuario WHERE id = ?");
+    $stmt = $conexion->prepare("SELECT id, nombres, apellidos, correo, carrera, id_evento FROM usuario WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -78,10 +79,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombres = trim($input['nombres']);
     $apellidos = trim($input['apellidos']);
     $correo = trim($input['correo']);
-    $carrera = trim($input['carrera']);
+    $carreraRaw = trim($input['carrera']);
 
     // Validar campos obligatorios
-    if (empty($nombres) || empty($apellidos) || empty($correo) || empty($carrera)) {
+    if (empty($nombres) || empty($apellidos) || empty($correo) || empty($carreraRaw)) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
@@ -89,6 +90,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         exit;
     }
+
+    $carreraNorm = ph_normalizar_carrera($carreraRaw) === 'civil' ? 'civil' : 'sistemas';
+    $carrera = ph_etiqueta_carrera($carreraNorm);
+    $idEventoAsignado = ph_evento_activo($conexion, $carreraNorm);
 
     // Verificar si se está cambiando la contraseña
     $cambiarContrasena = !empty($input['contrasenaActual']) && !empty($input['contrasenaNueva']);
@@ -126,12 +131,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nuevaContrasenaHash = password_hash($input['contrasenaNueva'], PASSWORD_DEFAULT);
 
         // Actualizar con nueva contraseña
-        $stmt = $conexion->prepare("UPDATE usuario SET nombres = ?, apellidos = ?, correo = ?, carrera = ?, `contraseña` = ? WHERE id = ?");
-        $stmt->bind_param("sssssi", $nombres, $apellidos, $correo, $carrera, $nuevaContrasenaHash, $id);
+        $stmt = $conexion->prepare("UPDATE usuario SET nombres = ?, apellidos = ?, correo = ?, carrera = ?, id_evento = ?, `contraseña` = ? WHERE id = ?");
+        $stmt->bind_param("ssssisi", $nombres, $apellidos, $correo, $carrera, $idEventoAsignado, $nuevaContrasenaHash, $id);
     } else {
         // Actualizar sin cambiar contraseña
-        $stmt = $conexion->prepare("UPDATE usuario SET nombres = ?, apellidos = ?, correo = ?, carrera = ? WHERE id = ?");
-        $stmt->bind_param("ssssi", $nombres, $apellidos, $correo, $carrera, $id);
+        $stmt = $conexion->prepare("UPDATE usuario SET nombres = ?, apellidos = ?, correo = ?, carrera = ?, id_evento = ? WHERE id = ?");
+        $stmt->bind_param("ssssii", $nombres, $apellidos, $correo, $carrera, $idEventoAsignado, $id);
     }
 
     if ($stmt->execute()) {

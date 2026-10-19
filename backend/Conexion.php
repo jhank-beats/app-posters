@@ -4,17 +4,23 @@
 $host = getenv('DB_HOST') ?: 'localhost';
 $db   = getenv('DB_NAME') ?: 'posters';
 $user = getenv('DB_USER') ?: 'root';
-$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '1234';
+$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'REMOVED_PASS';
 
-// Crear conexión
-$conexion = new mysqli($host, $user, $pass, $db);
-
-// Configurar codificación de caracteres
-$conexion->set_charset("utf8mb4");
-
-// Verificar conexión
-if ($conexion->connect_error) {
-    die("Error de conexión: " . $conexion->connect_error);
+try {
+    // Crear conexión
+    $conexion = new mysqli($host, $user, $pass, $db);
+    // Configurar codificación de caracteres
+    $conexion->set_charset("utf8mb4");
+} catch (Throwable $e) {
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+    }
+    echo json_encode([
+        "status" => "error",
+        "message" => "Error de conexión a la base de datos: " . $e->getMessage()
+    ]);
+    exit;
 }
 
 ?>

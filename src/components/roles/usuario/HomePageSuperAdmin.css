@@ -55,7 +55,7 @@ a {
     border: 1px solid #ccc;
     border-radius: 8px;
     gap: 10px;  
-    box-shadow: 0 0 0 100vmax #41414135;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
   }
   
   link {
@@ -78,7 +78,7 @@ a {
     border: 1px solid #ccc;
     border-radius: 8px;
     gap: 10px;
-    box-shadow: 0 0 0 100vmax #41414135;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
   }
 
   .menu-usuario .boton-cerrar {
@@ -232,7 +232,7 @@ comunidad GensTI
   flex: 1 1 25%;               /* 🔑 Cada cuadro ocupa 25% del ancho, pero puede ajustarse */
   max-width: 350px;            /* No se agranda demasiado */
   min-width: 250px;            /* No se hace tan pequeño */
-  transition: all 0.3s ease;   /* Transición suave al redimensionar */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;   /* Transición suave al redimensionar */
 }
 
 .imagen-cuadro-comunidad { 
@@ -322,7 +322,7 @@ novedades - carrusel
   justify-content: center;
   border-radius: 50%;  
   cursor: pointer;
-  transition: 0.3s;
+  transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   pointer-events: auto;
   opacity: 75%;
 }
@@ -356,14 +356,13 @@ novedades - carrusel
   height: 12px;
   border-radius: 50%;
   cursor: pointer;
-  transition: 0.3s;
+  transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   opacity: 75%;
 }
 
 .dot:hover {
   background-color: #4db1c3;
-  width: 14px;
-  height: 14px;
+  transform: scale(1.2);
 }
 
 .active {
@@ -435,7 +434,7 @@ footer
   text-decoration: none;
   color: #fdfdfd;
   font-size: 0.9rem;
-  transition: 0.3s;
+  transition: color 0.3s ease;
 }
 
 .footer-columna ul li a:hover {

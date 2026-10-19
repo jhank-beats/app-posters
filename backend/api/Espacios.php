@@ -1,50 +1,57 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token, X-Requested-With");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-header("Content-Type: application/json; charset=UTF-8");
+require_once __DIR__ . '/includes/Auth.php';
+cors_headers("GET, POST, PUT, DELETE, OPTIONS");
 
 // Incluir el archivo de conexión existente
 include_once '../Conexion.php';
 include_once __DIR__ . '/includes/Correos.php';
+include_once __DIR__ . '/includes/RondasHelper.php';
+include_once __DIR__ . '/includes/PostersHelper.php';
 
-// $conexion viene instanciado desde Conexion.php ($conexion = new mysqli(...))
 $method = $_SERVER['REQUEST_METHOD'];
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
 
 switch ($method) {
 
     // 1. OBTENER ESPACIOS Y PÓSTERES ASIGNADOS POR EVENTO
     case 'GET':
+        $authCurr = auth_current();
+        $id_evento_admin = auth_id_evento_admin($conexion, $authCurr);
         $id_evento = isset($_GET['id_evento']) ? intval($_GET['id_evento']) : null;
+        $carrera = isset($_GET['carrera']) ? trim((string)$_GET['carrera']) : null;
 
-        if (!$id_evento) {
-            // Si no se envía el id_evento, consultar el evento activo actual
-            $sqlActivo = "SELECT id_evento FROM eventos WHERE activo = 1 LIMIT 1";
-            $resActivo = $conexion->query($sqlActivo);
-            if ($resActivo && $rowActivo = $resActivo->fetch_assoc()) {
-                $id_evento = intval($rowActivo['id_evento']);
-            } else {
-                $id_evento = 1; // Evento por defecto si no hay ninguno activo
-            }
+        // Si quien consulta es un Admin (rol 3), SIEMPRE filtra por su evento asignado
+        if ($id_evento_admin !== null) {
+            $id_evento = $id_evento_admin;
+        } elseif (!$id_evento && $carrera !== null && $carrera !== '') {
+            $id_evento = ph_evento_activo($conexion, $carrera);
         }
 
-        // Consultar los espacios con la cantidad actual de pósteres ocupados
-        $sql = "SELECT e.*, 
-                       COUNT(p.id) AS ocupacion_actual 
-                FROM espacios_fisicos e 
-                LEFT JOIN cargar_posters p ON e.id_espacio = p.id_espacio AND p.activo = 1
-                WHERE e.id_evento = ?
-                GROUP BY e.id_espacio";
-
-        $stmt = $conexion->prepare($sql);
-        $stmt->bind_param("i", $id_evento);
-        $stmt->execute();
-        $resultado = $stmt->get_result();
+        if ($id_evento && $id_evento > 0) {
+            $sql = "SELECT e.*, ev.nombre_evento, ev.codigo_evento, COALESCE(ev.carrera, 'sistemas') AS carrera_evento,
+                           COUNT(p.id) AS ocupacion_actual 
+                    FROM espacios_fisicos e 
+                    LEFT JOIN eventos ev ON ev.id_evento = e.id_evento
+                    LEFT JOIN cargar_posters p ON e.id_espacio = p.id_espacio AND p.activo = 1
+                    WHERE e.id_evento = ?
+                    GROUP BY e.id_espacio
+                    ORDER BY e.id_espacio ASC";
+            $stmt = $conexion->prepare($sql);
+            $stmt->bind_param("i", $id_evento);
+            $stmt->execute();
+            $resultado = $stmt->get_result();
+        } else {
+            // Super Admin o visitante público sin filtro específico: muestra los espacios de todos los eventos activos
+            $sql = "SELECT e.*, ev.nombre_evento, ev.codigo_evento, COALESCE(ev.carrera, 'sistemas') AS carrera_evento,
+                           COUNT(p.id) AS ocupacion_actual 
+                    FROM espacios_fisicos e 
+                    INNER JOIN eventos ev ON ev.id_evento = e.id_evento AND ev.activo = 1
+                    LEFT JOIN cargar_posters p ON e.id_espacio = p.id_espacio AND p.activo = 1
+                    GROUP BY e.id_espacio
+                    ORDER BY ev.id_evento ASC, e.id_espacio ASC";
+            $stmt = $conexion->prepare($sql);
+            $stmt->execute();
+            $resultado = $stmt->get_result();
+        }
 
         $espacios = [];
         while ($row = $resultado->fetch_assoc()) {
@@ -57,6 +64,8 @@ switch ($method) {
 
     // 2. CREAR UN NUEVO ESPACIO FÍSICO
     case 'POST':
+        $auth = require_role([3, 4]);
+        $id_evento_admin = auth_id_evento_admin($conexion, $auth);
         $data = json_decode(file_get_contents("php://input"));
 
         if (!empty($data->nombre_espacio) && !empty($data->capacidad)) {
@@ -64,13 +73,13 @@ switch ($method) {
             $ubicacion = isset($data->ubicacion_detallada) ? trim($data->ubicacion_detallada) : '';
             $capacidad = intval($data->capacidad);
 
-            // Obtener evento activo actual automáticamente
-            $sqlActivo = "SELECT id_evento FROM eventos WHERE activo = 1 LIMIT 1";
-            $resActivo = $conexion->query($sqlActivo);
-            if ($resActivo && $rowActivo = $resActivo->fetch_assoc()) {
-                $id_evento = intval($rowActivo['id_evento']);
+            // Si es Admin (rol 3), se asigna obligatoriamente a su evento; Super Admin puede elegir el evento
+            if ($id_evento_admin !== null) {
+                $id_evento = $id_evento_admin;
             } else {
-                $id_evento = 1; // Evento por defecto
+                $id_evento = !empty($data->id_evento)
+                    ? intval($data->id_evento)
+                    : ph_evento_activo($conexion, $data->carrera ?? null);
             }
 
             $sql = "INSERT INTO espacios_fisicos (nombre_espacio, ubicacion_detallada, capacidad, id_evento) VALUES (?, ?, ?, ?)";
@@ -90,6 +99,7 @@ switch ($method) {
 
     // 3. ASIGNAR ESPACIO A UN PÓSTER (VALIDANDO CAPACIDAD MÁXIMA)
     case 'PUT':
+        $auth = require_role([3, 4]);
         $data = json_decode(file_get_contents("php://input"));
 
         if (isset($data->id_poster)) {
@@ -97,6 +107,17 @@ switch ($method) {
             $id_espacio = (isset($data->id_espacio) && $data->id_espacio !== null && $data->id_espacio !== "")
                 ? intval($data->id_espacio)
                 : null;
+
+            // Leer ubicación anterior ANTES de hacer el UPDATE
+            $ubiAntes = rh_ubicacion_poster($conexion, $id_poster);
+            $id_espacio_anterior = $ubiAntes['id_espacio'];
+            $espacio_anterior_txt = $ubiAntes['id_espacio'] !== null ? $ubiAntes['etiqueta'] : null;
+
+            // Si no hay cambio real de espacio, responder de inmediato sin reenviar correos
+            if ($id_espacio_anterior === $id_espacio) {
+                echo json_encode(["status" => "success", "message" => "La ubicación ya estaba asignada"]);
+                exit;
+            }
 
             // Si se va a asignar a un espacio (no desasignar)
             if ($id_espacio !== null) {
@@ -138,38 +159,131 @@ switch ($method) {
 
             if ($stmtAsignar->execute()) {
                 $stmtAsignar->close();
-                // Preparar datos del correo SIN enviarlo aún
-                $destEsp = null; $asuntoEsp = null; $mensajeEsp = null;
-                $sqlAut = "SELECT p.titulo, u.correo, CONCAT(u.nombres, ' ', u.apellidos) AS nombre_autor FROM cargar_posters p JOIN usuario u ON p.id_usuario = u.id WHERE p.id = ?";
+
+                // Leer nueva ubicación y número tras el UPDATE
+                $ubiDespues = rh_ubicacion_poster($conexion, $id_poster);
+                $espacio_nuevo_txt = $ubiDespues['id_espacio'] !== null ? $ubiDespues['etiqueta'] : 'sin ubicar';
+                $esCambioDeEspacio = ($id_espacio_anterior !== null && $id_espacio !== null && $id_espacio_anterior !== $id_espacio);
+
+                // Registrar en cambios_espacio_log cuando se reubica o se asigna espacio
+                if ($id_espacio !== null && $id_espacio_anterior !== $id_espacio) {
+                    rh_asegurar_tabla_cambios_espacio($conexion);
+                    $stmtLog = $conexion->prepare(
+                        "INSERT INTO cambios_espacio_log (id_poster, id_espacio_anterior, espacio_anterior, id_espacio_nuevo, espacio_nuevo, numero_nuevo)
+                         VALUES (?, ?, ?, ?, ?, ?)"
+                    );
+                    if ($stmtLog) {
+                        $numNuevo = $ubiDespues['numero'];
+                        $stmtLog->bind_param(
+                            "iisisi",
+                            $id_poster,
+                            $id_espacio_anterior,
+                            $espacio_anterior_txt,
+                            $id_espacio,
+                            $ubiDespues['nombre_espacio'],
+                            $numNuevo
+                        );
+                        $stmtLog->execute();
+                        $stmtLog->close();
+                    }
+                }
+
+                // Preparar lote de correos (autor + evaluadores asignados si aplica)
+                $loteCorreos = [];
+                $sqlAut = "SELECT p.titulo, u.correo, CONCAT(u.nombres, ' ', u.apellidos) AS nombre_autor
+                           FROM cargar_posters p
+                           JOIN usuario u ON p.id_usuario = u.id
+                           WHERE p.id = ?";
                 $stmtAut = $conexion->prepare($sqlAut);
                 $stmtAut->bind_param("i", $id_poster);
                 $stmtAut->execute();
                 $resAut = $stmtAut->get_result();
+                $tituloPoster = 'Póster';
+
                 if ($rowAut = $resAut->fetch_assoc()) {
-                    $destEsp = $rowAut['correo'];
+                    $tituloPoster = $rowAut['titulo'];
+                    $destAutor = $rowAut['correo'];
+                    $nomAutor = rh_escapar($rowAut['nombre_autor']);
+                    $titEsc = rh_escapar($tituloPoster);
+
                     if ($id_espacio === null) {
                         $asuntoEsp = "Espacio liberado para tu póster";
-                        $mensajeEsp = "<h2>Hola, {$rowAut['nombre_autor']}!</h2><p>Tu póster <strong>'{$rowAut['titulo']}'</strong> ha sido <strong>desasignado</strong> de su espacio físico. Quedamos atentos a una nueva asignación.</p>";
+                        $cuerpoAutor = "<p>Hola, <strong>{$nomAutor}</strong>.</p>"
+                            . "<p>Tu póster <strong>&laquo;{$titEsc}&raquo;</strong> fue desasignado de su espacio físico"
+                            . ($espacio_anterior_txt ? " (anteriormente en <strong>" . rh_escapar($espacio_anterior_txt) . "</strong>)" : "")
+                            . ". Te notificaremos cuando tenga una nueva ubicación.</p>";
+                    } elseif ($esCambioDeEspacio) {
+                        $asuntoEsp = "Cambio de espacio físico para tu póster";
+                        $cuerpoAutor = "<p>Hola, <strong>{$nomAutor}</strong>.</p>"
+                            . "<p>Tu póster <strong>&laquo;{$titEsc}&raquo;</strong> cambió del espacio <strong>"
+                            . rh_escapar($espacio_anterior_txt) . "</strong> al espacio <strong>"
+                            . rh_escapar($espacio_nuevo_txt) . "</strong>.</p>";
                     } else {
-                        $nomEsp = "espacio asignado";
-                        $ubiEsp = "";
-                        $sqlEsp = "SELECT nombre_espacio, ubicacion_detallada FROM espacios_fisicos WHERE id_espacio = ?";
-                        $stmtEsp = $conexion->prepare($sqlEsp);
-                        $stmtEsp->bind_param("i", $id_espacio);
-                        $stmtEsp->execute();
-                        $resEsp = $stmtEsp->get_result();
-                        if ($rowEsp = $resEsp->fetch_assoc()) {
-                            $nomEsp = $rowEsp['nombre_espacio'];
-                            $ubiEsp = $rowEsp['ubicacion_detallada'];
-                        }
-                        $stmtEsp->close();
                         $asuntoEsp = "Espacio asignado a tu póster";
-                        $mensajeEsp = "<h2>Hola, {$rowAut['nombre_autor']}!</h2><p>Tu póster <strong>'{$rowAut['titulo']}'</strong> ha sido asignado al espacio <strong>'{$nomEsp}'</strong>" . ($ubiEsp !== "" ? " (Ubicación: {$ubiEsp})" : "") . ".</p>";
+                        $cuerpoAutor = "<p>Hola, <strong>{$nomAutor}</strong>.</p>"
+                            . "<p>Tu póster <strong>&laquo;{$titEsc}&raquo;</strong> fue ubicado en <strong>"
+                            . rh_escapar($espacio_nuevo_txt) . "</strong>.</p>";
+                    }
+
+                    if (!empty($destAutor)) {
+                        $loteCorreos[] = [
+                            'correo' => $destAutor,
+                            'asunto' => $asuntoEsp,
+                            'cuerpo' => rh_plantilla_correo($asuntoEsp, $cuerpoAutor),
+                        ];
                     }
                 }
                 $stmtAut->close();
-                // Responder primero, enviar correo después (no bloquea la UI)
-                responderJsonYNotificar(["status" => "success", "message" => "Ubicación asignada correctamente"], $destEsp, $asuntoEsp, $mensajeEsp);
+
+                // Notificar a los evaluadores asignados cuando el póster cambia o recibe un espacio físico
+                if ($id_espacio !== null) {
+                    $sqlEvals = "SELECT DISTINCT u.correo, CONCAT(u.nombres, ' ', u.apellidos) AS nombre_eval
+                                 FROM asignaciones_evaluadores a
+                                 JOIN usuario u ON u.id = a.id_evaluador
+                                 WHERE a.id_poster = ? AND u.activo = 1";
+                    $stmtEv = $conexion->prepare($sqlEvals);
+                    if ($stmtEv) {
+                        $stmtEv->bind_param("i", $id_poster);
+                        $stmtEv->execute();
+                        $resEv = $stmtEv->get_result();
+                        $titEsc = rh_escapar($tituloPoster);
+
+                        while ($rowEv = $resEv->fetch_assoc()) {
+                            if (empty($rowEv['correo'])) continue;
+                            $nomEval = rh_escapar($rowEv['nombre_eval']);
+                            if ($esCambioDeEspacio) {
+                                $asuntoEv = "Cambio de ubicación de póster asignado";
+                                $cuerpoEv = "<p>Hola, <strong>{$nomEval}</strong>.</p>"
+                                    . "<p>El póster <strong>&laquo;{$titEsc}&raquo;</strong> que tienes asignado para evaluar cambió del espacio <strong>"
+                                    . rh_escapar($espacio_anterior_txt) . "</strong> al espacio <strong>"
+                                    . rh_escapar($espacio_nuevo_txt) . "</strong>.</p>";
+                            } else {
+                                $asuntoEv = "Ubicación asignada a póster por evaluar";
+                                $cuerpoEv = "<p>Hola, <strong>{$nomEval}</strong>.</p>"
+                                    . "<p>El póster <strong>&laquo;{$titEsc}&raquo;</strong> que tienes asignado para evaluar fue ubicado en <strong>"
+                                    . rh_escapar($espacio_nuevo_txt) . "</strong>.</p>";
+                            }
+                            $loteCorreos[] = [
+                                'correo' => $rowEv['correo'],
+                                'asunto' => $asuntoEv,
+                                'cuerpo' => rh_plantilla_correo($asuntoEv, $cuerpoEv),
+                            ];
+                        }
+                        $stmtEv->close();
+                    }
+                }
+
+                // Responder primero, enviar lote de correos después (no bloquea la UI)
+                responderJsonYNotificarLote(
+                    [
+                        "status" => "success",
+                        "message" => $esCambioDeEspacio
+                            ? "Ubicación actualizada a {$espacio_nuevo_txt}"
+                            : "Ubicación asignada correctamente",
+                        "ubicacion" => $ubiDespues,
+                    ],
+                    $loteCorreos
+                );
                 exit;
             } else {
                 $errMsg = "Error al actualizar la ubicación: " . $conexion->error;

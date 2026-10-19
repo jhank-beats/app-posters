@@ -55,19 +55,20 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
 
     const exportarExcel = () => {
         let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-        csvContent += "Espacio,Puesto / N°,Titulo del Poster,Autores,Categoria,Autor / Usuario\n";
+        csvContent += "Espacio,Puesto / N°,Titulo del Poster,Evento,Autores,Categoria,Autor / Usuario\n";
         espaciosConPosters.forEach(espacio => {
             if (espacio.postersAsignados.length === 0) {
-                const fila = `"${espacio.nombre_espacio}","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar"\n`;
+                const fila = `"${espacio.nombre_espacio}","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar"\n`;
                 csvContent += fila;
             } else {
                 espacio.postersAsignados.forEach((poster, index) => {
                     const puesto = poster.ubicacion_detallada || (index + 1);
                     const titulo = `"${(poster.titulo || "").replace(/"/g, '""')}"`;
+                    const evento = `"${(poster.nombre_evento || "Sin evento").replace(/"/g, '""')}"`;
                     const autores = `"${(poster.autores || "").replace(/"/g, '""')}"`;
                     const categoria = `"${(poster.categoria || "").replace(/"/g, '""')}"`;
                     const usuario = `"${(poster.nombre_usuario || "Desconocido").replace(/"/g, '""')}"`;
-                    const fila = `"${espacio.nombre_espacio}","${puesto}",${titulo},${autores},${categoria},${usuario}\n`;
+                    const fila = `"${espacio.nombre_espacio}","${puesto}",${titulo},${evento},${autores},${categoria},${usuario}\n`;
                     csvContent += fila;
                 });
             }
@@ -99,9 +100,11 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
                     .tarjeta h3 { margin:0; color:#132740; font-size:1rem; display:flex; align-items:center; gap:0.5rem; }
                     .badge { background:#f5f7f8; padding:4px 10px; border-radius:999px; font-size:0.8rem; font-weight:700; }
                     table { width:100%; border-collapse:collapse; margin-top:0.75rem; }
-                    thead th { background:#132740; color:#fff; padding:0.6rem 0.8rem; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.06em; text-align:left; }
+                    thead th { background:#132740; color:#fff; padding:0.6rem 0.8rem; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.06em; text-align:center; }
                     tbody td { padding:0.6rem 0.8rem; font-size:0.85rem; border-bottom:1px solid #eef2f5; }
                     .badge-rol { background: rgba(128,186,39,0.1); color:#3a6b0a; padding:3px 8px; border-radius:999px; font-size:0.75rem; font-weight:700; }
+                    .badge-ubicacion-espacio { display:inline-flex; align-items:center; gap:0.35rem; padding:4px 10px; border-radius:999px; background:rgba(0,172,201,0.12); color:#132740; font-weight:600; font-size:0.82rem; }
+                    .badge-ubicacion-num { background:#132740; color:#cad400; padding:1px 7px; border-radius:999px; font-size:0.76rem; font-weight:800; }
                     @media print {
                         body { padding: 0; }
                         .no-print { display:none !important; }
@@ -125,7 +128,7 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
             {cerrarTabla && (<button className="cerrar-tabla no-print" onClick={cerrarTabla} aria-label="Cerrar">X</button>)}
             <span className="seccion-eyebrow">Distribución física</span>
             <h2>Listado de Pósters por Ubicación Física</h2>
-            <p style={{ color: '#5f5e5e', textAlign: 'center', margin: '0.5rem 0 1.5rem' }}>Consulta ocupación por salón y exporta el listado</p>
+            <p style={{ color: '#5f5e5e', textAlign: 'center', margin: '0.5rem 0 1.5rem' }}>Consulta la ocupación por espacio físico y exporta el listado</p>
 
             <div className="no-print" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
                 <button onClick={exportarExcel} className="boton-primario" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}><FaFileExcel /> Descargar Excel</button>
@@ -152,8 +155,9 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>Puesto / N°</th>
+                                                <th>Espacio / N°</th>
                                                 <th>Título del Póster</th>
+                                                <th>Evento</th>
                                                 <th>Autores</th>
                                                 <th>Categoría</th>
                                                 <th>Autor / Usuario</th>
@@ -162,8 +166,32 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
                                         <tbody>
                                             {espacio.postersAsignados.map((poster, index) => (
                                                 <tr key={`${espacio.id_espacio}-${poster.id}-${index}`}>
-                                                    <td style={{ fontWeight: 700, color: '#00acc9' }}>#{poster.ubicacion_detallada || (index + 1)}</td>
+                                                    <td>
+                                                        {poster.nombre_espacio ? (
+                                                            <span className="badge-ubicacion-espacio">
+                                                                <span aria-hidden="true">📍</span>
+                                                                <span>{poster.nombre_espacio}</span>
+                                                                <strong className="badge-ubicacion-num">
+                                                                    #{poster.ubicacion_detallada || (index + 1)}
+                                                                </strong>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="subtexto-celda">Sin asignar</span>
+                                                        )}
+                                                    </td>
                                                     <td style={{ fontWeight: 600 }}>{poster.titulo}</td>
+                                                    <td>
+                                                        {poster.nombre_evento ? (
+                                                            <span className="badge-evento">
+                                                                <span className="badge-evento-texto">
+                                                                    {poster.nombre_evento}
+                                                                    {poster.codigo_evento && <small>{poster.codigo_evento}</small>}
+                                                                </span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="sin-evento">Sin evento</span>
+                                                        )}
+                                                    </td>
                                                     <td>{poster.autores}</td>
                                                     <td><span className="badge-rol rol-2">{poster.categoria}</span></td>
                                                     <td>{poster.nombre_usuario || 'Desconocido'}</td>

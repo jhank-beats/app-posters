@@ -14,7 +14,9 @@
 
   background-color: var(--fondo);
   min-height: 100vh;
-  overflow-x: clip;
+  /* Sin overflow-x aquí: un ancestro con overflow distinto de visible impide
+     que Firefox componga el header sticky en GPU y el scroll se traba.
+     El recorte horizontal vive en .contenido-home. */
 }
 
 
@@ -22,6 +24,9 @@
    Gancho para el rediseño por etapas; scroll-margin compensa el header fijo. */
 .contenido-home {
   display: block;
+  /* Recorte horizontal aquí (hermano del header, no ancestro):
+     no rompe el sticky en Firefox y contiene los adornos absolutos. */
+  overflow-x: clip;
 }
 
 .contenedor-pagina .seccion-home {
@@ -47,8 +52,11 @@
 }
 
 .header-contenedor {
+  position: relative;
+  z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /* Logo + navegación a la izquierda; acciones a la derecha */
+  grid-template-columns: auto auto minmax(0, 1fr);
   align-items: center;
   gap: 1rem;
 
@@ -87,14 +95,15 @@
   border-radius: 8px;
 }
 
-/* Navegación central (centrada respecto al header) */
+/* Navegación a la izquierda, junto al logo */
 .encabezado .menu-nav {
   display: flex;
   align-items: center;
   gap: 0.25rem;
 
   position: static;
-  justify-self: center;
+  justify-self: start;
+  justify-content: flex-start;
 }
 
 .encabezado nav {
@@ -271,9 +280,7 @@
 
     gap: 6px;
 
-    box-shadow:
-      0 14px 32px rgba(0, 0, 0, 0.28),
-      0 0 0 100vmax rgba(19, 39, 64, 0.4);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
   }
 
   .encabezado .menu-enlace {
@@ -293,6 +300,25 @@
 
     background-color: rgba(255, 255, 255, 0.08);
     border-left-color: #00acc9;
+  }
+
+  /* Botón cerrar del menú hamburguesa: arriba a la derecha del panel */
+  .encabezado .menu-nav .boton-cerrar {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.45rem;
+    font-size: 20px;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+    color: #ffffff;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .encabezado .menu-nav .boton-cerrar:hover {
+    color: #00acc9;
   }
 
   .menu-nav button:hover {
@@ -321,9 +347,7 @@
 
     gap: 10px;
 
-    box-shadow:
-      0 14px 32px rgba(0, 0, 0, 0.28),
-      0 0 0 100vmax rgba(19, 39, 64, 0.4);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
   }
 
 
@@ -352,6 +376,27 @@
   .encabezado .menu-nav.activo,
   .encabezado .menu-usuario.activo {
     display: flex;
+  }
+
+  /* Overlay real para los menús móviles: atenúa la página y cierra al pulsar.
+     Reemplaza al truco `box-shadow: 0 0 0 100vmax`, que obliga a Firefox a
+     rasterizar un área gigantesca en cada frame. El contenido del header
+     (.header-contenedor, z-index 2) queda por encima del overlay. */
+  .menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background-color: rgba(19, 39, 64, 0.4);
+    box-shadow: none;
+    cursor: default;
+  }
+
+  .menu-overlay:hover {
+    background-color: rgba(19, 39, 64, 0.4);
+    border-color: transparent;
   }
 
 
@@ -1663,29 +1708,21 @@
 }
 
 
-/* Eyebrow del FAQ (mismo lenguaje que el resto de secciones) */
-.faq-eyebrow {
-  display: block;
+/* Encabezado: eyebrow centrado SOBRE el título */
+.faq-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
-  margin-bottom: 0.85rem;
-}
-
-/* Título */
-.faq-titulo {
   margin-bottom: 2rem;
-
-  font-size: 2.5rem;
-  font-weight: 700;
-
-  text-align: center;
-
-  color: #132740;
 }
 
 /* Eyebrow del FAQ (mismo lenguaje que el resto de secciones) */
-.faq-eyebrow {
+.faq-titulo .faq-eyebrow,
+.faq-header .faq-eyebrow {
   display: block;
 
+  width: 100%;
   margin-bottom: 0.85rem;
 
   font-size: 0.75rem;
@@ -1695,6 +1732,18 @@
   text-align: center;
 
   color: #00acc9;
+}
+
+/* Título */
+.faq-titulo {
+  margin: 0;
+
+  font-size: 2.5rem;
+  font-weight: 700;
+
+  text-align: center;
+
+  color: #132740;
 }
 
 
@@ -1740,7 +1789,7 @@
 
   cursor: pointer;
 
-  transition: all 0.4s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 
@@ -1774,41 +1823,37 @@
 }
 
 
-/* Contenedor de respuesta */
+/* Contenedor de respuesta: acordeón con grid 0fr->1fr (sin max-height,
+   que obliga a recalcular todo el layout en cada frame en Firefox). */
 .faq-respuesta-wrapper {
-  max-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
 
-  overflow: hidden;
-
-  transition:
-    max-height 0.45s ease,
-    padding 0.35s ease;
+  transition: grid-template-rows 0.35s ease;
 }
 
 
 /* Respuesta abierta */
 .faq-item[data-state="open"] .faq-respuesta-wrapper {
-  max-height: 800px;
-
-  padding-bottom: 1.5rem;
+  grid-template-rows: 1fr;
 }
 
 
-/* Texto de respuesta */
+/* Texto de respuesta (es el item del grid: min-height 0 + overflow
+   permiten colapsar la fila a 0fr; el padding vertical vive en el
+   hijo interno porque el padding del item no colapsa). */
 .faq-respuesta {
-  padding: 0 2.5rem;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.faq-respuesta-texto {
+  margin: 0;
+  padding: 0 2.5rem 1.5rem;
 
   color: #5f5e5e;
 
   line-height: 1.7;
-
-  transition: padding 0.35s ease;
-}
-
-
-/* Ajuste al abrir */
-.faq-item[data-state="open"] .faq-respuesta {
-  padding: 0 1.5rem;
 }
 
 
@@ -1833,10 +1878,14 @@
   }
 
 
-  .faq-item[data-state="open"] .faq-pregunta,
-  .faq-item[data-state="open"] .faq-respuesta {
+  .faq-item[data-state="open"] .faq-pregunta {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
+  }
+
+  .faq-respuesta-texto {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 
@@ -1963,9 +2012,11 @@
   text-align: left;
 }
 
-/* El header de la Homepage es el único con .header-contenedor;
-   roles.css lo fuerza a flex con márgenes y la Homepage lo recupera */
-.encabezado:has(> .header-contenedor) {
+/* Los headers con .header-contenedor usan layout propio: se les quita el
+   display:flex con márgenes que impone HomePageSuperAdmin.css.
+   (Clase explícita en vez de :has(), que en Firefox fuerza recálculos
+   de estilo costosos durante el scroll.) */
+.encabezado.encabezado-app {
   display: block;
 
   margin-top: 0;

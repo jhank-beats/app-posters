@@ -5,13 +5,39 @@ const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const GestionEspaciosModal = ({ cerrarModal }) => {
     const [espacios, setEspacios] = useState([]);
+    const [eventosActivos, setEventosActivos] = useState([]);
+    const [idEventoSeleccionado, setIdEventoSeleccionado] = useState('');
     const [nombreEspacio, setNombreEspacio] = useState('');
     const [capacidad, setCapacidad] = useState('');
     const [mensaje, setMensaje] = useState(null);
 
+    const rolActual = parseInt(localStorage.getItem("id_rol") || "0", 10);
+    const esSuperAdmin = rolActual === 4;
+
     useEffect(() => {
         cargarEspacios();
+        if (esSuperAdmin) {
+            cargarEventosActivos();
+        }
     }, []);
+
+    const cargarEventosActivos = async () => {
+        try {
+            const res = await fetch(`${SERVER_URL}/api/Eventos.php?activo=1`);
+            const data = await res.json();
+            if (data.status === 'success' || data.success) {
+                const lista = Array.isArray(data.eventos_activos) && data.eventos_activos.length > 0
+                    ? data.eventos_activos
+                    : (data.data ? [data.data] : []);
+                setEventosActivos(lista);
+                if (lista.length > 0 && !idEventoSeleccionado) {
+                    setIdEventoSeleccionado(String(lista[0].id_evento));
+                }
+            }
+        } catch (error) {
+            console.error("Error al cargar eventos activos:", error);
+        }
+    };
 
     const cargarEspacios = async () => {
         try {
@@ -38,6 +64,9 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
                 capacidad: parseInt(capacidad, 10),
                 ubicacion_detallada: ""
             };
+            if (esSuperAdmin && idEventoSeleccionado) {
+                cuerpoPeticion.id_evento = parseInt(idEventoSeleccionado, 10);
+            }
             const res = await fetch(`${SERVER_URL}/api/Espacios.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -83,6 +112,22 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
                 <div className="grid-gestion-espacios">
                     <form onSubmit={crearEspacio} className="form-crear-espacio">
                         <h4>Crear Nuevo Salón / Pabellón / Estante</h4>
+                        {esSuperAdmin && eventosActivos.length > 0 && (
+                            <div className="campo-formulario">
+                                <label>Evento del Espacio</label>
+                                <select
+                                    value={idEventoSeleccionado}
+                                    onChange={(e) => setIdEventoSeleccionado(e.target.value)}
+                                    required
+                                >
+                                    {eventosActivos.map(ev => (
+                                        <option key={ev.id_evento} value={ev.id_evento}>
+                                            🗓️ {ev.nombre_evento} ({ev.codigo_evento})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <div className="campo-formulario">
                             <label>Nombre del Espacio</label>
                             <input type="text" value={nombreEspacio} onChange={(e) => setNombreEspacio(e.target.value)} required placeholder="Ej. Salón 101 - Pabellón A" />
@@ -101,17 +146,19 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
                                 <thead>
                                     <tr>
                                         <th>Nombre</th>
+                                        {esSuperAdmin && <th>Evento</th>}
                                         <th>Capacidad</th>
                                         <th>Ocupados</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {espacios.length === 0 ? (
-                                        <tr><td colSpan="3" style={{ textAlign: 'center', padding: '15px', color: '#666' }}>No hay espacios registrados</td></tr>
+                                        <tr><td colSpan={esSuperAdmin ? "4" : "3"} style={{ textAlign: 'center', padding: '15px', color: '#666' }}>No hay espacios registrados</td></tr>
                                     ) : (
                                         espacios.map(esp => (
                                             <tr key={esp.id_espacio}>
                                                 <td>{esp.nombre_espacio}</td>
+                                                {esSuperAdmin && <td>{esp.nombre_evento || `Evento #${esp.id_evento}`}</td>}
                                                 <td>{esp.capacidad}</td>
                                                 <td>{esp.ocupacion_actual !== undefined ? esp.ocupacion_actual : (esp.ocupados || 0)}</td>
                                             </tr>

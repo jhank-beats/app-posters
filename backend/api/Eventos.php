@@ -1,17 +1,9 @@
 <?php
-// 1. Configuración de encabezados CORS y tipo de respuesta
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token, X-Requested-With");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Content-Type: application/json; charset=UTF-8");
+require_once __DIR__ . '/includes/Auth.php';
+cors_headers("GET, POST, PUT, DELETE, OPTIONS");
 
-// 2. Responder inmediatamente a las peticiones pre-flight OPTIONS del navegador
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-include_once '../Conexion.php'; // Usa la conexión $conexion heredada de Conexion.php
+include_once '../Conexion.php';
+include_once __DIR__ . '/includes/PostersHelper.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -21,124 +13,265 @@ switch ($method) {
     // 1. OBTENER EVENTOS (GET)
     // -------------------------------------------------------------
     case 'GET':
+        $carreraFiltro = isset($_GET['carrera']) && trim((string)$_GET['carrera']) !== ''
+            ? ph_normalizar_carrera($_GET['carrera'])
+            : null;
+
         if (isset($_GET['activo']) && $_GET['activo'] == '1') {
-            // Devuelve únicamente el evento actualmente activo
-            $sql = "SELECT * FROM eventos WHERE activo = 1 LIMIT 1";
-            $res = $conexion->query($sql);
-            $evento = $res ? $res->fetch_assoc() : null;
-            echo json_encode(["status" => "success", "data" => $evento]);
+            $resActivos = $conexion->query("SELECT * FROM eventos WHERE activo = 1 ORDER BY id_evento ASC");
+            $eventosActivos = [];
+            $porCarrera = ['sistemas' => null, 'civil' => null, 'ambas' => null];
+            if ($resActivos) {
+                while ($row = $resActivos->fetch_assoc()) {
+                    $cEv = ph_normalizar_carrera($row['carrera'] ?? 'sistemas');
+                    $row['carrera'] = $cEv;
+                    $row['carrera_etiqueta'] = ph_etiqueta_carrera($cEv);
+                    $eventosActivos[] = $row;
+                    if ($porCarrera[$cEv] === null) {
+                        $porCarrera[$cEv] = $row;
+                    }
+                    if ($cEv === 'ambas') {
+                        if ($porCarrera['sistemas'] === null) $porCarrera['sistemas'] = $row;
+                        if ($porCarrera['civil'] === null) $porCarrera['civil'] = $row;
+                    }
+                }
+            }
+
+            $eventoPrincipal = null;
+            if ($carreraFiltro && isset($porCarrera[$carreraFiltro]) && $porCarrera[$carreraFiltro] !== null) {
+                $eventoPrincipal = $porCarrera[$carreraFiltro];
+            } else {
+                $curr = auth_current();
+                $idEvAdmin = auth_id_evento_admin($conexion, $curr);
+                if ($idEvAdmin !== null) {
+                    foreach ($eventosActivos as $evAct) {
+                        if (intval($evAct['id_evento']) === $idEvAdmin) {
+                            $eventoPrincipal = $evAct;
+                            break;
+                        }
+                    }
+                    if (!$eventoPrincipal) {
+                        $stmtEvAdm = $conexion->prepare("SELECT * FROM eventos WHERE id_evento = ? LIMIT 1");
+                        if ($stmtEvAdm) {
+                            $stmtEvAdm->bind_param("i", $idEvAdmin);
+                            $stmtEvAdm->execute();
+                            if ($rowAdm = $stmtEvAdm->get_result()->fetch_assoc()) {
+                                $cEv = ph_normalizar_carrera($rowAdm['carrera'] ?? 'sistemas');
+                                $rowAdm['carrera'] = $cEv;
+                                $rowAdm['carrera_etiqueta'] = ph_etiqueta_carrera($cEv);
+                                $eventoPrincipal = $rowAdm;
+                            }
+                            $stmtEvAdm->close();
+                        }
+                    }
+                }
+                if (!$eventoPrincipal) {
+                    $eventoPrincipal = $eventosActivos[0] ?? null;
+                }
+            }
+
+            echo json_encode([
+                "status" => "success",
+                "success" => true,
+                "data" => $eventoPrincipal,
+                "eventos_activos" => $eventosActivos,
+                "por_carrera" => $porCarrera,
+            ]);
         } else {
-            // Devuelve TODOS los eventos (activos de primero, luego por ID descendente)
-            $sql = "SELECT * FROM eventos ORDER BY activo DESC, id_evento DESC";
-            $res = $conexion->query($sql);
+            if ($carreraFiltro && in_array($carreraFiltro, ['sistemas', 'civil'], true)) {
+                $stmt = $conexion->prepare("SELECT * FROM eventos WHERE carrera = ? OR carrera = 'ambas' ORDER BY activo DESC, id_evento DESC");
+                $stmt->bind_param("s", $carreraFiltro);
+                $stmt->execute();
+                $res = $stmt->get_result();
+            } else {
+                $res = $conexion->query("SELECT * FROM eventos ORDER BY activo DESC, id_evento DESC");
+            }
             $eventos = [];
             if ($res) {
                 while ($row = $res->fetch_assoc()) {
+                    $cEv = ph_normalizar_carrera($row['carrera'] ?? 'sistemas');
+                    $row['carrera'] = $cEv;
+                    $row['carrera_etiqueta'] = ph_etiqueta_carrera($cEv);
                     $eventos[] = $row;
                 }
             }
-            echo json_encode(["status" => "success", "data" => $eventos]);
+            if (isset($stmt)) $stmt->close();
+            echo json_encode([
+                "status" => "success",
+                "success" => true,
+                "data" => $eventos,
+            ]);
         }
         break;
 
     // -------------------------------------------------------------
-    // 2. CREAR UN NUEVO EVENTO (POST)
+    // 2. CREAR UN NUEVO EVENTO (POST) — Solo Super Admin (rol 4)
     // -------------------------------------------------------------
     case 'POST':
+        $auth = require_role([4]);
         $data = json_decode(file_get_contents("php://input"));
 
         if (!$data) {
-            echo json_encode(["status" => "error", "message" => "Cuerpo de la petición JSON inválido."]);
-            exit;
-        }
-
-        // Validación de Rol
-        if (!isset($data->rol_usuario) || strtolower($data->rol_usuario) !== 'superadmin') {
-            echo json_encode(["status" => "error", "message" => "Acceso denegado. Solo el Superadministrador puede crear eventos."]);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Cuerpo de la petición JSON inválido."]);
             exit;
         }
 
         if (!empty($data->nombre_evento) && !empty($data->codigo_evento)) {
             $nombre = trim($data->nombre_evento);
             $codigo = trim($data->codigo_evento);
-            $inicio = !empty($data->fecha_inicio) ? $data->fecha_inicio : NULL;
-            $fin = !empty($data->fecha_fin) ? $data->fecha_fin : NULL;
+            $inicio = !empty($data->fecha_inicio) ? $data->fecha_inicio : null;
+            $fin = !empty($data->fecha_fin) ? $data->fecha_fin : null;
+            $carrera = !empty($data->carrera) ? ph_normalizar_carrera($data->carrera) : 'sistemas';
 
-            $sql = "INSERT INTO eventos (nombre_evento, codigo_evento, fecha_inicio, fecha_fin, activo) VALUES (?, ?, ?, ?, 0)";
+            $sql = "INSERT INTO eventos (nombre_evento, codigo_evento, carrera, fecha_inicio, fecha_fin, activo) VALUES (?, ?, ?, ?, ?, 0)";
             $stmt = $conexion->prepare($sql);
-            $stmt->bind_param("ssss", $nombre, $codigo, $inicio, $fin);
+            $stmt->bind_param("sssss", $nombre, $codigo, $carrera, $inicio, $fin);
 
             if ($stmt->execute()) {
-                echo json_encode(["status" => "success", "message" => "Evento creado correctamente"]);
+                $idNuevoEv = intval($conexion->insert_id);
+                $stmt->close();
+
+                // Crear Ronda 1 automáticamente para el nuevo evento con criterios base
+                $nombreRonda1 = 'Ronda 1 · Evaluación inicial';
+                $stmtR = $conexion->prepare("INSERT INTO rondas (id_evento, numero, nombre, estado, fecha_inicio, cupos_seleccion, premios, creado_por) VALUES (?, 1, ?, 'abierta', NOW(), 5, 3, ?)");
+                if ($stmtR) {
+                    $idCreador = intval($auth['id']);
+                    $stmtR->bind_param("isi", $idNuevoEv, $nombreRonda1, $idCreador);
+                    if ($stmtR->execute()) {
+                        $idRondaNueva = intval($conexion->insert_id);
+                        rh_copiar_criterios($conexion, 1, $idRondaNueva);
+                    }
+                    $stmtR->close();
+                }
+
+                echo json_encode(["status" => "success", "success" => true, "message" => "Evento creado correctamente"]);
             } else {
-                echo json_encode(["status" => "error", "message" => "Error al crear evento: " . $conexion->error]);
+                $err = $conexion->error;
+                $stmt->close();
+                echo json_encode(["status" => "error", "success" => false, "message" => "Error al crear evento: " . $err]);
             }
-            $stmt->close();
         } else {
-            echo json_encode(["status" => "error", "message" => "Nombre y código del evento son obligatorios."]);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Nombre y código del evento son obligatorios."]);
         }
         break;
 
     // -------------------------------------------------------------
-    // 3. EDITAR / ACTIVAR EVENTO (PUT)
+    // 3. EDITAR / ACTIVAR EVENTO (PUT) — Solo Super Admin (rol 4)
     // -------------------------------------------------------------
     case 'PUT':
+        $auth = require_role([4]);
         $data = json_decode(file_get_contents("php://input"));
 
         if (!$data) {
-            echo json_encode(["status" => "error", "message" => "Cuerpo de la petición JSON inválido."]);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Cuerpo de la petición JSON inválido."]);
             exit;
         }
 
-        // Validación de Rol
-        if (!isset($data->rol_usuario) || strtolower($data->rol_usuario) !== 'superadmin') {
-            echo json_encode(["status" => "error", "message" => "Acceso denegado. Solo el Superadministrador puede modificar eventos."]);
-            exit;
-        }
-
-        // CASO A: Activar un evento específico (y desactivar los demás)
+        // CASO A: Activar un evento específico (desactivando solo los de su misma carrera)
         if (isset($data->accion) && $data->accion === 'activar' && !empty($data->id_evento)) {
             $id_evento = intval($data->id_evento);
+
+            $stmtEv = $conexion->prepare("SELECT carrera FROM eventos WHERE id_evento = ? LIMIT 1");
+            $stmtEv->bind_param("i", $id_evento);
+            $stmtEv->execute();
+            $filaEv = $stmtEv->get_result()->fetch_assoc();
+            $stmtEv->close();
+
+            if (!$filaEv) {
+                echo json_encode(["status" => "error", "success" => false, "message" => "El evento indicado no existe."]);
+                exit;
+            }
+            $carreraEv = ph_normalizar_carrera($filaEv['carrera'] ?? 'sistemas');
+
             $conexion->begin_transaction();
             try {
-                $conexion->query("UPDATE eventos SET activo = 0");
-                $stmt = $conexion->prepare("UPDATE eventos SET activo = 1 WHERE id_evento = ?");
-                $stmt->bind_param("i", $id_evento);
-                $stmt->execute();
+                // Desactivar solo eventos de la misma carrera (así Sistemas y Civil pueden tener 1 evento activo cada una)
+                $stmtDes = $conexion->prepare("UPDATE eventos SET activo = 0 WHERE carrera = ?");
+                $stmtDes->bind_param("s", $carreraEv);
+                $stmtDes->execute();
+                $stmtDes->close();
+
+                $stmtAct = $conexion->prepare("UPDATE eventos SET activo = 1 WHERE id_evento = ?");
+                $stmtAct->bind_param("i", $id_evento);
+                $stmtAct->execute();
+                $stmtAct->close();
+
+                // Actualizar automáticamente a los usuarios de esa carrera para que apunten al nuevo evento activo
+                if ($carreraEv === 'civil') {
+                    $stmtUsrEv = $conexion->prepare("UPDATE usuario SET id_evento = ? WHERE id_rol IN (1, 2, 3) AND LOWER(carrera) LIKE '%civil%'");
+                    if ($stmtUsrEv) {
+                        $stmtUsrEv->bind_param("i", $id_evento);
+                        $stmtUsrEv->execute();
+                        $stmtUsrEv->close();
+                    }
+                } elseif ($carreraEv === 'sistemas') {
+                    $stmtUsrEv = $conexion->prepare("UPDATE usuario SET id_evento = ? WHERE id_rol IN (1, 2, 3) AND LOWER(carrera) NOT LIKE '%civil%'");
+                    if ($stmtUsrEv) {
+                        $stmtUsrEv->bind_param("i", $id_evento);
+                        $stmtUsrEv->execute();
+                        $stmtUsrEv->close();
+                    }
+                }
+
+                // Asegurar que el evento tenga al menos Ronda 1 creada
+                $stmtChkR = $conexion->prepare("SELECT id_ronda FROM rondas WHERE id_evento = ? LIMIT 1");
+                $stmtChkR->bind_param("i", $id_evento);
+                $stmtChkR->execute();
+                $tieneRonda = (bool)$stmtChkR->get_result()->fetch_row();
+                $stmtChkR->close();
+
+                if (!$tieneRonda) {
+                    $idCreador = intval($auth['id']);
+                    $stmtR1 = $conexion->prepare("INSERT INTO rondas (id_evento, numero, nombre, estado, fecha_inicio, cupos_seleccion, premios, creado_por) VALUES (?, 1, 'Ronda 1 · Evaluación inicial', 'abierta', NOW(), 5, 3, ?)");
+                    if ($stmtR1) {
+                        $stmtR1->bind_param("ii", $id_evento, $idCreador);
+                        if ($stmtR1->execute()) {
+                            $idRondaNueva = intval($conexion->insert_id);
+                            rh_copiar_criterios($conexion, 1, $idRondaNueva);
+                        }
+                        $stmtR1->close();
+                    }
+                }
+
                 $conexion->commit();
-                echo json_encode(["status" => "success", "message" => "Evento activado correctamente"]);
+                echo json_encode([
+                    "status" => "success",
+                    "success" => true,
+                    "message" => "Evento activado correctamente para " . ph_etiqueta_carrera($carreraEv),
+                ]);
             } catch (Exception $e) {
                 $conexion->rollback();
-                echo json_encode(["status" => "error", "message" => "Error al activar el evento: " . $e->getMessage()]);
+                echo json_encode(["status" => "error", "success" => false, "message" => "Error al activar el evento: " . $e->getMessage()]);
             }
             exit;
         }
 
-        // CASO B: Editar datos de un evento (Nombre, Código, Fechas)
+        // CASO B: Editar datos de un evento (Nombre, Código, Carrera, Fechas)
         if (!empty($data->id_evento) && !empty($data->nombre_evento) && !empty($data->codigo_evento)) {
             $id_evento = intval($data->id_evento);
             $nombre = trim($data->nombre_evento);
             $codigo = trim($data->codigo_evento);
-            $inicio = !empty($data->fecha_inicio) ? $data->fecha_inicio : NULL;
-            $fin = !empty($data->fecha_fin) ? $data->fecha_fin : NULL;
+            $inicio = !empty($data->fecha_inicio) ? $data->fecha_inicio : null;
+            $fin = !empty($data->fecha_fin) ? $data->fecha_fin : null;
+            $carrera = !empty($data->carrera) ? ph_normalizar_carrera($data->carrera) : 'sistemas';
 
-            $sql = "UPDATE eventos SET nombre_evento = ?, codigo_evento = ?, fecha_inicio = ?, fecha_fin = ? WHERE id_evento = ?";
+            $sql = "UPDATE eventos SET nombre_evento = ?, codigo_evento = ?, carrera = ?, fecha_inicio = ?, fecha_fin = ? WHERE id_evento = ?";
             $stmt = $conexion->prepare($sql);
-            $stmt->bind_param("ssssi", $nombre, $codigo, $inicio, $fin, $id_evento);
+            $stmt->bind_param("sssssi", $nombre, $codigo, $carrera, $inicio, $fin, $id_evento);
 
             if ($stmt->execute()) {
-                echo json_encode(["status" => "success", "message" => "Evento actualizado correctamente"]);
+                echo json_encode(["status" => "success", "success" => true, "message" => "Evento actualizado correctamente"]);
             } else {
-                echo json_encode(["status" => "error", "message" => "Error al actualizar el evento: " . $conexion->error]);
+                echo json_encode(["status" => "error", "success" => false, "message" => "Error al actualizar el evento: " . $conexion->error]);
             }
             $stmt->close();
         } else {
-            echo json_encode(["status" => "error", "message" => "Datos incompletos para actualizar el evento."]);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Datos incompletos para actualizar el evento."]);
         }
         break;
 
     default:
-        echo json_encode(["status" => "error", "message" => "Método HTTP no permitido"]);
+        echo json_encode(["status" => "error", "success" => false, "message" => "Método HTTP no permitido"]);
         break;
 }
 ?>

@@ -20,14 +20,32 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
     // Orden
     const [ordenColumna, setOrdenColumna] = useState(null);
     const [ordenDir, setOrdenDir] = useState("asc");
+    const [eventosDisponibles, setEventosDisponibles] = useState([]);
+
+    const rolSesionActual = parseInt(localStorage.getItem("id_rol") || "0", 10);
 
     useEffect(() => {
         cargarUsuarios();
+        if (rolSesionActual === 4) {
+            cargarEventos();
+        }
     }, []);
 
     useEffect(() => {
         aplicarFiltros();
     }, [usuarios, filtroGeneral, filtroRol, ordenColumna, ordenDir]);
+
+    const cargarEventos = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/Eventos.php`);
+            const data = await res.json();
+            if (data.status === 'success' || data.success) {
+                setEventosDisponibles(data.data || []);
+            }
+        } catch (error) {
+            console.error("Error al cargar eventos para asignar admin:", error);
+        }
+    };
 
     const cargarUsuarios = async () => {
         try {
@@ -63,6 +81,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                     u.apellidos.toLowerCase().includes(texto) ||
                     u.correo.toLowerCase().includes(texto) ||
                     u.carrera.toLowerCase().includes(texto) ||
+                    (u.nombre_evento || "").toLowerCase().includes(texto) ||
                     obtenerNombreRol(u.id_rol).toLowerCase().includes(texto)
                 );
             });
@@ -95,7 +114,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
         }
     };
 
-    const cambiarRol = async (id, nuevoRol, nombreRol) => {
+    const cambiarRol = async (id, nuevoRol, nombreRol, idEventoActual = null) => {
         const confirmar = window.confirm(`¿Confirmar cambio a ${nombreRol}?`);
         if (!confirmar) return;
 
@@ -105,15 +124,51 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
             const respuesta = await fetch(`${API_BASE}/TablaUsuarios.php`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, id_rol: nuevoRol, admin_id: adminId }),
+                body: JSON.stringify({
+                    id,
+                    id_rol: nuevoRol,
+                    id_evento: idEventoActual || (nuevoRol === 3 ? (eventosDisponibles[0]?.id_evento ?? null) : null),
+                    admin_id: adminId
+                }),
             });
 
             const data = await respuesta.json();
             if (data.success) {
-                setUsuarios(prev =>
-                    prev.map(u => (u.id === id ? { ...u, id_rol: nuevoRol } : u))
-                );
+                await cargarUsuarios();
                 alert('✅ Rol actualizado correctamente');
+            } else {
+                alert('❌ ' + data.message);
+            }
+        } catch (error) {
+            alert('❌ Error de conexión: ' + error.message);
+        }
+    };
+
+    const cambiarEventoAdmin = async (id, nuevoIdEvento) => {
+        const adminId = localStorage.getItem("idUsuario");
+        const evObj = eventosDisponibles.find(e => String(e.id_evento) === String(nuevoIdEvento));
+        try {
+            const respuesta = await fetch(`${API_BASE}/TablaUsuarios.php`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id,
+                    id_rol: 3,
+                    id_evento: parseInt(nuevoIdEvento, 10),
+                    admin_id: adminId
+                }),
+            });
+            const data = await respuesta.json();
+            if (data.success) {
+                setUsuarios(prev =>
+                    prev.map(u => (u.id === id ? {
+                        ...u,
+                        id_evento: nuevoIdEvento,
+                        nombre_evento: evObj ? evObj.nombre_evento : u.nombre_evento,
+                        codigo_evento: evObj ? evObj.codigo_evento : u.codigo_evento
+                    } : u))
+                );
+                alert(`✅ Evento asignado al administrador: ${evObj ? evObj.nombre_evento : nuevoIdEvento}`);
             } else {
                 alert('❌ ' + data.message);
             }
@@ -155,11 +210,17 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
     };
 
     const obtenerOpcionesRolesDisponibles = () => {
-        return [
+        const base = [
             { value: 1, label: "Usuario" },
             { value: 2, label: "Evaluador" },
-            { value: 3, label: "Administrador" },
         ];
+        if (rolSesionActual === 4) {
+            base.push(
+                { value: 3, label: "Administrador (por evento)" },
+                { value: 4, label: "Super Admin" }
+            );
+        }
+        return base;
     };
 
     return (
@@ -176,7 +237,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                             <th onClick={() => cambiarOrden("correo")}>CORREO</th>
                             <th onClick={() => cambiarOrden("carrera")}>CARRERA</th>
                             <th onClick={() => cambiarOrden("id_rol")}>ROL ACTUAL</th>
-                            <th>CAMBIAR ROL</th>
+                            <th>CAMBIAR ROL / EVENTO</th>
                             <th>EDITAR</th>
                             <th>ELIMINAR</th>
                         </tr>
@@ -187,53 +248,100 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                         ) : usuariosFiltrados.length === 0 ? (
                             <tr><td colSpan="8" style={{ textAlign: "center" }}>No hay usuarios registrados</td></tr>
                         ) : (
-                            usuariosFiltrados.map(usuario => (
-                                <tr key={usuario.id}>
-                                    <td>{usuario.nombres}</td>
-                                    <td>{usuario.apellidos}</td>
-                                    <td>{usuario.correo}</td>
-                                    <td>{usuario.carrera}</td>
-                                    <td>
-                                        <span className={`badge-rol rol-${usuario.id_rol}`}>
-                                            {obtenerNombreRol(usuario.id_rol)}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <select
-                                            value={usuario.id_rol}
-                                            onChange={(e) => {
-                                                const nuevoRol = parseInt(e.target.value, 10);
-                                                const nombreRol = obtenerNombreRol(nuevoRol);
-                                                cambiarRol(usuario.id, nuevoRol, nombreRol);
-                                            }}
-                                        >
-                                            {obtenerOpcionesRolesDisponibles().map(opcion => (
-                                                <option key={opcion.value} value={opcion.value}>
-                                                    {opcion.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="btn-rechazar"
-                                            onClick={() => setUsuarioAEditar(usuario)}
-                                            title="Editar información del usuario"
-                                        >
-                                            <FaRegPenToSquare />
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="btn-rechazar"
-                                            onClick={() => eliminarUsuario(usuario.id)}
-                                            title="Eliminar usuario"
-                                        >
-                                            <FaTrashAlt />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
+                            usuariosFiltrados.map(usuario => {
+                                const esAdminEvento = parseInt(usuario.id_rol, 10) === 3;
+                                const esSuperAdmin = parseInt(usuario.id_rol, 10) === 4;
+                                return (
+                                    <tr key={usuario.id}>
+                                        <td>{usuario.nombres}</td>
+                                        <td>{usuario.apellidos}</td>
+                                        <td>{usuario.correo}</td>
+                                        <td>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                                <span>{usuario.carrera}</span>
+                                                {usuario.nombre_evento && !esSuperAdmin && (
+                                                    <span className="badge-evento" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                                        <span className="badge-evento-icono" aria-hidden="true">🗓️</span>
+                                                        <span className="badge-evento-texto">
+                                                            {usuario.nombre_evento}
+                                                        </span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                                <span className={`badge-rol rol-${usuario.id_rol}`}>
+                                                    {obtenerNombreRol(usuario.id_rol)}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {esSuperAdmin ? (
+                                                <span className={`badge-rol rol-${usuario.id_rol}`}>
+                                                    {obtenerNombreRol(usuario.id_rol)}
+                                                </span>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    <select
+                                                        value={usuario.id_rol}
+                                                        onChange={(e) => {
+                                                            const nuevoRol = parseInt(e.target.value, 10);
+                                                            const nombreRol = obtenerNombreRol(nuevoRol);
+                                                            cambiarRol(usuario.id, nuevoRol, nombreRol, usuario.id_evento);
+                                                        }}
+                                                    >
+                                                        {obtenerOpcionesRolesDisponibles().map(opcion => (
+                                                            <option key={opcion.value} value={opcion.value}>
+                                                                {opcion.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {esAdminEvento && rolSesionActual === 4 && eventosDisponibles.length > 0 && (
+                                                        <select
+                                                            value={usuario.id_evento || ""}
+                                                            onChange={(e) => {
+                                                                if (e.target.value) {
+                                                                    cambiarEventoAdmin(usuario.id, e.target.value);
+                                                                }
+                                                            }}
+                                                            title="Evento que administra este usuario"
+                                                            style={{ fontSize: '0.8rem', padding: '4px 6px' }}
+                                                        >
+                                                            <option value="" disabled>-- Asignar evento --</option>
+                                                            {eventosDisponibles.map(ev => (
+                                                                <option key={ev.id_evento} value={ev.id_evento}>
+                                                                    🗓️ {ev.nombre_evento} ({ev.codigo_evento})
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <button
+                                                className="btn-rechazar"
+                                                onClick={() => setUsuarioAEditar(usuario)}
+                                                title="Editar información del usuario"
+                                                disabled={esSuperAdmin}
+                                            >
+                                                <FaRegPenToSquare />
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <button
+                                                className="btn-rechazar"
+                                                onClick={() => eliminarUsuario(usuario.id)}
+                                                title="Eliminar usuario"
+                                                disabled={[3, 4].includes(parseInt(usuario.id_rol, 10))}
+                                            >
+                                                <FaTrashAlt />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>
@@ -242,7 +350,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
             <div className="filtros">
                 <input
                     type="text"
-                    placeholder="Buscar por nombre, correo, carrera..."
+                    placeholder="Buscar por nombre, correo, carrera o evento..."
                     value={filtroGeneral}
                     onChange={(e) => setFiltroGeneral(e.target.value)}
                 />
@@ -254,6 +362,8 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                     <option value="todos">Todos los roles</option>
                     <option value="1">Usuario</option>
                     <option value="2">Evaluador</option>
+                    <option value="3">Administrador (por evento)</option>
+                    <option value="4">Super Admin</option>
                 </select>
 
                 {limite && (
@@ -274,6 +384,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
             {usuarioAEditar && (
                 <EditarUsuario
                     usuario={usuarioAEditar}
+                    eventosDisponibles={eventosDisponibles}
                     cerrarModal={() => setUsuarioAEditar(null)}
                     alGuardarExitoso={cargarUsuarios}
                 />

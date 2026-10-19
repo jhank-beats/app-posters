@@ -22,24 +22,27 @@ const HeaderSuperAdmin = ({ abrirCuenta }) => {
     };
 
     return (
-        <header className='encabezado'>
+        <header className='encabezado encabezado-app encabezado-compacto'>
             <div className='header-contenedor'>
                 <div className='logo-nav'>
-                    <Link to="inicio" smooth={true} duration={500} className='logo-enlace' onClick={cerrarMenus}>
+                    <Link to="inicio" smooth={true} duration={500} offset={-84} className='logo-enlace' onClick={cerrarMenus}>
                         <img className='logo-ucc' src='/img/logoucc.png' alt="Logo UCC" />
                     </Link>
-                    <nav className={`menu-nav ${menuAbierto ? 'activo' : ''}`}>
-                        <button onClick={() => setMenuAbierto(false)} className='boton-cerrar' aria-label="Cerrar menú">X</button>
-                        <Link className='menu-enlace' to="inicio" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Inicio</Link>
-                        <Link className='menu-enlace' to="pendientes" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Usuarios Pendientes</Link>
-                        <Link className='menu-enlace' to="criterios" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Criterios</Link>
-                        <Link className='menu-enlace' to="posters" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Posters</Link>
-                        <Link className='menu-enlace' to="espacios" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Espacios</Link>
-                        <Link className='menu-enlace' to="usuarios" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Usuarios</Link>
-                        <Link className='menu-enlace' to="categorias" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Categorías</Link>
-                        <Link className='menu-enlace' to="eventos" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Eventos</Link>
-                    </nav>
                 </div>
+
+                <nav className={`menu-nav ${menuAbierto ? 'activo' : ''}`}>
+                        <button onClick={() => setMenuAbierto(false)} className='boton-cerrar' aria-label="Cerrar menú">X</button>
+                        <Link className='menu-enlace' to="inicio" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Inicio</Link>
+                        <Link className='menu-enlace' to="pendientes" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Pendientes</Link>
+                        <Link className='menu-enlace' to="criterios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Criterios</Link>
+                        <Link className='menu-enlace' to="posters" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Posters</Link>
+                        <Link className='menu-enlace' to="espacios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Espacios</Link>
+                        <Link className='menu-enlace' to="usuarios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Usuarios</Link>
+                        <Link className='menu-enlace' to="categorias" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Categorías</Link>
+                        <Link className='menu-enlace' to="eventos" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Eventos</Link>
+                        <Link className='menu-enlace' to="rondas" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Rondas</Link>
+                        <Link className='menu-enlace' to="recordatorios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Recordatorios</Link>
+                </nav>
 
                 <div className='acciones-header'>
                     <div className={`menu-usuario ${menuUsuario ? 'activo' : ''}`}>
@@ -63,6 +66,14 @@ const HeaderSuperAdmin = ({ abrirCuenta }) => {
                     </div>
                 </div>
             </div>
+            {(menuAbierto || menuUsuario) && (
+                <button
+                    type="button"
+                    aria-label="Cerrar menú"
+                    className="menu-overlay"
+                    onClick={cerrarMenus}
+                />
+            )}
         </header>
     );
 }

@@ -121,7 +121,19 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
                                     <td>{solicitud.nombres}</td>
                                     <td>{solicitud.apellidos}</td>
                                     <td>{solicitud.correo}</td>
-                                    <td>{solicitud.carrera}</td>
+                                    <td>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                            <span>{solicitud.carrera}</span>
+                                            {solicitud.nombre_evento && (
+                                                <span className="badge-evento" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                                    <span className="badge-evento-icono" aria-hidden="true">🗓️</span>
+                                                    <span className="badge-evento-texto">
+                                                        {solicitud.nombre_evento}
+                                                    </span>
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
                                     <td>{new Date(solicitud.fecha_registro).toLocaleDateString()}</td>
                                     <td>
                                         <label className="toggle-switch">

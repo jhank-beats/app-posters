@@ -24,7 +24,16 @@ if (empty($input['correo']) || empty($input['contrasena'])) {
 $correo = trim($input['correo']);
 $contrasena = $input['contrasena'];
 
-$stmt = $conexion->prepare("SELECT id, nombres, apellidos, correo, `contraseña` AS pass_hash, activo, id_rol FROM usuario WHERE correo = ? LIMIT 1");
+$stmt = $conexion->prepare("
+    SELECT u.id, u.nombres, u.apellidos, u.correo, u.carrera, u.`contraseña` AS pass_hash,
+           u.activo, u.id_rol, u.id_evento,
+           ev.nombre_evento AS nombre_evento_asignado,
+           ev.codigo_evento AS codigo_evento_asignado
+    FROM usuario u
+    LEFT JOIN eventos ev ON ev.id_evento = u.id_evento
+    WHERE u.correo = ?
+    LIMIT 1
+");
 if (!$stmt) {
     http_response_code(500);
     echo json_encode(["status" => "error", "message" => "Error en el servidor (prepare)"]);
@@ -58,6 +67,24 @@ if (!password_verify($contrasena, $user['pass_hash'])) {
     exit;
 }
 
+// Si es Admin (rol 3) y aún no tenía id_evento explícito, resolverlo y devolver el nombre del evento
+if ((int)$user['id_rol'] === 3 && empty($user['id_evento'])) {
+    $idEvResuelto = auth_id_evento_admin($conexion, ['id' => (int)$user['id'], 'rol' => 3]);
+    if ($idEvResuelto) {
+        $user['id_evento'] = $idEvResuelto;
+        $stmtEv = $conexion->prepare("SELECT nombre_evento, codigo_evento FROM eventos WHERE id_evento = ? LIMIT 1");
+        if ($stmtEv) {
+            $stmtEv->bind_param("i", $idEvResuelto);
+            $stmtEv->execute();
+            if ($rowEv = $stmtEv->get_result()->fetch_assoc()) {
+                $user['nombre_evento_asignado'] = $rowEv['nombre_evento'];
+                $user['codigo_evento_asignado'] = $rowEv['codigo_evento'];
+            }
+            $stmtEv->close();
+        }
+    }
+}
+
 // Login OK: quitar campos sensibles antes de responder
 unset($user['pass_hash']);
 unset($user['activo']);
@@ -70,7 +97,7 @@ echo json_encode([
     "status" => "success",
     "message" => "Inicio de sesión exitoso",
     "token" => $token,
-    "usuario" => $user  // incluye id_rol
+    "usuario" => $user  // incluye id_rol, id_evento y nombre_evento_asignado
 ]);
 exit;
 ?>

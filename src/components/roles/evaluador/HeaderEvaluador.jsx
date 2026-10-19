@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import NotificacionesBell from '../generales/NotificacionesBell.jsx';
 import { clearSession } from '../../../auth.js';
 
-const HeaderEvaluador = ({ abrirCuenta }) => {
+const HeaderEvaluador = ({ abrirCuenta, abrirPublicarPoster }) => {
     const [menuAbierto, setMenuAbierto] = useState(false);
     const [menuUsuario, setMenuUsuario] = useState(false);
     const navigate = useNavigate();
@@ -22,21 +22,33 @@ const HeaderEvaluador = ({ abrirCuenta }) => {
     };
 
     return (
-        <header className='encabezado'>
+        <header className='encabezado encabezado-app'>
             <div className='header-contenedor'>
                 <div className='logo-nav'>
-                    <Link to="inicio" smooth={true} duration={500} className='logo-enlace' onClick={cerrarMenus}>
+                    <Link to="inicio" smooth={true} duration={500} offset={-84} className='logo-enlace' onClick={cerrarMenus}>
                         <img className='logo-ucc' src='/img/logoucc.png' alt="Logo UCC" />
                     </Link>
-                    <nav className={`menu-nav ${menuAbierto ? 'activo' : ''}`}>
-                        <button onClick={() => setMenuAbierto(false)} className='boton-cerrar' aria-label="Cerrar menú">X</button>
-                        <Link className='menu-enlace' to="inicio" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Inicio</Link>
-                        <Link className='menu-enlace' to="pendientes" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Usuarios Pendientes</Link>
-                        <Link className='menu-enlace' to="posters" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Posters</Link>
-                        <Link className='menu-enlace' to="usuarios" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Usuarios</Link>
-                        <Link className='menu-enlace' to="categorias" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Categorías</Link>
-                    </nav>
                 </div>
+
+                <nav className={`menu-nav ${menuAbierto ? 'activo' : ''}`}>
+                        <button onClick={() => setMenuAbierto(false)} className='boton-cerrar' aria-label="Cerrar menú">X</button>
+                        <Link className='menu-enlace' to="inicio" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Inicio</Link>
+                        <Link className='menu-enlace' to="posters" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Asignados</Link>
+                        <Link className='menu-enlace' to="mis-posters" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Mis Pósters</Link>
+                        {abrirPublicarPoster && (
+                            <a
+                                href="#publicar"
+                                className='menu-enlace'
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setMenuAbierto(false);
+                                    abrirPublicarPoster();
+                                }}
+                            >
+                                Publicar Póster
+                            </a>
+                        )}
+                </nav>
 
                 <div className='acciones-header'>
                     <div className={`menu-usuario ${menuUsuario ? 'activo' : ''}`}>
@@ -60,6 +72,14 @@ const HeaderEvaluador = ({ abrirCuenta }) => {
                     </div>
                 </div>
             </div>
+            {(menuAbierto || menuUsuario) && (
+                <button
+                    type="button"
+                    aria-label="Cerrar menú"
+                    className="menu-overlay"
+                    onClick={cerrarMenus}
+                />
+            )}
         </header>
     );
 }

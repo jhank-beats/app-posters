@@ -3,15 +3,18 @@ import './roles.css';
 
 const SERVER_URL = `http://${window.location.hostname}:8000`;
 
-const EditarUsuario = ({ usuario, cerrarModal, alGuardarExitoso }) => {
+const EditarUsuario = ({ usuario, eventosDisponibles = [], cerrarModal, alGuardarExitoso }) => {
     const [datosUsuario, setDatosUsuario] = useState({
         nombres: usuario?.nombres || "",
         apellidos: usuario?.apellidos || "",
         correo: usuario?.correo || "",
-        carrera: usuario?.carrera || ""
+        carrera: usuario?.carrera || "",
+        id_evento: usuario?.id_evento || ""
     });
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState("");
+    const rolSesionActual = parseInt(localStorage.getItem("id_rol") || "0", 10);
+    const esAdminObjetivo = parseInt(usuario?.id_rol || "0", 10) === 3;
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -40,17 +43,22 @@ const EditarUsuario = ({ usuario, cerrarModal, alGuardarExitoso }) => {
         setCargando(true);
 
         try {
+            const payload = {
+                id: usuario.id,
+                admin_id: adminId,
+                nombres: datosUsuario.nombres,
+                apellidos: datosUsuario.apellidos,
+                correo: datosUsuario.correo,
+                carrera: datosUsuario.carrera
+            };
+            if (rolSesionActual === 4 && esAdminObjetivo) {
+                payload.id_evento = datosUsuario.id_evento ? parseInt(datosUsuario.id_evento, 10) : null;
+            }
+
             const respuesta = await fetch(`${SERVER_URL}/api/TablaUsuarios.php`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: usuario.id,
-                    admin_id: adminId,
-                    nombres: datosUsuario.nombres,
-                    apellidos: datosUsuario.apellidos,
-                    correo: datosUsuario.correo,
-                    carrera: datosUsuario.carrera
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await respuesta.json();
@@ -110,15 +118,30 @@ const EditarUsuario = ({ usuario, cerrarModal, alGuardarExitoso }) => {
 
                     <div className="campo-formulario"><select
                         name="carrera"
-                        value={datosUsuario.carrera}
+                        value={datosUsuario.carrera.toLowerCase().includes("civil") ? "Ingeniería Civil" : (datosUsuario.carrera ? "Ingeniería de Sistemas" : "")}
                         onChange={handleInputChange}
                     >
                         <option value="">🎓 Selecciona tu carrera</option>
-                        <option value="sistemas">💻 Ingeniería en Sistemas</option>
-                        <option value="civil">🏗️ Ingeniería Civil</option>
-                        <option value="administracion">📊 Administración de Empresas</option>
-                        <option value="derecho">⚖️ Derecho</option>
+                        <option value="Ingeniería de Sistemas">💻 Ingeniería de Sistemas</option>
+                        <option value="Ingeniería Civil">🏗️ Ingeniería Civil</option>
                     </select></div>
+
+                    {rolSesionActual === 4 && esAdminObjetivo && eventosDisponibles.length > 0 && (
+                        <div className="campo-formulario">
+                            <select
+                                name="id_evento"
+                                value={datosUsuario.id_evento}
+                                onChange={handleInputChange}
+                            >
+                                <option value="">🗓️ Selecciona el evento a administrar</option>
+                                {eventosDisponibles.map(ev => (
+                                    <option key={ev.id_evento} value={ev.id_evento}>
+                                        🗓️ {ev.nombre_evento} ({ev.codigo_evento})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <button className="boton-primario" type="submit" disabled={cargando}>
                         {cargando ? "Guardando..." : "Guardar Cambios"}

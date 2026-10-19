@@ -21,7 +21,7 @@ const Header = () => {
 
     return (
 
-        <header className='encabezado'>
+        <header className='encabezado encabezado-app'>
             <div className='header-contenedor'>
                 {/* Logo a la izquierda */}
                 <div className='logo-nav'>
@@ -43,10 +43,10 @@ const Header = () => {
                 {/* Navegación central */}
                 <nav className={`menu-nav ${menuAbierto ? 'activo' : ''}`}>
                     <button onClick={() => setMenuAbierto(false)} className='boton-cerrar' aria-label="Cerrar menú">X</button>
-                    <Link className='menu-enlace' to="inicio" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Inicio</Link>
-                    <Link className='menu-enlace' to="comunidad" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Comunidad GensTI</Link>
-                    <Link className='menu-enlace' to="novedades" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Novedades</Link>
-                    <Link className='menu-enlace' to="posters" smooth={true} duration={500} onClick={() => setMenuAbierto(false)}>Posters</Link>
+                    <Link className='menu-enlace' to="inicio" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Inicio</Link>
+                    <Link className='menu-enlace' to="comunidad" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Comunidad</Link>
+                    <Link className='menu-enlace' to="novedades" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Novedades</Link>
+                    <Link className='menu-enlace' to="posters" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Posters</Link>
                 </nav>
 
                 {/* Acciones a la derecha */}
@@ -113,6 +113,15 @@ const Header = () => {
                     </div>
                 </div>
             </div>
+
+            {(menuAbierto || menuUsuario) && (
+                <button
+                    type="button"
+                    aria-label="Cerrar menú"
+                    className="menu-overlay"
+                    onClick={cerrarMenus}
+                />
+            )}
 
             {mostrarRegistro && (
                 <div className="modal-registro">

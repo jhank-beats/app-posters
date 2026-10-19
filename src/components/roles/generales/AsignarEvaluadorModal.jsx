@@ -4,30 +4,46 @@ import '../generales/Evaluar.css';
 // Usar la misma constante dinámica que en MostrarPostersAdmin.jsx
 const SERVER_URL = `http://${window.location.hostname}:8000`;
 
-const AsignarEvaluadorModal = ({ poster, cerrarModal }) => {
+const AsignarEvaluadorModal = ({ poster, cerrarModal, idRonda = null }) => {
     const [evaluadores, setEvaluadores] = useState([]);
     const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
     const [seleccionados, setSeleccionados] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [mensaje, setMensaje] = useState(null);
+    // Contexto de ronda: en la Ronda 1 solo cabe UN evaluador (radio);
+    // desde la Ronda 2 pueden ser varios (checkbox con tope).
+    const [rondaCtx, setRondaCtx] = useState({ id_ronda: 0, numero: 0, limite: 1 });
+    const [idAutorPoster, setIdAutorPoster] = useState(() => Number(poster?.id_usuario || 0));
+    const soloUno = Number(rondaCtx.limite || 1) === 1;
 
     useEffect(() => {
         if (poster && poster.id) {
+            setIdAutorPoster(Number(poster.id_usuario || 0));
             cargarEvaluadores();
         }
-    }, [filtroEspecialidad]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filtroEspecialidad, poster?.id]);
 
     const cargarEvaluadores = async () => {
         try {
             setCargando(true);
-            const url = `${SERVER_URL}/api/AsignarEvaluadores.php?id_poster=${poster.id}&carrera=${encodeURIComponent(filtroEspecialidad)}`;
+            const params = `id_poster=${poster.id}&carrera=${encodeURIComponent(filtroEspecialidad)}`;
+            const url = `${SERVER_URL}/api/AsignarEvaluadores.php?${params}${idRonda ? `&id_ronda=${idRonda}` : ''}`;
             const res = await fetch(url);
             const data = await res.json();
 
             if (data.success) {
-                setEvaluadores(data.data);
-                // Pre-seleccionar evaluadores que ya están asignados a este póster
-                const yaAsignados = data.data.filter(e => e.asignado).map(e => e.id);
+                const autorId = Number(data.id_autor || poster?.id_usuario || 0);
+                if (autorId > 0) setIdAutorPoster(autorId);
+
+                // Fase 3: ocultar al autor del póster en la lista de evaluadores
+                const listaFiltrada = (data.data || []).filter(
+                    e => Number(e.id) !== autorId
+                );
+                setEvaluadores(listaFiltrada);
+                if (data.ronda) setRondaCtx(data.ronda);
+                // Pre-seleccionar evaluadores que ya están asignados a este póster (excluyendo siempre al autor)
+                const yaAsignados = listaFiltrada.filter(e => e.asignado).map(e => e.id);
                 setSeleccionados(yaAsignados);
             } else {
                 console.error("Error devuelto por la API:", data.message);
@@ -40,21 +56,39 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal }) => {
     };
 
     const handleCheckboxChange = (idEvaluador) => {
-        if (seleccionados.includes(idEvaluador)) {
-            setSeleccionados(seleccionados.filter(id => id !== idEvaluador));
-        } else {
-            setSeleccionados([...seleccionados, idEvaluador]);
+        if (idAutorPoster > 0 && Number(idEvaluador) === idAutorPoster) {
+            setMensaje({ tipo: 'error', texto: 'El autor del póster no puede evaluarse a sí mismo.' });
+            return;
         }
+        const limite = Number(rondaCtx.limite || 1);
+        if (soloUno) {
+            // Selección única (Ronda 1): elegir a uno deselecciona al anterior.
+            setSeleccionados(prev => (prev.includes(idEvaluador) ? [] : [idEvaluador]));
+            return;
+        }
+        setSeleccionados(prev => {
+            if (prev.includes(idEvaluador)) return prev.filter(id => id !== idEvaluador);
+            if (prev.length >= limite) {
+                setMensaje({ tipo: 'error', texto: `Como máximo ${limite} evaluadores por póster en esta ronda. Quita uno antes de agregar otro.` });
+                return prev;
+            }
+            return [...prev, idEvaluador];
+        });
     };
 
     const guardarAsignacion = async () => {
+        if (idAutorPoster > 0 && seleccionados.some(id => Number(id) === idAutorPoster)) {
+            setMensaje({ tipo: 'error', texto: 'No se puede asignar al autor del póster como su propio evaluador.' });
+            return;
+        }
         try {
             const res = await fetch(`${SERVER_URL}/api/AsignarEvaluadores.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id_poster: poster.id,
-                    evaluadores_ids: seleccionados
+                    evaluadores_ids: seleccionados,
+                    ...(rondaCtx.id_ronda ? { id_ronda: rondaCtx.id_ronda } : {})
                 })
             });
 
@@ -81,6 +115,20 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal }) => {
                 <div className="info-poster-resumen">
                     <p><strong>Póster:</strong> {poster.titulo}</p>
                     <p><strong>Categoría/Área:</strong> {poster.categoria}</p>
+                    {(poster.nombre_usuario || poster.autores) && (
+                        <p>
+                            <strong>Autor registrado:</strong> {poster.nombre_usuario || poster.autores}{' '}
+                            <small style={{ color: '#5f5e5e' }}>(excluido de evaluadores por no autoevaluación)</small>
+                        </p>
+                    )}
+                    {rondaCtx.numero > 0 && (
+                        <p>
+                            <strong>Ronda:</strong> {rondaCtx.numero}
+                            {soloUno
+                                ? ' — regla: en la Ronda 1 solo puede haber UN evaluador por póster.'
+                                : ` — pueden evaluarse hasta ${rondaCtx.limite} evaluadores por póster.`}
+                        </p>
+                    )}
                 </div>
 
                 <div className="filtro-contenedor">
@@ -108,7 +156,8 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal }) => {
                         evaluadores.map(e => (
                             <label key={e.id} className="item-evaluador">
                                 <input
-                                    type="checkbox"
+                                    type={soloUno ? 'radio' : 'checkbox'}
+                                    name={soloUno ? `evaluador-poster-${poster.id}` : undefined}
                                     checked={seleccionados.includes(e.id)}
                                     onChange={() => handleCheckboxChange(e.id)}
                                 />
@@ -121,6 +170,11 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal }) => {
                         ))
                     )}
                 </div>
+
+                <p style={{ marginTop: '10px', fontSize: '13px', color: '#5f5e5e' }}>
+                    Evaluadores seleccionados: <strong>{seleccionados.length}</strong>
+                    {!soloUno && ` / ${rondaCtx.limite}`}
+                </p>
 
                 <div className="modal-acciones">
                     <button className="btn-cancelar" onClick={cerrarModal}>Cancelar</button>

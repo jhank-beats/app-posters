@@ -9,9 +9,13 @@ import Cuenta from '../generales/Cuenta.jsx';
 import GestionEventosModal from './GestionEventosModal.jsx';
 import GestionEspaciosModal from '../generales/GestionEspaciosModal.jsx';
 import GestionCriterios from './GestionCriterios.jsx';
+import GestionRondas from '../generales/GestionRondas.jsx';
+import GestionRecordatorios from '../generales/GestionRecordatorios.jsx';
 import ListadoUbicaciones from '../generales/ListadoUbicaciones.jsx';
 import Footer from "../../generales/Footer.jsx";
 import VolverArriba from "../../generales/VolverArriba.jsx";
+import { tituloRonda } from '../generales/rondasUtils.js';
+import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
 import "../generales/roles.css";
 
 const SERVER_URL = `http://${window.location.hostname}:8000`;
@@ -38,18 +42,26 @@ const HomePageSuperAdmin = () => {
     const [mostrarCriterios, setMostrarCriterios] = useState(false);
     const [criteriosResumen, setCriteriosResumen] = useState([]);
 
+    // Estados para Rondas y Premios (§6.3: la 8ª sección del panel)
+    const [mostrarRondas, setMostrarRondas] = useState(false);
+    const [rondasResumen, setRondasResumen] = useState([]);
+    const [rondaFoco, setRondaFoco] = useState(null);
+
+    // Estados para Recordatorios Programados (Fase 5)
+    const [mostrarRecordatorios, setMostrarRecordatorios] = useState(false);
+    const [recRefreshKey, setRecRefreshKey] = useState(0);
+
     const [nombreUsuario, setNombreUsuario] = useState("");
     const [idRolActual, setIdRolActual] = useState(null);
 
     const obtenerUrlApi = async () => {
-        const urlPrincipal = `${SERVER_URL}/backend/api/Eventos.php`;
-        const urlAlternativa = `${SERVER_URL}/api/Eventos.php`;
-
+        // Ruta correcta del backend (el PHP server sirve /api desde backend/)
+        const urlApi = `${SERVER_URL}/api/Eventos.php`;
         try {
-            const resPrincipal = await fetch(urlPrincipal);
-            return resPrincipal.ok ? urlPrincipal : urlAlternativa;
+            const res = await fetch(urlApi);
+            return res.ok ? urlApi : urlApi;
         } catch {
-            return urlAlternativa;
+            return urlApi;
         }
     };
 
@@ -95,6 +107,17 @@ const HomePageSuperAdmin = () => {
         }
     };
 
+    const cargarRondasResumen = async (opts) => {
+        try {
+            const data = await obtenerRondasResumen(opts);
+            if (data.success) {
+                setRondasResumen(data.data || []);
+            }
+        } catch (error) {
+            console.error("Error al cargar rondas y premios:", error);
+        }
+    };
+
     useEffect(() => {
         const nombre = localStorage.getItem("nombreUsuario");
         if (nombre) {
@@ -106,9 +129,16 @@ const HomePageSuperAdmin = () => {
         cargarEventosResumen();
         cargarEspaciosResumen();
         cargarCriteriosResumen();
+        cargarRondasResumen();
     }, []);
 
     const limite = 3;
+
+    // Las tarjetas de acciones llevan al apartado correspondiente.
+    // scrollIntoView respeta el scroll-margin-top del header sticky.
+    const irASeccion = (id) => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     return (
         <div className="contenedor-pagina">
@@ -123,31 +153,41 @@ const HomePageSuperAdmin = () => {
                         {nombreUsuario || "usuario"}
                     </h1>
                     <p>
-                        Estás en la página de inicio del sistema de gestión de pósters de la UCC.
+                        Estás en el panel general del sistema de gestión de pósters (acceso completo a los eventos de Ingeniería de Sistemas e Ingeniería Civil).
                     </p>
                 </div>
                 <div className="texto-tarjetas">
                     <h3>🔔 Recuerda que puedes hacer las siguientes acciones:</h3>
                     <div className="grupo-tarjetas">
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => irASeccion('usuarios')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('usuarios')}>
                             <div className="icono">👥</div>
                             <h3>Gestionar Usuarios / Roles</h3>
                             <p>Aprobar o rechazar solicitudes y modificar roles</p>
                         </div>
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => irASeccion('criterios')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('criterios')}>
                             <div className="icono">📝</div>
                             <h3>Criterios de Evaluación</h3>
                             <p>Crear, modificar y parametrizar los criterios</p>
                         </div>
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => irASeccion('espacios')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('espacios')}>
                             <div className="icono">📍</div>
                             <h3>Espacios Físicos</h3>
                             <p>Definir salones, estantes y capacidad de ubicación</p>
                         </div>
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => irASeccion('eventos')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('eventos')}>
                             <div className="icono">🗓️</div>
                             <h3>Gestionar Eventos</h3>
                             <p>Crear semestres y definir el evento activo</p>
+                        </div>
+                        <div className="tarjeta" onClick={() => irASeccion('recordatorios')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('recordatorios')}>
+                            <div className="icono">⏰</div>
+                            <h3>Recordatorios de Evaluación</h3>
+                            <p>Configurar horas, personalizar el mensaje y verificar pósters pendientes</p>
                         </div>
                     </div>
                 </div>
@@ -232,15 +272,28 @@ const HomePageSuperAdmin = () => {
             <section id="posters">
                 <span className="seccion-eyebrow">Contenido</span>
                 <h2>Posters Publicados</h2>
-                <MostrarPosters
-                    limite={limite}
-                    verMas={() => setMostrarPosters(true)}
-                />
+                {!mostrarPosters && (
+                    <MostrarPosters
+                        limite={limite}
+                        verMas={() => setMostrarPosters(true)}
+                    />
+                )}
             </section>
 
             {mostrarPosters && (
                 <div className="modal">
-                    <MostrarPostersAdmin cerrarTabla={() => setMostrarPosters(false)} />
+                    <MostrarPostersAdmin
+                        cerrarTabla={() => setMostrarPosters(false)}
+                        onVerRanking={(poster) => {
+                            const ultima = (poster.rondas || []).slice(-1)[0];
+                            setMostrarPosters(false);
+                            setRondaFoco({
+                                id_evento: poster.id_evento,
+                                id_ronda: poster.id_ronda || (ultima ? ultima.id_ronda : null)
+                            });
+                            setMostrarRondas(true);
+                        }}
+                    />
                 </div>
             )}
 
@@ -253,6 +306,7 @@ const HomePageSuperAdmin = () => {
                         <thead>
                             <tr>
                                 <th>Nombre del Salón / Pabellón / Estante</th>
+                                <th>Evento</th>
                                 <th>Capacidad Máxima</th>
                                 <th>Pósters Ocupados</th>
                                 <th>Estado</th>
@@ -261,7 +315,7 @@ const HomePageSuperAdmin = () => {
                         <tbody>
                             {espaciosResumen.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" style={{ textAlign: 'center' }}>
+                                    <td colSpan="5" style={{ textAlign: 'center' }}>
                                         No se encontraron espacios físicos registrados.
                                     </td>
                                 </tr>
@@ -272,6 +326,7 @@ const HomePageSuperAdmin = () => {
                                     return (
                                         <tr key={esp.id_espacio}>
                                             <td><strong>{esp.nombre_espacio}</strong></td>
+                                            <td>{esp.nombre_evento || `Evento #${esp.id_evento}`}</td>
                                             <td>{esp.capacidad}</td>
                                             <td>{ocupacion}</td>
                                             <td>
@@ -361,6 +416,7 @@ const HomePageSuperAdmin = () => {
                                 <tr>
                                     <th>Nombre del Evento</th>
                                     <th>Código</th>
+                                    <th>Carrera</th>
                                     <th>Fechas (Inicio / Fin)</th>
                                     <th>Estado</th>
                                 </tr>
@@ -368,7 +424,7 @@ const HomePageSuperAdmin = () => {
                             <tbody>
                                 {eventosResumen.length === 0 ? (
                                     <tr>
-                                        <td colSpan="4" style={{ textAlign: 'center' }}>
+                                        <td colSpan="5" style={{ textAlign: 'center' }}>
                                             No se encontraron eventos registrados.
                                         </td>
                                     </tr>
@@ -377,6 +433,11 @@ const HomePageSuperAdmin = () => {
                                         <tr key={ev.id_evento}>
                                             <td><strong>{ev.nombre_evento}</strong></td>
                                             <td>{ev.codigo_evento}</td>
+                                            <td>
+                                                <span className={`badge-rol ${ev.carrera === 'civil' ? 'rol-5' : 'rol-4'}`} style={{ textTransform: 'none' }}>
+                                                    {ev.carrera === 'civil' ? '🏗️ Ing. Civil' : ev.carrera === 'ambas' ? '🤝 Ambas' : '💻 Ing. Sistemas'}
+                                                </span>
+                                            </td>
                                             <td>
                                                 {ev.fecha_inicio ? `${ev.fecha_inicio} a ${ev.fecha_fin || 'Sin fin'}` : 'Sin definir'}
                                             </td>
@@ -412,6 +473,142 @@ const HomePageSuperAdmin = () => {
                         cerrarTabla={() => {
                             setMostrarEventos(false);
                             cargarEventosResumen();
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* Rondas y Premios (8ª sección del panel) */}
+            <section id="rondas">
+                <span className="seccion-eyebrow">Rondas y premios</span>
+                <h2>Rondas de Evaluación y Premios</h2>
+                <div className="contenedor-tabla">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Evento</th>
+                                <th>Ronda</th>
+                                <th>Estado</th>
+                                <th>Cupos</th>
+                                <th>Premios</th>
+                                <th>Ganadores</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rondasResumen.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" style={{ textAlign: 'center' }}>
+                                        No se encontraron rondas registradas.
+                                    </td>
+                                </tr>
+                            ) : (
+                                rondasResumen.map((ev) => (
+                                    (ev.rondas || []).length === 0 ? (
+                                        <tr key={`ev-${ev.id_evento}`}>
+                                            <td>
+                                                <span className="badge-evento">
+                                                    <span className="badge-evento-icono" aria-hidden="true">🎓</span>
+                                                    <span className="badge-evento-texto">
+                                                        {ev.nombre_evento}
+                                                        {ev.codigo_evento && <small>{ev.codigo_evento}</small>}
+                                                    </span>
+                                                </span>
+                                            </td>
+                                            <td colSpan="5" style={{ textAlign: 'center', color: '#5f5e5e' }}>
+                                                Sin rondas configuradas
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        ev.rondas.map((ronda) => (
+                                            <tr key={ronda.id_ronda}>
+                                                <td>
+                                                    <span className="badge-evento">
+                                                        <span className="badge-evento-icono" aria-hidden="true">🎓</span>
+                                                        <span className="badge-evento-texto">
+                                                            {ev.nombre_evento}
+                                                            {ev.codigo_evento && <small>{ev.codigo_evento}</small>}
+                                                        </span>
+                                                    </span>
+                                                </td>
+                                                <td><strong>{tituloRonda(ronda)}</strong></td>
+                                                <td>
+                                                    {ronda.estado === 'abierta' ? (
+                                                        <span className="badge-rol rol-2">ABIERTA</span>
+                                                    ) : (
+                                                        <span className="badge-rol rol-3">CERRADA</span>
+                                                    )}
+                                                </td>
+                                                <td>{ronda.cupos_seleccion ?? 'Sin límite'}</td>
+                                                <td>{ronda.premios}</td>
+                                                <td>
+                                                    {(ronda.ganadores || []).length === 0 ? (
+                                                        <span style={{ color: '#5f5e5e', fontStyle: 'italic' }}>Por publicar</span>
+                                                    ) : (
+                                                        <div className="subtexto-celda">
+                                                            {ronda.ganadores.map((g) => (
+                                                                <div key={g.id_poster}>
+                                                                    <span className="badge-premio">{g.premio || `${g.lugar}º lugar`}</span>{' '}
+                                                                    {g.titulo}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                    <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                        <button
+                            className="boton-primario"
+                            onClick={() => {
+                                setRondaFoco(null);
+                                setMostrarRondas(true);
+                            }}
+                        >
+                            Administrar Rondas y Premios
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Modal Gestión de Rondas y Premios */}
+            {mostrarRondas && (
+                <div className="modal">
+                    <GestionRondas
+                        cerrarTabla={() => {
+                            setMostrarRondas(false);
+                            setRondaFoco(null);
+                            cargarRondasResumen({ refetch: true });
+                        }}
+                        idEventoInicial={rondaFoco ? rondaFoco.id_evento : null}
+                        idRondaFoco={rondaFoco ? rondaFoco.id_ronda : null}
+                    />
+                </div>
+            )}
+
+            {/* Recordatorios Programados y Mensajes Personalizables */}
+            <section id="recordatorios">
+                <span className="seccion-eyebrow">Automatización y avisos</span>
+                <h2>Recordatorios de Evaluación y Horarios</h2>
+                <GestionRecordatorios
+                    key={recRefreshKey}
+                    modo="resumen"
+                    abrirModal={() => setMostrarRecordatorios(true)}
+                />
+            </section>
+
+            {/* Modal Gestión de Recordatorios */}
+            {mostrarRecordatorios && (
+                <div className="modal">
+                    <GestionRecordatorios
+                        modo="modal"
+                        cerrarModal={() => {
+                            setMostrarRecordatorios(false);
+                            setRecRefreshKey((k) => k + 1);
                         }}
                     />
                 </div>

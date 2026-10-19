@@ -18,10 +18,24 @@ export function saveSession({ token, usuario }) {
   localStorage.setItem("idUsuario", String(usuario.id));
   localStorage.setItem("id_rol", String(usuario.id_rol));
   localStorage.setItem("nombreUsuario", `${usuario.nombres} ${usuario.apellidos}`);
+  if (usuario.carrera) {
+    localStorage.setItem("carreraUsuario", String(usuario.carrera));
+  }
+  if (usuario.id_evento) {
+    localStorage.setItem("idEventoAdmin", String(usuario.id_evento));
+  } else {
+    localStorage.removeItem("idEventoAdmin");
+  }
+  if (usuario.nombre_evento_asignado) {
+    localStorage.setItem("nombreEventoAdmin", String(usuario.nombre_evento_asignado));
+  } else {
+    localStorage.removeItem("nombreEventoAdmin");
+  }
 }
 export function clearSession() {
   ["authToken", "token", "user", "idUsuario", "id_rol", "rol", "rolUsuario",
-   "nombreUsuario", "usuario", "id_usuario"].forEach((k) => {
+   "nombreUsuario", "usuario", "id_usuario", "carreraUsuario",
+   "idEventoAdmin", "nombreEventoAdmin"].forEach((k) => {
     try { localStorage.removeItem(k); } catch { /* noop */ }
   });
 }

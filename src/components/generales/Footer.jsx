@@ -19,9 +19,9 @@ const Footer = () => {
                         src='/img/logoucc.png'
                         alt="Logo UCC"
                     />
-                    <h3 className="footer-marca-nombre">Comunidad GensTI</h3>
+                    <h3 className="footer-marca-nombre">Facultad de Ingeniería · UCC</h3>
                     <p className="footer-texto">
-                        Comunidad de la Facultad de Ingeniería de Sistemas de la Universidad Cooperativa de Colombia.
+                        Plataforma académica de Ingeniería de Sistemas (Comunidad GensTI) e Ingeniería Civil de la Universidad Cooperativa de Colombia.
                     </p>
                 </div>
 
@@ -29,10 +29,10 @@ const Footer = () => {
                 <div className="footer-columna">
                     <h4>Enlaces</h4>
                     <ul>
-                        <li><a href="#">Inicio</a></li>
-                        <li><a href="#">Comunidad GensTI</a></li>
-                        <li><a href="#">Novedades</a></li>
-                        <li><a href="#">Posters</a></li>
+                        <li><a href="#inicio">Inicio</a></li>
+                        <li><a href="#comunidad">Comunidad</a></li>
+                        <li><a href="#novedades">Novedades</a></li>
+                        <li><a href="#posters">Posters</a></li>
                     </ul>
                 </div>
 
@@ -41,7 +41,8 @@ const Footer = () => {
                     <h4>Información</h4>
                     <ul>
                         <li><span className="footer-info-item">Universidad Cooperativa de Colombia</span></li>
-                        <li><span className="footer-info-item">Facultad de Ingeniería de Sistemas</span></li>
+                        <li><span className="footer-info-item">Ingeniería de Sistemas · Comunidad GensTI</span></li>
+                        <li><span className="footer-info-item">Ingeniería Civil</span></li>
                     </ul>
                 </div>
 
@@ -78,7 +79,7 @@ const Footer = () => {
             </div>
 
             <div className="footer-copy-creditos">
-                <p>© 2025 GensTI - Universidad Cooperativa de Colombia</p>
+                <p>© 2026 Facultad de Ingeniería (GensTI & Civil) - Universidad Cooperativa de Colombia</p>
                 <p className="creditos">Desarrollado por <strong>Juan Camilo Murillo / Semillero DivitGames</strong></p>
             </div>
         </footer>

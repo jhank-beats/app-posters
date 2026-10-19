@@ -22,6 +22,8 @@ const Carrusel = ({ images }) => {
         key={currentIndex}
         src={images[currentIndex]}
         alt={`slide-${currentIndex}`}
+        loading="lazy"
+        decoding="async"
     />
     <div className="slide_direction">
         <div className="left" onClick={handlePrevious}>

@@ -15,7 +15,8 @@ const AsignarEspacioModal = ({ poster, cerrarModal, alActualizar }) => {
 
     const cargarEspacios = async () => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Espacios.php`);
+            const qs = poster?.id_evento ? `?id_evento=${encodeURIComponent(poster.id_evento)}` : '';
+            const res = await fetch(`${SERVER_URL}/api/Espacios.php${qs}`);
             const data = await res.json();
 
             // Verificamos ambas opciones (success booleano o status 'success')
@@ -71,7 +72,12 @@ const AsignarEspacioModal = ({ poster, cerrarModal, alActualizar }) => {
                 {poster && (
                     <div className="poster-info-box">
                         <p><strong>Póster:</strong> {poster.titulo}</p>
-                        <p><strong>Ubicación actual:</strong> {poster.nombre_espacio || 'Sin asignar'}</p>
+                        <p>
+                            <strong>Ubicación actual:</strong>{' '}
+                            {poster.nombre_espacio
+                                ? `${poster.nombre_espacio}${poster.ubicacion_detallada ? ` #${poster.ubicacion_detallada}` : ''}`
+                                : 'Sin asignar'}
+                        </p>
                     </div>
                 )}
 
@@ -83,7 +89,7 @@ const AsignarEspacioModal = ({ poster, cerrarModal, alActualizar }) => {
 
                 <form onSubmit={handleAsignar}>
                     <div className="form-group-asignar">
-                        <label>Seleccionar Espacio / Salón / Estante:</label>
+                        <label>Seleccionar Espacio Físico:</label>
                         <select
                             value={idEspacioSeleccionado}
                             onChange={(e) => setIdEspacioSeleccionado(e.target.value)}

@@ -26,7 +26,7 @@ COLORES UCC:
   background-color: #242424;  */
 
   font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  /* Sin text-rendering: optimizeLegibility: en Firefox degrada el scroll */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

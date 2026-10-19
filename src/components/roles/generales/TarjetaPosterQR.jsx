@@ -19,6 +19,17 @@ const TarjetaPosterQR = ({ poster, urlDigital }) => {
     return (
         <div className="contenedor-formulario" style={{ textAlign: 'center' }}>
             <p style={{ margin: '0 0 5px', fontWeight: 'bold' }}>{poster.titulo}</p>
+            {poster.nombre_evento && (
+                <p style={{ margin: '0 0 5px' }}>
+                    <span className="badge-evento">
+                        <span className="badge-evento-icono" aria-hidden="true">🎓</span>
+                        <span className="badge-evento-texto">
+                            {poster.nombre_evento}
+                            {poster.codigo_evento && <small>{poster.codigo_evento}</small>}
+                        </span>
+                    </span>
+                </p>
+            )}
             <p style={{ margin: '0 0 10px', fontSize: '0.9em' }}><strong>Autor(es):</strong> {poster.autores} · <strong>Categoría:</strong> {poster.categoria}</p>
 
             <div ref={qrRef} style={{ margin: '15px 0', display: 'flex', justifyContent: 'center' }}>

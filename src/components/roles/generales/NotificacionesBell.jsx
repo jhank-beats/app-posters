@@ -21,122 +21,132 @@ const NotificacionesBell = ({ tipo }) => {
         setNoLeidas(0);
     };
 
+    // Respuesta JSON sin romper la cadena si un endpoint falla.
+    const pedir = (url) => fetch(url).then(r => r.json()).catch(() => null);
+
     const cargar = async () => {
         try {
             const leidas = JSON.parse(localStorage.getItem(storageKey) || '[]');
             let lista = [];
 
-            if (tipo === 'super_admin' || rolId === 4 || tipo === 'admin' || rolId === 3) {
+            const esAdmin = tipo === 'super_admin' || rolId === 4 || tipo === 'admin' || rolId === 3;
+            const esUsuario = tipo === 'usuario' || rolId === 1;
+            const esEvaluador = tipo === 'evaluador' || rolId === 2;
+            const conPosters = (esUsuario || esEvaluador) && !!idUsuario;
+
+            // 1. Fuentes independientes: UNA tanda de peticiones en paralelo.
+            const [dNotifs, dSolicitudes, dPosters] = await Promise.all([
+                pedir(`${SERVER_URL}/api/Notificaciones.php`),
+                esAdmin ? pedir(`${SERVER_URL}/api/TablaSolicitudes.php`) : Promise.resolve(null),
+                esAdmin
+                    ? pedir(`${SERVER_URL}/api/TablaPosters.php`)
+                    : (conPosters
+                        ? pedir(`${SERVER_URL}/api/TablaPosters.php?${esUsuario ? 'id_usuario' : 'id_evaluador'}=${idUsuario}`)
+                        : Promise.resolve(null)),
+            ]);
+
+            const misPosters = (dPosters && dPosters.data) || [];
+
+            // 2. Evaluaciones de TODOS los pósters en UNA sola petición
+            //    (antes: 1 petición por póster, en serie).
+            let dEvals = null;
+            if (conPosters && misPosters.length > 0) {
+                const ids = misPosters.map(p => p.id);
+                const extra = esEvaluador ? `&id_evaluador=${idUsuario}` : '';
+                dEvals = await pedir(`${SERVER_URL}/api/Evaluaciones.php?ids=${ids.join(',')}${extra}`);
+            }
+            const resultados = (dEvals && dEvals.resultados) || {};
+            const tieneEvaluaciones = (id) => {
+                const r = resultados[id];
+                return !!(r && r.evaluaciones && Object.keys(r.evaluaciones).length > 0);
+            };
+
+            if (esAdmin) {
                 // Pendientes por aceptar
-                try {
-                    const r = await fetch(`${SERVER_URL}/api/TablaSolicitudes.php`);
-                    const d = await r.json();
-                    const pendientes = d.data || [];
-                    if (pendientes.length > 0) {
-                        lista.push({
-                            id: 'pendientes',
-                            icon: '👥',
-                            titulo: `${pendientes.length} solicitudes pendientes`,
-                            desc: 'Usuarios esperando aprobación',
-                            ancla: 'pendientes',
-                            count: pendientes.length
-                        });
-                    }
-                } catch {}
-                // Posters sin espacio
-                try {
-                    const r = await fetch(`${SERVER_URL}/api/TablaPosters.php`);
-                    const d = await r.json();
-                    const sinEspacio = (d.data || []).filter(p => !p.nombre_espacio);
-                    if (sinEspacio.length > 0) {
-                        lista.push({
-                            id: 'sin-espacio',
-                            icon: '📍',
-                            titulo: `${sinEspacio.length} pósters sin ubicación`,
-                            desc: 'Asigna espacio físico',
-                            ancla: 'espacios'
-                        });
-                    }
-                    // Sin evaluador (para super_admin)
-                    if ((tipo === 'super_admin' || rolId === 4) && (d.data || []).length > 0) {
-                        // conteo simple: si no sabemos, mostramos si hay posters sin evaluaciones
-                        // se infiere revisando asignaciones en el modal, aquí solo placeholder si hay posters activos sin espacio ya cubierto
-                    }
-                } catch {}
-            }
-
-            if (tipo === 'usuario' || rolId === 1) {
-                if (idUsuario) {
-                    try {
-                        const r = await fetch(`${SERVER_URL}/api/TablaPosters.php?id_usuario=${idUsuario}`);
-                        const d = await r.json();
-                        const misPosters = d.data || [];
-                        for (const p of misPosters) {
-                            try {
-                                const er = await fetch(`${SERVER_URL}/api/Evaluaciones.php?id_poster=${p.id}`);
-                                const ed = await er.json();
-                                const tieneEval = ed.evaluaciones && Object.keys(ed.evaluaciones).length > 0;
-                                if (tieneEval) {
-                                    lista.push({
-                                        id: `eval-${p.id}`,
-                                        icon: '⭐',
-                                        titulo: `Tu póster "${p.titulo.slice(0, 28)}" fue evaluado`,
-                                        desc: 'Ver calificación',
-                                        ancla: 'posters'
-                                    });
-                                }
-                                if (!p.nombre_espacio) {
-                                    // ya cubierto arriba, pero para usuario también
-                                } else {
-                                    // Si tiene espacio, notificar asignación (solo una vez)
-                                    // Para simplificar, si tiene espacio y no está leído, mostrar
-                                    // Evitamos duplicar: solo si no hay evaluación aún, mostrar asignación
-                                    const key = `espacio-${p.id}-${p.nombre_espacio}`;
-                                    if (!leidas.includes(key)) {
-                                        lista.push({
-                                            id: key,
-                                            icon: '📍',
-                                            titulo: `Póster "${p.titulo.slice(0, 22)}" asignado a ${p.nombre_espacio}`,
-                                            desc: `Puesto ${p.ubicacion_detallada || ''}`,
-                                            ancla: 'posters'
-                                        });
-                                    }
-                                }
-                            } catch {}
-                        }
-                        if (misPosters.length === 0) {
-                            lista.push({ id: 'sin-posters', icon: '📤', titulo: 'Aún no has publicado pósters', desc: 'Carga tu primer póster', ancla: 'inicio' });
-                        }
-                    } catch {}
+                const pendientes = (dSolicitudes && dSolicitudes.data) || [];
+                if (pendientes.length > 0) {
+                    lista.push({
+                        id: 'pendientes',
+                        icon: '👥',
+                        titulo: `${pendientes.length} solicitudes pendientes`,
+                        desc: 'Usuarios esperando aprobación',
+                        ancla: 'pendientes',
+                        count: pendientes.length
+                    });
+                }
+                // Pósters sin ubicación
+                const sinEspacio = misPosters.filter(p => !p.nombre_espacio);
+                if (sinEspacio.length > 0) {
+                    lista.push({
+                        id: 'sin-espacio',
+                        icon: '📍',
+                        titulo: `${sinEspacio.length} pósters sin ubicación`,
+                        desc: 'Asigna espacio físico',
+                        ancla: 'espacios'
+                    });
                 }
             }
 
-            if (tipo === 'evaluador' || rolId === 2) {
-                if (idUsuario) {
-                    try {
-                        const r = await fetch(`${SERVER_URL}/api/TablaPosters.php?id_evaluador=${idUsuario}`);
-                        const d = await r.json();
-                        const asignados = d.data || [];
-                        let pendientes = 0;
-                        for (const p of asignados) {
-                            try {
-                                const er = await fetch(`${SERVER_URL}/api/Evaluaciones.php?id_poster=${p.id}&id_evaluador=${idUsuario}`);
-                                const ed = await er.json();
-                                const tiene = ed.evaluaciones && Object.keys(ed.evaluaciones).length > 0;
-                                if (!tiene) pendientes++;
-                            } catch {}
+            if (esUsuario && idUsuario) {
+                for (const p of misPosters) {
+                    if (tieneEvaluaciones(p.id)) {
+                        lista.push({
+                            id: `eval-${p.id}`,
+                            icon: '⭐',
+                            titulo: `Tu póster "${p.titulo.slice(0, 28)}" fue evaluado`,
+                            desc: 'Ver calificación',
+                            ancla: 'posters'
+                        });
+                    } else if (p.nombre_espacio) {
+                        // Asignación de espacio: una sola vez, si aún no está leída.
+                        const key = `espacio-${p.id}-${p.nombre_espacio}`;
+                        if (!leidas.includes(key)) {
+                            const etiquetaEsp = `${p.nombre_espacio}${p.ubicacion_detallada ? ` #${p.ubicacion_detallada}` : ''}`;
+                            lista.push({
+                                id: key,
+                                icon: '📍',
+                                titulo: `Póster "${p.titulo.slice(0, 22)}" asignado a ${etiquetaEsp}`,
+                                desc: `Ubicación: ${etiquetaEsp}`,
+                                ancla: 'posters'
+                            });
                         }
-                        if (asignados.length > 0) {
-                            lista.push({ id: 'asignados', icon: '📋', titulo: `${asignados.length} pósters asignados`, desc: pendienteTexto(pendientes), ancla: 'posters' });
-                            if (pendientes > 0) {
-                                lista.push({ id: 'pendientes-eval', icon: '✏️', titulo: `${pendientes} pendientes por calificar`, desc: 'Abre la tabla para calificar', ancla: 'posters' });
-                            }
-                        } else {
-                            lista.push({ id: 'sin-asignados', icon: '📭', titulo: 'Sin pósters asignados', desc: 'Esperando asignación de admin', ancla: 'posters' });
-                        }
-                    } catch {}
+                    }
+                }
+                if (misPosters.length === 0) {
+                    lista.push({ id: 'sin-posters', icon: '📤', titulo: 'Aún no has publicado pósters', desc: 'Carga tu primer póster', ancla: 'inicio' });
                 }
             }
+
+            const notifsServidor = (dNotifs && dNotifs.data) || [];
+            const servidorTraePendientes = notifsServidor.some(n => String(n.id || '').startsWith('pendientes-'));
+
+            if (esEvaluador && idUsuario) {
+                const postersPendientes = misPosters.filter(p => !tieneEvaluaciones(p.id));
+                const pendientes = postersPendientes.length;
+                if (misPosters.length > 0) {
+                    lista.push({ id: 'asignados', icon: '📋', titulo: `${misPosters.length} pósters asignados`, desc: pendienteTexto(pendientes), ancla: 'posters' });
+                    if (pendientes > 0 && !servidorTraePendientes) {
+                        const resumenTitulosEspacios = postersPendientes.map(p => {
+                            const ubi = p.nombre_espacio
+                                ? `${p.nombre_espacio}${p.ubicacion_detallada ? ` #${p.ubicacion_detallada}` : ''}`
+                                : 'Sin ubicar todavía';
+                            return `"${p.titulo}" (📍 ${ubi})`;
+                        }).join(' · ');
+                        lista.push({
+                            id: `pendientes-eval-${pendientes}`,
+                            icon: '✏️',
+                            titulo: `Tienes ${pendientes} ${pendientes === 1 ? 'póster pendiente' : 'pósters pendientes'} por calificar`,
+                            desc: `Faltan: ${resumenTitulosEspacios}`,
+                            ancla: 'posters'
+                        });
+                    }
+                } else {
+                    lista.push({ id: 'sin-asignados', icon: '📭', titulo: 'Sin pósters asignados', desc: 'Esperando asignación de admin', ancla: 'posters' });
+                }
+            }
+
+            // Novedades de rondas, premios, recordatorios y cambios de espacio (según el rol del token)
+            notifsServidor.forEach(n => lista.push(n));
 
             if (lista.length === 0) {
                 lista.push({ id: 'vacio', icon: '✅', titulo: 'Sin notificaciones', desc: 'Todo al día', ancla: null });
@@ -158,7 +168,8 @@ const NotificacionesBell = ({ tipo }) => {
 
     useEffect(() => {
         cargar();
-        const id = setInterval(cargar, 60000);
+        // Cada 5 min basta para notificaciones (antes: cada 60 s saturaba el servidor).
+        const id = setInterval(cargar, 300000);
         const onClickOutside = (e) => {
             if (ref.current && !ref.current.contains(e.target)) setAbierto(false);
         };
@@ -196,7 +207,11 @@ const NotificacionesBell = ({ tipo }) => {
                         )}
                         <div className="notif-lista notif-lista--modal">
                             {notifs.map(n => (
-                                <button key={n.id} className="notif-item" onClick={() => ir(n.ancla)}>
+                                <button
+                                    key={n.id}
+                                    className={`notif-item${n.tipo === 'cambio-espacio' ? ' notif-item--cambio-espacio' : ''}`}
+                                    onClick={() => ir(n.ancla)}
+                                >
                                     <span className="notif-icon">{n.icon}</span>
                                     <span className="notif-text">
                                         <span className="notif-titulo">{n.titulo}</span>

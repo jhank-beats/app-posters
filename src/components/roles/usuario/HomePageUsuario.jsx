@@ -13,6 +13,8 @@ import "../generales/roles.css";
 const HomePageUsuario = () => {
     const [mostrarPosters, setMostrarPosters] = useState(false);
     const [mostrarCargarPosters, setMostrarCargarPosters] = useState(false);
+    // Clave que, al incrementarse, fuerza el refresco del listado de posters
+    const [claveRecargaPosters, setClaveRecargaPosters] = useState(0);
     const [nombreUsuario, setNombreUsuario] = useState("");
     const [mostrarCuenta, setMostrarCuenta] = useState(false);
 
@@ -25,6 +27,11 @@ const HomePageUsuario = () => {
     }, []);
 
     const limite = 3;
+
+    // Las tarjetas de acciones llevan al apartado o formulario correspondiente.
+    const irASeccion = (id) => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     return (
         <div className="contenedor-pagina">
@@ -53,22 +60,26 @@ const HomePageUsuario = () => {
                 <div className="texto-tarjetas">
                     <h3>🔔 Recuerda que puedes hacer las siguientes acciones:</h3>
                     <div className="grupo-tarjetas">
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => setMostrarCargarPosters(true)} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && setMostrarCargarPosters(true)}>
                             <div className="icono">👥</div>
                             <h3>Publicar tus posters</h3>
                             <p>Enviar tus posters realizados</p>
                         </div>
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => irASeccion('posters')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('posters')}>
                             <div className="icono">📂</div>
                             <h3>Visualizar tus Posters</h3>
                             <p>Ver tus posters publicados</p>
                         </div>
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => setMostrarCargarPosters(true)} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && setMostrarCargarPosters(true)}>
                             <div className="icono">📊</div>
                             <h3>Completa el formulario</h3>
                             <p>Recuerda llenar todo el formulario</p>
                         </div>
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => setMostrarCargarPosters(true)} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && setMostrarCargarPosters(true)}>
                             <div className="icono">📌</div>
                             <h3>Evita dublicados</h3>
                             <p>El sistema no permite duplicados</p>
@@ -87,18 +98,24 @@ const HomePageUsuario = () => {
             {/* Modal Cargar Posters */}
             {mostrarCargarPosters && (
                 <div className="modal">
-                    <CargarPosters cerrarModal={() => setMostrarCargarPosters(false)} />
+                    <CargarPosters
+                        cerrarModal={() => setMostrarCargarPosters(false)}
+                        onPosterUpload={() => setClaveRecargaPosters(k => k + 1)}
+                    />
                 </div>
             )}
 
             {/* Mis Posters publicados */}
             <section id="posters" className="posters-publicados">
                 <h2>Mis Posters Publicados</h2>
-                <MostrarPosters 
-                    limite={limite} 
-                    verMas={() => setMostrarPosters(true)}
-                    soloMisPosters={true}
-                />
+                {!mostrarPosters && (
+                    <MostrarPosters
+                        limite={limite}
+                        verMas={() => setMostrarPosters(true)}
+                        soloMisPosters={true}
+                        recargarClave={claveRecargaPosters}
+                    />
+                )}
             </section>
 
             {mostrarPosters && (
@@ -106,6 +123,7 @@ const HomePageUsuario = () => {
                     <MostrarPosters 
                         cerrarTabla={() => setMostrarPosters(false)} 
                         soloMisPosters={true}
+                        recargarClave={claveRecargaPosters}
                     />
                 </div>
             )}

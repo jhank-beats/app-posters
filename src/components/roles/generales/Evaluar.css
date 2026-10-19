@@ -15,7 +15,8 @@
   z-index: 2000;
   padding: 1rem;
   box-sizing: border-box;
-  backdrop-filter: blur(4px);
+  /* Sin backdrop-filter: blur(): en Firefox re-desenfoca toda la pantalla
+     en cada frame y traba los hovers/animaciones dentro del modal. */
 }
 
 .modal-contenido-evaluador,

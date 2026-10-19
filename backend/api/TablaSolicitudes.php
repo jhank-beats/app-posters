@@ -28,10 +28,13 @@ function obtenerSolicitudes()
 
     $limite = isset($_GET['limite']) ? (int) $_GET['limite'] : null;
 
-    $sql = "SELECT id, nombres, apellidos, correo, carrera, activo, fecha_registro, desactivado
-            FROM usuario
-            WHERE activo = 0 AND desactivado = 0
-            ORDER BY fecha_registro DESC";
+    $sql = "SELECT u.id, u.nombres, u.apellidos, u.correo, u.carrera,
+                   u.id_evento, ev.nombre_evento, ev.codigo_evento,
+                   u.activo, u.fecha_registro, u.desactivado
+            FROM usuario u
+            LEFT JOIN eventos ev ON ev.id_evento = u.id_evento
+            WHERE u.activo = 0 AND u.desactivado = 0
+            ORDER BY u.fecha_registro DESC";
 
     if ($limite) {
         $sql .= " LIMIT $limite";

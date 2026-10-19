@@ -47,18 +47,25 @@ function auth_verify_token($token) {
     return ['id' => (int)$p['id'], 'rol' => (int)$p['rol']];
 }
 
-// Extrae el token: header Authorization Bearer, X-Auth-Token, ?auth_token= o body.auth_token
+// Extrae el token: header Authorization Bearer, X-Auth-Token, ?auth_token=, $_POST['auth_token'] o body.auth_token
 function auth_current() {
     $token = null;
     $headers = function_exists('getallheaders') ? getallheaders() : [];
     $norm = [];
     foreach ($headers as $k => $v) $norm[strtolower($k)] = $v;
+    if (empty($norm['authorization']) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+        $norm['authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+    } elseif (empty($norm['authorization']) && !empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $norm['authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
     if (!empty($norm['authorization']) && stripos($norm['authorization'], 'bearer ') === 0) {
         $token = trim(substr($norm['authorization'], 7));
     } elseif (!empty($norm['x-auth-token'])) {
         $token = trim($norm['x-auth-token']);
     } elseif (!empty($_GET['auth_token'])) {
         $token = trim($_GET['auth_token']);
+    } elseif (!empty($_POST['auth_token'])) {
+        $token = trim($_POST['auth_token']);
     }
     if (!$token) {
         // Intentar leerlo del body JSON sin consumirlo dos veces (php://input es re-leíble)
@@ -79,12 +86,66 @@ function auth_deny($code, $msg) {
     exit;
 }
 
-// Exige login; opcionalmente exige uno de los roles. Superadmin (4) pasa siempre.
+// Exige login; opcionalmente exige uno de los roles. Superadmin (rol 4) pasa siempre.
+function auth_es_superadmin($rol = null) {
+    if ($rol === null) {
+        $curr = auth_current();
+        $rol = $curr ? (int)$curr['rol'] : 0;
+    }
+    return ((int)$rol === 4);
+}
+
+/**
+ * Si el usuario autenticado es un Administrador (id_rol = 3), devuelve el id_evento
+ * que tiene asignado para administrar (o el evento activo de su carrera como respaldo).
+ * Si es Super Admin (id_rol = 4) u otro rol, devuelve null (sin restricción de evento).
+ */
+function auth_id_evento_admin($conexion, $auth = null) {
+    if ($auth === null) $auth = auth_current();
+    if (!$auth || (int)($auth['rol'] ?? 0) !== 3) {
+        return null;
+    }
+    $userId = (int)($auth['id'] ?? 0);
+    if ($userId <= 0) return null;
+
+    $stmt = $conexion->prepare("SELECT id_evento, carrera FROM usuario WHERE id = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        $stmt->close();
+        if ($row) {
+            if (!empty($row['id_evento']) && (int)$row['id_evento'] > 0) {
+                return (int)$row['id_evento'];
+            }
+            $c = mb_strtolower(trim((string)($row['carrera'] ?? '')), 'UTF-8');
+            $cNorm = (strpos($c, 'civil') !== false) ? 'civil' : 'sistemas';
+            $stmtEv = $conexion->prepare("SELECT id_evento FROM eventos WHERE activo = 1 AND (carrera = ? OR carrera = 'ambas') ORDER BY (carrera = ?) DESC, id_evento ASC LIMIT 1");
+            if ($stmtEv) {
+                $stmtEv->bind_param("ss", $cNorm, $cNorm);
+                $stmtEv->execute();
+                $resEv = $stmtEv->get_result();
+                $rowEv = $resEv ? $resEv->fetch_assoc() : null;
+                $stmtEv->close();
+                if ($rowEv && !empty($rowEv['id_evento'])) {
+                    return (int)$rowEv['id_evento'];
+                }
+            }
+        }
+    }
+    $resDef = $conexion->query("SELECT id_evento FROM eventos WHERE activo = 1 ORDER BY id_evento ASC LIMIT 1");
+    if ($resDef && ($rowDef = $resDef->fetch_assoc())) {
+        return (int)$rowDef['id_evento'];
+    }
+    return 1;
+}
+
 function require_role($roles = null) {
     $auth = auth_current();
     if (!$auth) auth_deny(401, "No autenticado. Inicia sesión.");
     if (is_array($roles) && count($roles) > 0) {
-        if ($auth['rol'] === 4) return $auth; // superadmin bypass
+        if ((int)$auth['rol'] === 4) return $auth; // superadmin bypass
         if (!in_array($auth['rol'], $roles, true)) {
             auth_deny(403, "Sin permiso para esta operación.");
         }

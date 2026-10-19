@@ -78,12 +78,14 @@ const Cuenta = ({ cerrarCuenta }) => {
                 <div className="campo-formulario"><input type="text" name="apellidos" value={datosUsuario.apellidos} onChange={handleInputChange} placeholder="📝 Apellidos" /></div>
                 <div className="campo-formulario"><input type="email" name="correo" value={datosUsuario.correo} onChange={handleInputChange} placeholder="📧 Correo Electrónico" /></div>
                 <div className="campo-formulario">
-                    <select name="carrera" value={datosUsuario.carrera} onChange={handleInputChange}>
+                    <select
+                        name="carrera"
+                        value={datosUsuario.carrera.toLowerCase().includes("civil") ? "Ingeniería Civil" : (datosUsuario.carrera ? "Ingeniería de Sistemas" : "")}
+                        onChange={handleInputChange}
+                    >
                         <option value="">🎓 Selecciona tu carrera</option>
-                        <option value="sistemas">💻 Ingeniería en Sistemas</option>
-                        <option value="civil">🏗️ Ingeniería Civil</option>
-                        <option value="administracion">📊 Administración de Empresas</option>
-                        <option value="derecho">⚖️ Derecho</option>
+                        <option value="Ingeniería de Sistemas">💻 Ingeniería de Sistemas</option>
+                        <option value="Ingeniería Civil">🏗️ Ingeniería Civil</option>
                     </select>
                 </div>
 

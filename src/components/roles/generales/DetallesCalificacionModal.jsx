@@ -46,6 +46,9 @@ const DetallesCalificacionModal = ({ poster, evaluacion, criterios: criteriosPro
                 {poster && (
                     <div className="poster-info-box" style={{ textAlign: 'left' }}>
                         <p><strong>Póster:</strong> {poster.titulo}</p>
+                        {poster.nombre_evento && (
+                            <p><strong>Evento:</strong> {poster.nombre_evento}{poster.codigo_evento ? ` (${poster.codigo_evento})` : ''}</p>
+                        )}
                         <p><strong>Evaluador:</strong> {evaluacion.nombre_evaluador || 'Asignado'}</p>
                     </div>
                 )}

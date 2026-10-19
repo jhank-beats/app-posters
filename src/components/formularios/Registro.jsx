@@ -120,10 +120,8 @@ const Registro = ({ setUser, cerrarRegistro, abrirLogin }) => {
             required
           >
             <option value="">🎓 Selecciona tu carrera</option>
-            <option value="sistemas">💻 Ingeniería en Sistemas</option>
-            <option value="civil">🏗️ Ingeniería Civil</option>
-            <option value="administracion">📊 Administración de Empresas</option>
-            <option value="derecho">⚖️ Derecho</option>
+            <option value="Ingeniería de Sistemas">💻 Ingeniería de Sistemas</option>
+            <option value="Ingeniería Civil">🏗️ Ingeniería Civil</option>
           </select>
         </div>
 

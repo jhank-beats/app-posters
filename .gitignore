@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Scratch & temporary artifacts
+verificacion-responsive/
+.playwright-mcp/
+mejoras aplicativo

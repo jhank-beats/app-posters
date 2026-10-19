@@ -39,12 +39,15 @@ const NOMBRES_ROL = {
     usuario: 'Usuario',
 };
 
+const SERVER_URL = `http://${window.location.hostname}:8000`;
+
 const HomePage = () => {
     const [mostrarRegistro, setMostrarRegistro] = useState(false);
-    const [mostrarLogin, setMostrarLogin] = useState(false); // 👈 2. ESTADO PARA LOGIN
+    const [mostrarLogin, setMostrarLogin] = useState(false);
     const [, setUser] = useState(null);
     const [mostrarPreguntasFrecuentes, setMostrarPreguntasFrecuentes] = useState(false);
     const [avisoAcceso, setAvisoAcceso] = useState('');
+    const [eventosActivos, setEventosActivos] = useState([]);
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Si se llegó aquí por un acceso denegado (?acceso=denegado&rol=admin),
@@ -58,6 +61,19 @@ const HomePage = () => {
             searchParams.delete('rol');
             setSearchParams(searchParams, { replace: true });
         }
+    }, []);
+
+    useEffect(() => {
+        fetch(`${SERVER_URL}/api/Eventos.php?activo=1`)
+            .then((r) => r.json())
+            .then((d) => {
+                if (Array.isArray(d.eventos_activos) && d.eventos_activos.length > 0) {
+                    setEventosActivos(d.eventos_activos);
+                } else if (d.data) {
+                    setEventosActivos([d.data]);
+                }
+            })
+            .catch(() => {});
     }, []);
 
     return (
@@ -74,10 +90,46 @@ const HomePage = () => {
             <section id='inicio' className='inicio seccion-home'>
                 <div className='hero-tarjeta'>
                     <div className='texto-inicio'>
-                        <span className='hero-eyebrow'>Comunidad GensTI</span>
-                        <h1>Sistema de Gestión de Posters</h1>
+                        <span className='hero-eyebrow'>Facultad de Ingeniería · UCC</span>
+                        <h1>Sistema de Gestión de Pósters</h1>
 
-                        <p>Plataforma de la comunidad de Ingeniería de Sistemas de la Universidad Cooperativa de Colombia para gestionar, organizar y evaluar proyectos de investigación.</p>
+                        <p>Plataforma académica de Ingeniería de Sistemas (Comunidad GensTI) e Ingeniería Civil de la Universidad Cooperativa de Colombia para gestionar, organizar y evaluar proyectos de investigación.</p>
+
+                        {eventosActivos.length > 0 && (
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: '0.5rem',
+                                    marginBottom: '1.1rem',
+                                }}
+                                aria-label="Eventos activos por carrera"
+                            >
+                                {eventosActivos.map((ev) => (
+                                    <span
+                                        key={ev.id_evento}
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '0.4rem',
+                                            background: 'rgba(0, 172, 201, 0.18)',
+                                            border: '1px solid rgba(0, 172, 201, 0.55)',
+                                            color: '#ffffff',
+                                            padding: '0.35rem 0.75rem',
+                                            borderRadius: '999px',
+                                            fontSize: '0.82rem',
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        <span>{ev.carrera === 'civil' ? '🏗️' : ev.carrera === 'ambas' ? '🤝' : '💻'}</span>
+                                        <span>
+                                            <strong>{ev.carrera === 'civil' ? 'Ing. Civil:' : ev.carrera === 'ambas' ? 'General:' : 'Ing. Sistemas:'}</strong>{' '}
+                                            {ev.nombre_evento}
+                                        </span>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
                         <div className='botones-inicio'>
                             <button
@@ -104,7 +156,9 @@ const HomePage = () => {
                     <div className='imagen-inicio'>
                         <img
                             src="https://images.pexels.com/photos/546819/pexels-photo-546819.jpeg?auto=compress&cs=tinysrgb&w=800"
-                            alt="Estudiantes de Ingeniería de Sistemas desarrollando software"
+                            alt="Estudiantes de Ingeniería de Sistemas e Ingeniería Civil presentando proyectos"
+                            decoding="async"
+                            fetchPriority="high"
                         />
                         <span className='hero-detalle hero-detalle-cian' aria-hidden="true"></span>
                         <span className='hero-detalle hero-detalle-verde' aria-hidden="true"></span>
@@ -112,12 +166,12 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {/* apartado de comunidad GENSTI */}
+            {/* apartado de comunidad académica */}
             <section id='comunidad' className='comunidad-gensti seccion-home'>
                 <div className='subtitulo-texto-comunidad'>
                     <span className='seccion-eyebrow'>Nosotros</span>
-                    <h2>Comunidad GensTI</h2>
-                    <p>Comunidad de la Facultad de Ingeniería de Sistemas de la Universidad Cooperativa de Colombia.</p>
+                    <h2>Comunidad de Ingeniería · GensTI & Civil</h2>
+                    <p>Programas de Ingeniería de Sistemas e Ingeniería Civil de la Universidad Cooperativa de Colombia.</p>
                 </div>
 
                 <div className='cuadros-texto'>
@@ -125,21 +179,21 @@ const HomePage = () => {
                         icono={faUsers}
                         color="#00acc9"
                         titulo="¿Qué somos?"
-                        descripcion="GensTI es la comunidad académica de Ingeniería de Sistemas: estudiantes y docentes que comparten proyectos, conocimiento e investigación para crecer juntos."
+                        descripcion="Somos la comunidad académica de Ingeniería de Sistemas (GensTI) e Ingeniería Civil: estudiantes y docentes que comparten proyectos, conocimiento e investigación aplicada."
                     />
 
                     <CuadrosTextoComunidad
                         icono={faBullseye}
                         color="#80ba27"
                         titulo="Objetivos"
-                        descripcion="Impulsamos la investigación, la innovación y el desarrollo tecnológico, fomentando la participación académica en cada semestre."
+                        descripcion="Impulsamos la investigación, la innovación en ingeniería y el desarrollo tecnológico e infraestructura, fomentando la participación académica en cada semestre."
                     />
 
                     <CuadrosTextoComunidad
                         icono={faFlask}
                         color="#cad400"
                         titulo="Semilleros de Investigación"
-                        descripcion="Los semilleros son el espacio para desarrollar proyectos, investigar y trabajar de forma colaborativa con acompañamiento docente."
+                        descripcion="Los semilleros de Ingeniería de Sistemas e Ingeniería Civil son el espacio para desarrollar proyectos interdisciplinarios con acompañamiento docente."
                     />
                 </div>
 
@@ -218,6 +272,8 @@ const HomePage = () => {
                             className='imagen-poster'
                             src="/img/poster.png"
                             alt="Maqueta del poster para este semestre"
+                            loading="lazy"
+                            decoding="async"
                         />
                         <a className='boton-descargar-poster' href="/img/poster.png" download="Maqueta-Poster.png">
                             <FontAwesomeIcon icon={faDownload} />

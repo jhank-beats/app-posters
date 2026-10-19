@@ -2,19 +2,19 @@ import { useState } from "react";
 
 const faqs = [
   {
-    question: "¿Qué es la Comunidad GensTI?",
+    question: "¿Qué programas participan en la plataforma?",
     answer:
-      "Es la comunidad de la Facultad de Ingeniería de Sistemas de la Universidad Cooperativa de Colombia (UCC). Esta plataforma permite gestionar, organizar y evaluar los pósters de los proyectos de investigación de la comunidad.",
+      "La plataforma integra a los programas de Ingeniería de Sistemas (Comunidad GensTI) e Ingeniería Civil de la Universidad Cooperativa de Colombia (UCC). Permite gestionar, organizar y evaluar los pósters de proyectos académicos y de investigación de ambas carreras.",
   },
   {
     question: "¿Quién puede registrarse?",
     answer:
-      "Cualquier persona puede enviar una solicitud de registro completando el formulario con nombres, apellidos, correo, contraseña y carrera. La solicitud queda pendiente y es gestionada por los administradores, quienes pueden activarla o rechazarla desde el panel de solicitudes.",
+      "Cualquier estudiante o docente puede enviar una solicitud de registro completando el formulario con nombres, apellidos, correo, contraseña y carrera. La solicitud queda pendiente y es gestionada por los administradores desde el panel de solicitudes.",
   },
   {
-    question: "¿Cómo puedo registrar un poster?",
+    question: "¿Cómo puedo registrar un poster y elegir la carrera?",
     answer:
-      "Debes iniciar sesión en la plataforma. Desde tu panel puedes usar el formulario de subida, donde se solicitan título, autores, descripción, categoría, palabras clave y el archivo del póster (.pdf, .jpg o .png). El sistema valida que hayas iniciado sesión y que todos los campos estén completos antes de publicarlo.",
+      "Debes iniciar sesión en la plataforma. Desde el formulario de subida ingresas título, autores, descripción, categoría, profesores/materias, carrera de participación (Ingeniería de Sistemas, Ingeniería Civil o Ambas) y el archivo del póster (.pdf, .jpg, .jpeg o .png).",
   },
   {
     question: "¿Quién puede evaluar los posters?",
@@ -57,10 +57,10 @@ export default function PreguntasFrecuentes({ cerrar }) {
           ×
         </button>
 
-        <h2 className="faq-titulo">
+        <div className="faq-header">
           <span className="seccion-eyebrow faq-eyebrow">Centro de Ayuda</span>
-          Preguntas Frecuentes
-        </h2>
+          <h2 className="faq-titulo">Preguntas Frecuentes</h2>
+        </div>
 
         <div className="faq-lista">
           {faqs.map((faq, index) => (
@@ -90,7 +90,7 @@ export default function PreguntasFrecuentes({ cerrar }) {
 
               <div className="faq-respuesta-wrapper">
                 <div className="faq-respuesta">
-                  {faq.answer}
+                  <p className="faq-respuesta-texto">{faq.answer}</p>
                 </div>
               </div>
             </div>

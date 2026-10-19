@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { isLoggedIn, getRol } from "../auth.js";
 
-// Roles: 1=usuario 2=evaluador 3=admin 4=superadmin (el 4 entra a todo).
+// Roles: 1=usuario 2=evaluador 3=admin (por evento) 4=superadmin (ve todo).
 const ROL_POR_RUTA = {
   "/superadmin": "superadmin",
   "/admin": "admin",

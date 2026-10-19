@@ -16,7 +16,8 @@
   z-index: 9999;
   padding: 1rem;
   box-sizing: border-box;
-  backdrop-filter: blur(4px);
+  /* Sin backdrop-filter: blur(): en Firefox re-desenfoca toda la pantalla
+     en cada frame y traba los hovers/animaciones dentro del modal. */
 }
 
 /* === TARJETA FORMULARIO === */
@@ -504,4 +505,259 @@
 .boton-secundario:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* =========================================================
+   FASE 2 — Profesores/Materias, Contador y Duplicados
+   ========================================================= */
+
+.formularios.formulario-cargar-poster {
+  max-width: 620px;
+}
+
+.contador-caracteres {
+  font-size: 0.78rem;
+  color: #5f5e5e;
+  text-align: right;
+  font-weight: 600;
+}
+
+.contador-caracteres.limite-cerca {
+  color: #b26a00;
+}
+
+.contador-caracteres.limite-alcanzado {
+  color: #d32f2f;
+}
+
+.bloque-profesores-materias {
+  background: #f5f7f8;
+  border: 1.5px solid rgba(19, 39, 64, 0.1);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  gap: 0.65rem;
+}
+
+.cabecera-profesores-materias {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+}
+
+.cabecera-profesores-materias label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #132740;
+}
+
+.ayuda-campo {
+  font-size: 0.78rem;
+  color: #5f5e5e;
+}
+
+.lista-pares-profesores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.fila-profesor-materia {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.formularios .btn-quitar-par {
+  width: 36px;
+  height: 38px;
+  min-width: 36px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1.5px solid rgba(211, 47, 47, 0.35);
+  background: #ffffff;
+  color: #d32f2f;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.formularios .btn-quitar-par:hover {
+  background: #d32f2f;
+  color: #ffffff;
+}
+
+.formularios .btn-agregar-par {
+  align-self: flex-start;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1.5px dashed #00acc9;
+  background: #ffffff;
+  color: #00acc9;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.formularios .btn-agregar-par:hover {
+  background: rgba(0, 172, 201, 0.1);
+  color: #0093ad;
+}
+
+/* --- Alerta de duplicados difusos --- */
+.alerta-duplicados {
+  background: #fffdf5;
+  border: 2px solid #cad400;
+  border-top: 4px solid #00acc9;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alerta-duplicados-cabecera strong {
+  display: block;
+  color: #132740;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.alerta-duplicados-cabecera p {
+  margin: 0;
+  color: #5f5e5e;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.lista-duplicados {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.duplicado-item {
+  background: #ffffff;
+  border: 1px solid rgba(19, 39, 64, 0.12);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.duplicado-fila-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.duplicado-titulo {
+  font-weight: 700;
+  color: #132740;
+  font-size: 0.88rem;
+}
+
+.duplicado-porcentaje {
+  background: rgba(202, 212, 0, 0.28);
+  border: 1px solid #cad400;
+  color: #132740;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.duplicado-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  color: #5f5e5e;
+}
+
+.duplicado-motivo {
+  color: #0093ad;
+  font-weight: 600;
+}
+
+.acciones-duplicados {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.acciones-duplicados .boton-primario,
+.acciones-duplicados .boton-secundario {
+  flex: 1 1 180px;
+  margin-top: 0;
+  padding: 0.7rem 1rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .fila-profesor-materia {
+    grid-template-columns: 1fr;
+  }
+
+  .formularios .btn-quitar-par {
+    width: 100%;
+    height: 34px;
+  }
+}
+
+/* Indicador de formatos aceptados debajo del botón de subida */
+.formatos-aceptados-info {
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.9rem;
+  background-color: #f5f7f8;
+  border: 1px dashed #cfd6dd;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.formatos-aceptados-titulo {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #5f5e5e;
+  letter-spacing: 0.2px;
+}
+
+.formatos-aceptados-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.badge-formato {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  background-color: #ffffff;
+  color: #132740;
+  border: 1px solid rgba(0, 172, 201, 0.35);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(19, 39, 64, 0.04);
 }

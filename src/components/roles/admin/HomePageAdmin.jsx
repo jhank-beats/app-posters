@@ -7,8 +7,12 @@ import Usuarios from '../generales/Usuarios.jsx';
 import Categorias from '../generales/Categorias.jsx';
 import Cuenta from '../generales/Cuenta.jsx';
 import GestionEspaciosModal from '../generales/GestionEspaciosModal.jsx';
+import GestionRondas from '../generales/GestionRondas.jsx';
+import GestionRecordatorios from '../generales/GestionRecordatorios.jsx';
 import Footer from "../../generales/Footer.jsx";
 import VolverArriba from "../../generales/VolverArriba.jsx";
+import { tituloRonda } from '../generales/rondasUtils.js';
+import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
 import "../generales/roles.css";
 
 const SERVER_URL = `http://${window.location.hostname}:8000`;
@@ -23,6 +27,15 @@ const HomePageAdmin = () => {
     // Estados para la Gestión de Espacios Físicos
     const [mostrarGestionEspacios, setMostrarGestionEspacios] = useState(false);
     const [espaciosResumen, setEspaciosResumen] = useState([]);
+
+    // Estados para Rondas y Premios (admin y super admin hacen lo mismo)
+    const [mostrarRondas, setMostrarRondas] = useState(false);
+    const [rondasResumen, setRondasResumen] = useState([]);
+    const [rondaFoco, setRondaFoco] = useState(null);
+
+    // Estados para Recordatorios Programados (Fase 5)
+    const [mostrarRecordatorios, setMostrarRecordatorios] = useState(false);
+    const [recRefreshKey, setRecRefreshKey] = useState(0);
 
     const [nombreUsuario, setNombreUsuario] = useState("");
     const [idRolActual, setIdRolActual] = useState(null);
@@ -39,6 +52,21 @@ const HomePageAdmin = () => {
         }
     };
 
+    const cargarRondasResumen = async (opts) => {
+        try {
+            const data = await obtenerRondasResumen(opts);
+            if (data.success) {
+                setRondasResumen(data.data || []);
+            }
+        } catch (error) {
+            console.error("Error al cargar rondas y premios:", error);
+        }
+    };
+
+    const [nombreEventoAsignado, setNombreEventoAsignado] = useState(
+        () => localStorage.getItem("nombreEventoAdmin") || ""
+    );
+
     useEffect(() => {
         const nombre = localStorage.getItem("nombreUsuario");
         if (nombre) {
@@ -48,9 +76,26 @@ const HomePageAdmin = () => {
         if (idRol) setIdRolActual(parseInt(idRol));
 
         cargarEspaciosResumen();
+        cargarRondasResumen();
     }, []);
 
+    useEffect(() => {
+        if (rondasResumen.length > 0 && rondasResumen[0]?.nombre_evento) {
+            setNombreEventoAsignado(rondasResumen[0].nombre_evento);
+            localStorage.setItem("nombreEventoAdmin", rondasResumen[0].nombre_evento);
+            if (rondasResumen[0].id_evento) {
+                localStorage.setItem("idEventoAdmin", String(rondasResumen[0].id_evento));
+            }
+        }
+    }, [rondasResumen]);
+
     const limite = 3;
+
+    // Las tarjetas de acciones llevan al apartado correspondiente.
+    // scrollIntoView respeta el scroll-margin-top del header sticky.
+    const irASeccion = (id) => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     return (
         <div className="contenedor-pagina">
@@ -64,32 +109,52 @@ const HomePageAdmin = () => {
                         Bienvenido Admin <br />
                         {nombreUsuario || "usuario"}
                     </h1>
+                    {nombreEventoAsignado && (
+                        <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                            <span className="badge-evento" style={{ fontSize: '0.95rem', padding: '6px 14px' }}>
+                                <span className="badge-evento-icono" aria-hidden="true">🗓️</span>
+                                <span className="badge-evento-texto">
+                                    Evento a cargo: <strong>{nombreEventoAsignado}</strong>
+                                </span>
+                            </span>
+                        </div>
+                    )}
                     <p>
-                        Estás en la página de inicio del sistema de gestión de pósters de la UCC.
+                        Estás en el panel de administración de tu evento asignado (pósters, espacios físicos, rondas y recordatorios filtrados automáticamente por tu evento).
                     </p>
                 </div>
                 <div className="texto-tarjetas">
                     <h3>🔔 Recuerda que puedes hacer las siguientes acciones:</h3>
                     <div className="grupo-tarjetas">
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => irASeccion('usuarios')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('usuarios')}>
                             <div className="icono">👥</div>
                             <h3>Gestionar Usuarios / Asignar Roles</h3>
                             <p>Aprobar o rechazar solicitudes y modificar roles</p>
                         </div>
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => irASeccion('posters')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('posters')}>
                             <div className="icono">🖼️</div>
                             <h3>Administrar Pósters</h3>
                             <p>Revisar, editar o eliminar</p>
                         </div>
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => irASeccion('espacios')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('espacios')}>
                             <div className="icono">📍</div>
                             <h3>Espacios Físicos</h3>
                             <p>Definir salones, estantes y capacidad de ubicación</p>
                         </div>
-                        <div className="tarjeta">
+                        <div className="tarjeta" onClick={() => irASeccion('categorias')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('categorias')}>
                             <div className="icono">📊</div>
                             <h3>Modificar Categorías</h3>
                             <p>Cambiar, agregar o eliminar categorías de los pósters</p>
+                        </div>
+                        <div className="tarjeta" onClick={() => irASeccion('recordatorios')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('recordatorios')}>
+                            <div className="icono">⏰</div>
+                            <h3>Recordatorios de Evaluación</h3>
+                            <p>Configurar horas, personalizar el mensaje y verificar pósters pendientes</p>
                         </div>
                     </div>
                 </div>
@@ -125,15 +190,28 @@ const HomePageAdmin = () => {
             <section id="posters">
                 <span className="seccion-eyebrow">Contenido</span>
                 <h2>Posters Publicados</h2>
-                <MostrarPosters
-                    limite={limite}
-                    verMas={() => setMostrarPosters(true)}
-                />
+                {!mostrarPosters && (
+                    <MostrarPosters
+                        limite={limite}
+                        verMas={() => setMostrarPosters(true)}
+                    />
+                )}
             </section>
             {mostrarPosters && (
                 <div className="modal-posters">
                     <div className="modal">
-                        <MostrarPostersAdmin cerrarTabla={() => setMostrarPosters(false)} />
+                        <MostrarPostersAdmin
+                            cerrarTabla={() => setMostrarPosters(false)}
+                            onVerRanking={(poster) => {
+                                const ultima = (poster.rondas || []).slice(-1)[0];
+                                setMostrarPosters(false);
+                                setRondaFoco({
+                                    id_evento: poster.id_evento,
+                                    id_ronda: poster.id_ronda || (ultima ? ultima.id_ronda : null)
+                                });
+                                setMostrarRondas(true);
+                            }}
+                        />
                     </div>
                 </div>
             )}
@@ -234,6 +312,123 @@ const HomePageAdmin = () => {
                     <div className="modal">
                         <Categorias cerrarTabla={() => setMostrarCategorias(false)} />
                     </div>
+                </div>
+            )}
+
+            {/* Rondas y Premios */}
+            <section id="rondas">
+                <span className="seccion-eyebrow">Rondas y premios</span>
+                <h2>Rondas de Evaluación y Premios</h2>
+                <div className="contenedor-tabla">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Evento</th>
+                                <th>Ronda</th>
+                                <th>Estado</th>
+                                <th>Premios</th>
+                                <th>Ganadores</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rondasResumen.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" style={{ textAlign: 'center' }}>
+                                        No se encontraron rondas registradas.
+                                    </td>
+                                </tr>
+                            ) : (
+                                rondasResumen.map((ev) => (
+                                    (ev.rondas || []).map((ronda) => (
+                                        <tr key={ronda.id_ronda}>
+                                            <td>
+                                                <span className="badge-evento">
+                                                    <span className="badge-evento-icono" aria-hidden="true">🎓</span>
+                                                    <span className="badge-evento-texto">
+                                                        {ev.nombre_evento}
+                                                        {ev.codigo_evento && <small>{ev.codigo_evento}</small>}
+                                                    </span>
+                                                </span>
+                                            </td>
+                                            <td><strong>{tituloRonda(ronda)}</strong></td>
+                                            <td>
+                                                {ronda.estado === 'abierta' ? (
+                                                    <span className="badge-rol rol-2">ABIERTA</span>
+                                                ) : (
+                                                    <span className="badge-rol rol-3">CERRADA</span>
+                                                )}
+                                            </td>
+                                            <td>{ronda.premios}</td>
+                                            <td>
+                                                {(ronda.ganadores || []).length === 0 ? (
+                                                    <span style={{ color: '#5f5e5e', fontStyle: 'italic' }}>Por publicar</span>
+                                                ) : (
+                                                    <div className="subtexto-celda">
+                                                        {ronda.ganadores.map((g) => (
+                                                            <div key={g.id_poster}>
+                                                                <span className="badge-premio">{g.premio || `${g.lugar}º lugar`}</span>{' '}
+                                                                {g.titulo}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                    <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                        <button
+                            className="boton-primario"
+                            onClick={() => {
+                                setRondaFoco(null);
+                                setMostrarRondas(true);
+                            }}
+                        >
+                            Administrar Rondas y Premios
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Modal Gestión de Rondas y Premios */}
+            {mostrarRondas && (
+                <div className="modal">
+                    <GestionRondas
+                        cerrarTabla={() => {
+                            setMostrarRondas(false);
+                            setRondaFoco(null);
+                            cargarRondasResumen({ refetch: true });
+                        }}
+                        idEventoInicial={rondaFoco ? rondaFoco.id_evento : null}
+                        idRondaFoco={rondaFoco ? rondaFoco.id_ronda : null}
+                    />
+                </div>
+            )}
+
+            {/* Recordatorios Programados y Mensajes Personalizables */}
+            <section id="recordatorios">
+                <span className="seccion-eyebrow">Automatización y avisos</span>
+                <h2>Recordatorios de Evaluación y Horarios</h2>
+                <GestionRecordatorios
+                    key={recRefreshKey}
+                    modo="resumen"
+                    abrirModal={() => setMostrarRecordatorios(true)}
+                />
+            </section>
+
+            {/* Modal Gestión de Recordatorios */}
+            {mostrarRecordatorios && (
+                <div className="modal">
+                    <GestionRecordatorios
+                        modo="modal"
+                        cerrarModal={() => {
+                            setMostrarRecordatorios(false);
+                            setRecRefreshKey((k) => k + 1);
+                        }}
+                    />
                 </div>
             )}
 

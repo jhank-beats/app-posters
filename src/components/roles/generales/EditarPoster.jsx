@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../../../config.js';
 import "./roles.css";
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
+// Nombres legibles de las categorías (mismas etiquetas que usa CargarPosters.jsx)
+const ETIQUETAS_CATEGORIA = {
+    desarrolloWeb: '💻 Desarrollo Web',
+    programacion: '⚙️ Programación',
+    backend: '🔧 Backend',
+    frontend: '🎨 Frontend',
+    calculo: '🧮 Cálculo/Ecuaciones',
+    estadistica: '📊 Estadística'
+};
+const nombreCategoria = (valor) => ETIQUETAS_CATEGORIA[valor] || valor;
+const MAX_DESCRIPCION = 255;
 
 const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
     const [categorias, setCategorias] = useState([]);
+    const [profesoresDisponibles, setProfesoresDisponibles] = useState([]);
     const [datosPoster, setDatosPoster] = useState({
         titulo: poster?.titulo || "",
         autores: poster?.autores || "",
@@ -12,20 +24,46 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
         categoria: poster?.categoria || "",
         palabrasClave: poster?.palabras_clave || ""
     });
+
+    const [profesoresMaterias, setProfesoresMaterias] = useState(() => {
+        if (Array.isArray(poster?.profesores) && poster.profesores.length > 0) {
+            return poster.profesores.map(p => ({
+                id_usuario: String(p.id_usuario || ""),
+                materia: p.materia || ""
+            }));
+        }
+        return [{ id_usuario: "", materia: "" }];
+    });
+
     const [cargandoGuardar, setCargandoGuardar] = useState(false);
     const [error, setError] = useState("");
+    const [duplicadosDetectados, setDuplicadosDetectados] = useState([]);
+    const [mensajeDuplicados, setMensajeDuplicados] = useState("");
 
     useEffect(() => {
         cargarCategorias();
+        cargarProfesores();
     }, []);
 
     const cargarCategorias = async () => {
         try {
-            const respuesta = await fetch(`${SERVER_URL}/api/Categorias.php`);
+            const respuesta = await fetch(`${API_BASE}/Categorias.php`);
             const datos = await respuesta.json();
             if (datos.success) setCategorias(datos.data);
-        } catch (error) {
-            console.error("Error al cargar categorías en el modal:", error);
+        } catch (err) {
+            console.error("Error al cargar categorías en el modal:", err);
+        }
+    };
+
+    const cargarProfesores = async () => {
+        try {
+            const respuesta = await fetch(`${API_BASE}/SubirPosters.php?action=profesores`);
+            const datos = await respuesta.json();
+            if (datos.success && Array.isArray(datos.data)) {
+                setProfesoresDisponibles(datos.data);
+            }
+        } catch (err) {
+            console.error("Error al cargar profesores en el modal:", err);
         }
     };
 
@@ -35,10 +73,29 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
             ...prev,
             [name]: value
         }));
+        if ((name === "titulo" || name === "descripcion") && duplicadosDetectados.length > 0) {
+            setDuplicadosDetectados([]);
+        }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const actualizarParProfesor = (indice, campo, valor) => {
+        setProfesoresMaterias(prev =>
+            prev.map((par, i) => (i === indice ? { ...par, [campo]: valor } : par))
+        );
+    };
+
+    const agregarParProfesor = () => {
+        setProfesoresMaterias(prev => [...prev, { id_usuario: "", materia: "" }]);
+    };
+
+    const quitarParProfesor = (indice) => {
+        setProfesoresMaterias(prev => {
+            if (prev.length <= 1) return [{ id_usuario: "", materia: "" }];
+            return prev.filter((_, i) => i !== indice);
+        });
+    };
+
+    const guardarPoster = async (forzarGuardado = false) => {
         setError("");
 
         if (!datosPoster.titulo.trim()) {
@@ -46,23 +103,53 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
             return;
         }
 
+        if (datosPoster.descripcion.length > MAX_DESCRIPCION) {
+            setError(`La descripción no puede superar los ${MAX_DESCRIPCION} caracteres (actual: ${datosPoster.descripcion.length}).`);
+            return;
+        }
+
+        const filaIncompleta = profesoresMaterias.find(
+            p => !p.id_usuario && p.materia.trim() !== ""
+        );
+        if (filaIncompleta) {
+            setError("Selecciona el profesor asignado para cada materia ingresada.");
+            return;
+        }
+
+        const paresValidos = profesoresMaterias
+            .filter(p => p.id_usuario)
+            .map(p => ({
+                id_usuario: Number(p.id_usuario),
+                materia: p.materia.trim()
+            }));
+
         setCargandoGuardar(true);
 
         try {
-            const respuesta = await fetch(`${SERVER_URL}/api/TablaPosters.php`, {
+            const respuesta = await fetch(`${API_BASE}/TablaPosters.php`, {
                 method: 'PUT',
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     id: poster.id,
-                    titulo: datosPoster.titulo,
-                    autores: datosPoster.autores,
-                    descripcion: datosPoster.descripcion,
+                    titulo: datosPoster.titulo.trim(),
+                    autores: datosPoster.autores.trim(),
+                    descripcion: datosPoster.descripcion.trim(),
                     categoria: datosPoster.categoria,
-                    palabrasClave: datosPoster.palabrasClave
+                    palabrasClave: datosPoster.palabrasClave.trim(),
+                    profesores: paresValidos.map(p => p.id_usuario),
+                    materias: paresValidos.map(p => p.materia),
+                    profesores_materias: paresValidos,
+                    forzar_guardado: forzarGuardado
                 })
             });
 
             const data = await respuesta.json();
+
+            if (data.status === "duplicados") {
+                setDuplicadosDetectados(Array.isArray(data.duplicados) ? data.duplicados : []);
+                setMensajeDuplicados(data.message || "Se encontraron pósters similares en este evento.");
+                return;
+            }
 
             if (data.success) {
                 alert("✅ Póster modificado correctamente");
@@ -79,70 +166,214 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
         }
     };
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        guardarPoster(false);
+    };
+
     return (
         <div className="modal">
-            <section className="formularios">
+            <section
+                className="formularios formularios-editar"
+                style={{ maxWidth: '620px', maxHeight: '92vh', overflowY: 'auto' }}
+            >
                 {cerrarModal && (
-                    <button className="cerrar-formulario" onClick={cerrarModal}>X</button>
+                    <button className="cerrar-formulario" onClick={cerrarModal} type="button">X</button>
                 )}
 
                 <div className="formularios-header">
                     <span className="formularios-eyebrow">Edición</span>
                     <h2>📌 Editar Póster</h2>
-                    <p>Actualiza la información técnica del póster</p>
+                    <p>Actualiza la información técnica, profesores y materias del póster</p>
                 </div>
 
                 <form className="formularios-body" onSubmit={handleSubmit}>
-                    <div className="campo-formulario"><input
-                        type="text"
-                        name="titulo"
-                        value={datosPoster.titulo}
-                        onChange={handleInputChange}
-                        placeholder="📝 Título del póster"
-                    /></div>
+                    <div className="campo-formulario">
+                        <label className="etiqueta-campo">📝 Título del póster</label>
+                        <input
+                            type="text"
+                            name="titulo"
+                            value={datosPoster.titulo}
+                            onChange={handleInputChange}
+                            placeholder="Escribe el título"
+                        />
+                    </div>
 
-                    <div className="campo-formulario"><input
-                        type="text"
-                        name="autores"
-                        value={datosPoster.autores}
-                        onChange={handleInputChange}
-                        placeholder="👥 Autores"
-                    /></div>
+                    <div className="campo-formulario">
+                        <label className="etiqueta-campo">👥 Autores</label>
+                        <input
+                            type="text"
+                            name="autores"
+                            value={datosPoster.autores}
+                            onChange={handleInputChange}
+                            placeholder="Nombres de los autores"
+                        />
+                    </div>
 
-                    <div className="campo-formulario"><select
-                        name="categoria"
-                        value={datosPoster.categoria}
-                        onChange={handleInputChange}
-                    >
-                        <option value="">📁 Seleccione una categoría</option>
-                        {categorias.map((cat) => (
-                            <option key={cat.id_categorias} value={cat.nombre_categorias}>
-                                {cat.nombre_categorias}
-                            </option>
-                        ))}
-                    </select></div>
+                    <div className="campo-formulario">
+                        <label className="etiqueta-campo">📁 Categoría</label>
+                        <select
+                            name="categoria"
+                            value={datosPoster.categoria}
+                            onChange={handleInputChange}
+                        >
+                            <option value="">Seleccione una categoría</option>
+                            {categorias.map((cat) => (
+                                <option key={cat.id_categorias} value={cat.nombre_categorias}>
+                                    {nombreCategoria(cat.nombre_categorias)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                    <div className="campo-formulario"><textarea
-                        name="descripcion"
-                        value={datosPoster.descripcion}
-                        onChange={handleInputChange}
-                        placeholder="📄 Descripción del póster"
-                        rows="4"
-                    ></textarea></div>
+                    <div className="campo-formulario bloque-profesores-materias">
+                        <div className="cabecera-profesores-materias">
+                            <label className="etiqueta-campo">👨‍🏫 Profesores asignados y materias</label>
+                            <span className="ayuda-campo">
+                                Asigna uno o varios profesores y la materia correspondiente
+                            </span>
+                        </div>
 
-                    <div className="campo-formulario"><input
-                        type="text"
-                        name="palabrasClave"
-                        value={datosPoster.palabrasClave}
-                        onChange={handleInputChange}
-                        placeholder="🏷️ Palabras clave"
-                    /></div>
+                        <div className="lista-pares-profesores">
+                            {profesoresMaterias.map((par, idx) => (
+                                <div className="fila-profesor-materia" key={idx}>
+                                    <select
+                                        value={par.id_usuario}
+                                        onChange={(e) => actualizarParProfesor(idx, 'id_usuario', e.target.value)}
+                                        aria-label={`Profesor ${idx + 1}`}
+                                    >
+                                        <option value="">👨‍🏫 Selecciona profesor...</option>
+                                        {profesoresDisponibles.map(prof => (
+                                            <option key={prof.id} value={prof.id}>
+                                                {prof.nombre_completo || `${prof.nombres} ${prof.apellidos}`}
+                                                {prof.carrera ? ` (${prof.carrera})` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
 
-                    <button className="boton-primario" type="submit" disabled={cargandoGuardar}>
-                        {cargandoGuardar ? "Guardando..." : "Guardar Cambios"}
-                    </button>
+                                    <input
+                                        type="text"
+                                        value={par.materia}
+                                        onChange={(e) => actualizarParProfesor(idx, 'materia', e.target.value)}
+                                        placeholder="📚 Materia / Asignatura"
+                                        maxLength={160}
+                                        aria-label={`Materia ${idx + 1}`}
+                                    />
+
+                                    {(profesoresMaterias.length > 1 || par.id_usuario || par.materia) && (
+                                        <button
+                                            type="button"
+                                            className="btn-quitar-par"
+                                            onClick={() => quitarParProfesor(idx)}
+                                            title="Quitar fila"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            type="button"
+                            className="btn-agregar-par"
+                            onClick={agregarParProfesor}
+                        >
+                            + Agregar otro profesor / materia
+                        </button>
+                    </div>
+
+                    <div className="campo-formulario">
+                        <label className="etiqueta-campo">📄 Descripción</label>
+                        <textarea
+                            name="descripcion"
+                            value={datosPoster.descripcion}
+                            maxLength={MAX_DESCRIPCION}
+                            onChange={handleInputChange}
+                            placeholder="Describe el póster (máx. 255 caracteres)"
+                            rows="4"
+                        ></textarea>
+                        <div
+                            className={`contador-caracteres ${
+                                datosPoster.descripcion.length >= MAX_DESCRIPCION
+                                    ? 'limite-alcanzado'
+                                    : datosPoster.descripcion.length >= 220
+                                    ? 'limite-cerca'
+                                    : ''
+                            }`}
+                        >
+                            {datosPoster.descripcion.length}/{MAX_DESCRIPCION} caracteres
+                        </div>
+                    </div>
+
+                    <div className="campo-formulario">
+                        <label className="etiqueta-campo">🏷️ Palabras clave</label>
+                        <input
+                            type="text"
+                            name="palabrasClave"
+                            value={datosPoster.palabrasClave}
+                            onChange={handleInputChange}
+                            placeholder="Ej: seguridad, visión artificial"
+                        />
+                    </div>
+
+                    {duplicadosDetectados.length > 0 && (
+                        <div className="alerta-duplicados" role="alert">
+                            <div className="alerta-duplicados-cabecera">
+                                <strong>⚠️ Posibles pósters duplicados detectados</strong>
+                                <p>{mensajeDuplicados}</p>
+                            </div>
+
+                            <ul className="lista-duplicados">
+                                {duplicadosDetectados.map((dup, idx) => (
+                                    <li key={dup.id || idx} className="duplicado-item">
+                                        <div className="duplicado-fila-top">
+                                            <span className="duplicado-titulo">{dup.titulo}</span>
+                                            <span className="duplicado-porcentaje">
+                                                {dup.porcentaje ?? 100}% similitud
+                                            </span>
+                                        </div>
+                                        <div className="duplicado-meta">
+                                            <span><strong>Autor(es):</strong> {dup.autor || dup.autores || '—'}</span>
+                                            {dup.motivo && (
+                                                <span className="duplicado-motivo">{dup.motivo}</span>
+                                            )}
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+
+                            <div className="acciones-duplicados">
+                                <button
+                                    type="button"
+                                    className="boton-primario btn-forzar-guardado"
+                                    disabled={cargandoGuardar}
+                                    onClick={() => guardarPoster(true)}
+                                >
+                                    {cargandoGuardar ? "Guardando..." : "Guardar de todos modos"}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="boton-secundario"
+                                    disabled={cargandoGuardar}
+                                    onClick={() => {
+                                        setDuplicadosDetectados([]);
+                                        setMensajeDuplicados("");
+                                    }}
+                                >
+                                    Cancelar y corregir
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {error && <p className="error-mensaje">{error}</p>}
+
+                    {duplicadosDetectados.length === 0 && (
+                        <button className="boton-primario" type="submit" disabled={cargandoGuardar}>
+                            {cargandoGuardar ? "Guardando..." : "Guardar Cambios"}
+                        </button>
+                    )}
                 </form>
             </section>
         </div>
