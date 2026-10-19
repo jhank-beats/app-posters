@@ -216,8 +216,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
         ];
         if (rolSesionActual === 4) {
             base.push(
-                { value: 3, label: "Administrador (por evento)" },
-                { value: 4, label: "Super Admin" }
+                { value: 3, label: "Administrador (por evento)" }
             );
         }
         return base;

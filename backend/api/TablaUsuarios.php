@@ -166,6 +166,12 @@ function actualizarUsuario()
             return;
         }
 
+        // REGLA INSTITUCIONAL: Solo puede existir un único Super Admin en el sistema. No se permite promover a Super Admin.
+        if ($id_rol === 4) {
+            echo json_encode(['success' => false, 'message' => 'No está permitido asignar el rol de Super Admin. Solo puede existir un único Super Admin.']);
+            return;
+        }
+
         // Resolver id_evento según el evento explícito o el evento activo de la carrera del usuario
         $id_evento = null;
         if (array_key_exists('id_evento', $data) && !empty($data['id_evento'])) {
