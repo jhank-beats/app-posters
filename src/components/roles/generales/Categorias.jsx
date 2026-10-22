@@ -3,6 +3,7 @@ import { FaTrashAlt } from "react-icons/fa";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import "./roles.css";
 import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
 const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
     const [solicitudesRegistro, setSolicitudesRegistro] = useState([]);
@@ -112,6 +113,7 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
             {!limite && <h2>Gestión de Categorías</h2>}
 
             <div className="contenedor-tabla">
+              <HintScrollTabla />
                 <table>
                     <thead>
                         <tr>

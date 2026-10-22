@@ -8,6 +8,8 @@ import HomePageAdmin from './components/roles/admin/HomePageAdmin.jsx';
 import HomePageEvaluador from './components/roles/evaluador/HomePageEvaluador.jsx';
 import CargarPosters from './components/formularios/CargarPosters';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicPosterRedirect from './components/PublicPosterRedirect';
+import Ayuda from './components/generales/Ayuda';
 import { useState, useEffect } from 'react';
 import { logPageView } from './analytics.js';
 import './App.css';
@@ -64,6 +66,10 @@ function App() {
         <Route path="/admin" element={<ProtectedRoute roles={[3]}><HomePageAdmin /></ProtectedRoute>} />
         <Route path="/evaluador" element={<ProtectedRoute roles={[2]}><HomePageEvaluador /></ProtectedRoute>} />
         <Route path="/usuario" element={<ProtectedRoute roles={[1]}><HomePageUsuario /></ProtectedRoute>} />
+        {/* Ruta estable para QR impresos: /poster/:id redirige al archivo vigente */}
+        <Route path="/poster/:id" element={<PublicPosterRedirect />} />
+        <Route path="/ayuda" element={<Ayuda />} />
+        <Route path="*" element={<HomePage />} />
       </Routes>
     </Layout>
   );

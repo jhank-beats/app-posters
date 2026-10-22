@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import '../generales/Evaluar.css';
+import { API_BASE } from '../../../config.js';
 
 // Usar la misma constante dinámica que en MostrarPostersAdmin.jsx
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const AsignarEvaluadorModal = ({ poster, cerrarModal, idRonda = null }) => {
     const [evaluadores, setEvaluadores] = useState([]);
@@ -28,7 +28,7 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal, idRonda = null }) => {
         try {
             setCargando(true);
             const params = `id_poster=${poster.id}&carrera=${encodeURIComponent(filtroEspecialidad)}`;
-            const url = `${SERVER_URL}/api/AsignarEvaluadores.php?${params}${idRonda ? `&id_ronda=${idRonda}` : ''}`;
+            const url = `${API_BASE}/AsignarEvaluadores.php?${params}${idRonda ? `&id_ronda=${idRonda}` : ''}`;
             const res = await fetch(url);
             const data = await res.json();
 
@@ -82,7 +82,7 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal, idRonda = null }) => {
             return;
         }
         try {
-            const res = await fetch(`${SERVER_URL}/api/AsignarEvaluadores.php`, {
+            const res = await fetch(`${API_BASE}/AsignarEvaluadores.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

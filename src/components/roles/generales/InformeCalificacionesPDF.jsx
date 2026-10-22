@@ -4,6 +4,7 @@
 // ventana nueva + document.write + window.print(). Sin jsPDF (prohibido por
 // la especificación del proyecto).
 
+import { API_BASE } from '../../../config.js';
 const escaparHtml = (valor) => String(valor ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -127,10 +128,9 @@ export const imprimirInformeRonda = (informe, { autoPrint = true } = {}) => {
     return win;
 };
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 export const descargarInformeRondaPDF = async (idRonda) => {
-    const res = await fetch(`${SERVER_URL}/api/Rondas.php?action=informe_ronda&id_ronda=${idRonda}`);
+    const res = await fetch(`${API_BASE}/Rondas.php?action=informe_ronda&id_ronda=${idRonda}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.message || 'No fue posible cargar el informe.');
     imprimirInformeRonda(data.data);

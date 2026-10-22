@@ -6,13 +6,14 @@ import { tituloRonda, textoLugar } from './rondasUtils.js';
 import { descargarResumenRondaPDF } from './ResumenRondaPDF.jsx';
 import { descargarInformeRondaPDF } from './InformeCalificacionesPDF.jsx';
 import { invalidarRondasResumen } from '../../../api/rondasResumen.js';
+import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
 // GestionRondas — panel de admin / super admin para configurar rondas, cortar
 // por promedio, publicar el podio y entregar premios (§6.1 del documento de
 // especificación). Todos los permisos se revalidan en el backend; aquí solo se
 // ocultan botones.
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null }) => {
     const [cargando, setCargando] = useState(true);
@@ -41,7 +42,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
 
     const cargarResumen = useCallback(async (mantenerEvento = null) => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Rondas.php?action=resumen`);
+            const res = await fetch(`${API_BASE}/Rondas.php?action=resumen`);
             const data = await res.json();
             if (data.success) {
                 const lista = data.data || [];
@@ -77,7 +78,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
         setVisibles(prev => ({ ...prev, [idRondaFoco]: true }));
         if (detalles[idRondaFoco]) return;
         let vivo = true;
-        fetch(`${SERVER_URL}/api/Rondas.php?id_ronda=${idRondaFoco}`)
+        fetch(`${API_BASE}/Rondas.php?id_ronda=${idRondaFoco}`)
             .then(res => res.json())
             .then(data => {
                 if (vivo && data.success) {
@@ -121,7 +122,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
         const cfg = config[ronda.id_ronda] || {};
         setConfig(prev => ({ ...prev, [ronda.id_ronda]: { ...prev[ronda.id_ronda], guardando: true } }));
         try {
-            const res = await fetch(`${SERVER_URL}/api/Rondas.php`, {
+            const res = await fetch(`${API_BASE}/Rondas.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -150,7 +151,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
         // Abrir sigue siendo directo; cerrar simple SOLO es cierre final.
         if (ronda.estado !== 'abierta') {
             try {
-                const res = await fetch(`${SERVER_URL}/api/Rondas.php`, {
+                const res = await fetch(`${API_BASE}/Rondas.php`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ accion: 'abrir_ronda', id_ronda: ronda.id_ronda })
@@ -193,7 +194,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                 return;
             }
 
-            const res = await fetch(`${SERVER_URL}/api/Rondas.php`, {
+            const res = await fetch(`${API_BASE}/Rondas.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ accion: 'previsualizar_corte', id_ronda: ronda.id_ronda, cupos })
@@ -236,7 +237,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
     // Ejecuta el cierre final (sin pasar pósters). Mismo aviso de pendientes.
     const ejecutarCierreFinal = async (ronda, forzar = false) => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Rondas.php`, {
+            const res = await fetch(`${API_BASE}/Rondas.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -275,7 +276,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
 
     const cargarParticipantes = async (ronda) => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Rondas.php?action=participantes&id_ronda=${ronda.id_ronda}`);
+            const res = await fetch(`${API_BASE}/Rondas.php?action=participantes&id_ronda=${ronda.id_ronda}`);
             const data = await res.json();
             if (data.success) {
                 setParticipantes(prev => ({ ...prev, [ronda.id_ronda]: data.data || [] }));
@@ -302,7 +303,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
 
     const crearRonda = async (form) => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Rondas.php`, {
+            const res = await fetch(`${API_BASE}/Rondas.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -330,7 +331,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
 
     const cargarDetalleRonda = async (idRonda) => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Rondas.php?id_ronda=${idRonda}`);
+            const res = await fetch(`${API_BASE}/Rondas.php?id_ronda=${idRonda}`);
             const data = await res.json();
             if (data.success) {
                 setDetalles(prev => ({ ...prev, [idRonda]: data.data }));
@@ -374,7 +375,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
         const numEval = Math.max(1, Math.min(5, parseInt(estado.evaluadores, 10) || 3));
 
         try {
-            const res = await fetch(`${SERVER_URL}/api/Rondas.php`, {
+            const res = await fetch(`${API_BASE}/Rondas.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -451,7 +452,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
         const pod = podios[ronda.id_ronda] || {};
         const premios = parseInt(pod.premios, 10) || 1;
         try {
-            const res = await fetch(`${SERVER_URL}/api/Rondas.php`, {
+            const res = await fetch(`${API_BASE}/Rondas.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ accion: 'previsualizar_podio', id_ronda: ronda.id_ronda, premios })
@@ -486,7 +487,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
             texto: `Se publicarán ${lugares.length} premio(s) de esta ronda y se avisará por correo a los ganadores y a los evaluadores. ¿Continuar?`,
             accion: async () => {
                 try {
-                    const res = await fetch(`${SERVER_URL}/api/Rondas.php`, {
+                    const res = await fetch(`${API_BASE}/Rondas.php`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ accion: 'publicar_podio', id_ronda: ronda.id_ronda, premios, lugares })
@@ -513,7 +514,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
             texto: 'Se quitarán los lugares y premios publicados y la ronda volverá a abrirse. ¿Continuar?',
             accion: async () => {
                 try {
-                    const res = await fetch(`${SERVER_URL}/api/Rondas.php`, {
+                    const res = await fetch(`${API_BASE}/Rondas.php`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ accion: 'deshacer_podio', id_ronda: ronda.id_ronda })
@@ -698,6 +699,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                         </div>
 
                         <div className="contenedor-tabla">
+                          <HintScrollTabla />
                             <table>
                                 <thead>
                                     <tr>
@@ -779,6 +781,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                 {pod.preview && (
                                     <>
                                         <div className="contenedor-tabla">
+                                          <HintScrollTabla />
                                             <table>
                                                 <thead>
                                                     <tr>

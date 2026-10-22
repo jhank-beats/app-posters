@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faFacebook,
@@ -33,6 +34,7 @@ const Footer = () => {
                         <li><a href="#comunidad">Comunidad</a></li>
                         <li><a href="#novedades">Novedades</a></li>
                         <li><a href="#posters">Posters</a></li>
+                        <li><Link to="/ayuda">Ayuda y sugerencias</Link></li>
                     </ul>
                 </div>
 

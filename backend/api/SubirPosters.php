@@ -11,6 +11,7 @@ cors_headers("POST, GET, OPTIONS");
 include '../Conexion.php';
 include_once __DIR__ . '/includes/Correos.php';
 include_once __DIR__ . '/includes/PostersHelper.php';
+include_once __DIR__ . '/includes/ArchivosHelper.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -69,7 +70,15 @@ if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK)
 }
 
 $rutaTemporal = $_FILES['archivo']['tmp_name'];
-$nombreOriginal = basename($_FILES['archivo']['name']);
+$nombreOriginal = basename((string)$_FILES['archivo']['name']);
+
+// Lista blanca de extensión + MIME real + límite de 10 MB.
+$validacionArchivo = archivos_validar_subida($rutaTemporal, $nombreOriginal, 10485760);
+if (!$validacionArchivo['ok']) {
+    echo json_encode(['status' => 'error', 'success' => false, 'message' => $validacionArchivo['error']]);
+    exit;
+}
+$extensionArchivo = $validacionArchivo['ext'];
 $hashArchivo = is_file($rutaTemporal) ? hash_file('sha256', $rutaTemporal) : null;
 
 // Normalizar pares profesor-materia enviados desde el formulario
@@ -139,13 +148,11 @@ try {
         }
     }
 
-    // 2. Mover el archivo subido al directorio destino
-    $directorioDestino = __DIR__ . '/../imgPosters/';
-    if (!file_exists($directorioDestino)) {
-        mkdir($directorioDestino, 0777, true);
-    }
+    // 2. Mover el archivo subido al directorio destino (clave aleatoria, sin nombre original)
+    $directorioDestino = archivos_asegurar_dir();
+    $claveArchivo = archivos_nueva_clave($extensionArchivo);
 
-    $rutaFinal = $directorioDestino . $nombreOriginal;
+    $rutaFinal = $directorioDestino . '/' . $claveArchivo;
     $yaExistiaEnDisco = file_exists($rutaFinal);
 
     if (!move_uploaded_file($rutaTemporal, $rutaFinal)) {
@@ -153,8 +160,12 @@ try {
         echo json_encode(['status' => 'error', 'success' => false, 'message' => 'No se pudo guardar el archivo del póster en el servidor.']);
         exit;
     }
+    @chmod($rutaFinal, 0644);
+    // Miniatura para listados (best-effort; PDF se sirve original).
+    archivos_generar_miniatura($claveArchivo, 200);
     $archivoMovido = true;
-    $rutaRelativa = 'src/assets/imgPosters/' . $nombreOriginal;
+    // Persistir SOLO la clave del archivo (contrato único de URL).
+    $rutaRelativa = $claveArchivo;
 
     // 3. Asignación automática de espacio físico con cupo disponible en el evento
     $id_espacio_asignado = null;
@@ -309,6 +320,7 @@ try {
     if ($archivoMovido && !$yaExistiaEnDisco && $rutaFinal && file_exists($rutaFinal)) {
         @unlink($rutaFinal);
     }
+    error_log('SubirPosters: ' . $e->getMessage());
     if (str_contains($e->getMessage(), 'foreign key') || str_contains($e->getMessage(), 'fk_poster_usuario')) {
         echo json_encode([
             'status' => 'error',
@@ -319,7 +331,7 @@ try {
         echo json_encode([
             'status' => 'error',
             'success' => false,
-            'message' => 'Error al guardar: ' . $e->getMessage(),
+            'message' => 'No se pudo guardar el póster. Intenta de nuevo.',
         ]);
     }
     exit;

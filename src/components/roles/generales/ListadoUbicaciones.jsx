@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaPrint, FaMapMarkerAlt, FaFileExcel } from "react-icons/fa";
 import "./roles.css";
+import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const ListadoUbicaciones = ({ cerrarTabla }) => {
     const [espaciosConPosters, setEspaciosConPosters] = useState([]);
@@ -16,9 +17,9 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
     const cargarDatosUbicaciones = async () => {
         try {
             setLoading(true);
-            const resEspacios = await fetch(`${SERVER_URL}/api/Espacios.php`);
+            const resEspacios = await fetch(`${API_BASE}/Espacios.php`);
             const dataEspacios = await resEspacios.json();
-            const resPosters = await fetch(`${SERVER_URL}/api/TablaPosters.php`);
+            const resPosters = await fetch(`${API_BASE}/TablaPosters.php`);
             const dataPosters = await resPosters.json();
             if (dataEspacios.status === 'success' && dataPosters.success) {
                 const espaciosRaw = dataEspacios.data || [];
@@ -152,6 +153,7 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
                                 <p style={{ color: '#5f5e5e', fontStyle: 'italic' }}>No hay pósters asignados en este espacio todavía.</p>
                             ) : (
                                 <div className="contenedor-tabla">
+                                  <HintScrollTabla />
                                     <table>
                                         <thead>
                                             <tr>

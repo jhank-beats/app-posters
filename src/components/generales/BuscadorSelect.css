@@ -1,0 +1,76 @@
+.buscador-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.buscador-select-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 2rem 0.55rem 0.75rem;
+  border: 1px solid #c5cdd8;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  color: #132740;
+}
+
+.buscador-select-input:focus {
+  outline: 2px solid #00acc9;
+  outline-offset: 1px;
+  border-color: #00acc9;
+}
+
+.buscador-select-limpiar {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.4rem;
+  line-height: 1;
+}
+
+.buscador-select-lista {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  margin: 4px 0 0;
+  padding: 0.25rem;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #c5cdd8;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(19, 39, 64, 0.12);
+}
+
+.buscador-select-opcion {
+  padding: 0.55rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #132740;
+  font-size: 0.92rem;
+}
+
+.buscador-select-opcion.activa,
+.buscador-select-opcion:hover {
+  background: #e6f7fb;
+}
+
+.buscador-select-opcion.seleccionada {
+  font-weight: 600;
+  color: #0b6b7d;
+}
+
+.buscador-select-vacio {
+  padding: 0.65rem 0.7rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+}

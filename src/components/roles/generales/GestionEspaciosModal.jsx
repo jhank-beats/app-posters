@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './roles.css';
+import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const GestionEspaciosModal = ({ cerrarModal }) => {
     const [espacios, setEspacios] = useState([]);
@@ -23,7 +24,7 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
 
     const cargarEventosActivos = async () => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Eventos.php?activo=1`);
+            const res = await fetch(`${API_BASE}/Eventos.php?activo=1`);
             const data = await res.json();
             if (data.status === 'success' || data.success) {
                 const lista = Array.isArray(data.eventos_activos) && data.eventos_activos.length > 0
@@ -41,7 +42,7 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
 
     const cargarEspacios = async () => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Espacios.php`);
+            const res = await fetch(`${API_BASE}/Espacios.php`);
             const data = await res.json();
             if (data.status === 'success' || data.success) {
                 setEspacios(data.data || []);
@@ -67,7 +68,7 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
             if (esSuperAdmin && idEventoSeleccionado) {
                 cuerpoPeticion.id_evento = parseInt(idEventoSeleccionado, 10);
             }
-            const res = await fetch(`${SERVER_URL}/api/Espacios.php`, {
+            const res = await fetch(`${API_BASE}/Espacios.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(cuerpoPeticion)
@@ -142,6 +143,7 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
                     <div className="tabla-espacios-container">
                         <h4>Listado de Espacios Actuales</h4>
                         <div className="contenedor-tabla">
+                          <HintScrollTabla />
                             <table>
                                 <thead>
                                     <tr>

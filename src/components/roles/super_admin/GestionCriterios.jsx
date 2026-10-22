@@ -4,8 +4,9 @@ import { FaRegPenToSquare } from "react-icons/fa6";
 import "../generales/roles.css";
 import "../../formularios/Formulario.css";
 import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
+import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const GestionCriterios = ({ cerrarTabla }) => {
     const [criterios, setCriterios] = useState([]);
@@ -50,7 +51,7 @@ const GestionCriterios = ({ cerrarTabla }) => {
     const cargarCriterios = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${SERVER_URL}/api/Criterios.php`);
+            const res = await fetch(`${API_BASE}/Criterios.php`);
             const data = await res.json();
             if (data.success) setCriterios(data.data || []);
         } catch (err) {
@@ -85,7 +86,7 @@ const GestionCriterios = ({ cerrarTabla }) => {
         if (!nombre.trim()) { setError('El nombre del criterio es obligatorio'); return; }
         try {
             const payload = { id: idEditando, nombre, descripcion, id_ronda: idRonda };
-            const res = await fetch(`${SERVER_URL}/api/Criterios.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const res = await fetch(`${API_BASE}/Criterios.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const data = await res.json();
             if (data.success) {
                 setNombre(''); setDescripcion(''); setIdEditando(null); setMostrarForm(false); cargarCriterios();
@@ -96,7 +97,7 @@ const GestionCriterios = ({ cerrarTabla }) => {
     const eliminar = async (id) => {
         if (!window.confirm('¿Seguro de eliminar este criterio?')) return;
         try {
-            const res = await fetch(`${SERVER_URL}/api/Criterios.php?id=${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE}/Criterios.php?id=${id}`, { method: 'DELETE' });
             const data = await res.json();
             if (data.success) cargarCriterios();
             else alert('❌ No se puede eliminar: ' + (data.message || 'el criterio ya tiene evaluaciones registradas'));
@@ -123,6 +124,7 @@ const GestionCriterios = ({ cerrarTabla }) => {
                 botones se quedan fijos y siempre visibles). */}
             <div className="formularios-body">
                 <div className="contenedor-tabla">
+                  <HintScrollTabla />
                     <table>
                         <thead>
                             <tr>

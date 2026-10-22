@@ -12,6 +12,7 @@ import {
     faClipboardCheck,
     faDownload,
 } from '@fortawesome/free-solid-svg-icons';
+import { API_BASE } from '../../config.js';
 
 import './HomePage.css';
 import Footer from "../generales/Footer.jsx";
@@ -39,7 +40,6 @@ const NOMBRES_ROL = {
     usuario: 'Usuario',
 };
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const HomePage = () => {
     const [mostrarRegistro, setMostrarRegistro] = useState(false);
@@ -64,7 +64,7 @@ const HomePage = () => {
     }, []);
 
     useEffect(() => {
-        fetch(`${SERVER_URL}/api/Eventos.php?activo=1`)
+        fetch(`${API_BASE}/Eventos.php?activo=1`)
             .then((r) => r.json())
             .then((d) => {
                 if (Array.isArray(d.eventos_activos) && d.eventos_activos.length > 0) {

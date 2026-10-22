@@ -2,6 +2,7 @@
 // Mismo patrón que CertificadoPremio.jsx: ventana nueva + document.write +
 // window.print(). No usa jsPDF (prohibido por la especificación).
 
+import { API_BASE } from '../../../config.js';
 const escaparHtml = (valor) => String(valor ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -93,10 +94,9 @@ export const imprimirResumenRonda = (resumen, { autoPrint = true } = {}) => {
     return win;
 };
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 export const descargarResumenRondaPDF = async (idRonda) => {
-    const res = await fetch(`${SERVER_URL}/api/Rondas.php?action=resumen_ronda&id_ronda=${idRonda}`);
+    const res = await fetch(`${API_BASE}/Rondas.php?action=resumen_ronda&id_ronda=${idRonda}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.message || 'No fue posible cargar el resumen.');
     imprimirResumenRonda(data.data);

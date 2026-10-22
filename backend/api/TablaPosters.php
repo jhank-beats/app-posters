@@ -28,6 +28,7 @@ include '../Conexion.php';
 include_once __DIR__ . '/includes/Correos.php';
 include_once __DIR__ . '/includes/RondasHelper.php';
 include_once __DIR__ . '/includes/PostersHelper.php';
+include_once __DIR__ . '/includes/ArchivosHelper.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -45,12 +46,49 @@ switch ($method) {
         break;
 }
 
+/**
+ * Autorización de edición/borrado: dueño del póster o rol 3/4 (admin/superadmin).
+ * Devuelve null si puede continuar; si no, responde 403 y termina.
+ */
+function pp_exigir_dueno_o_admin($idPoster)
+{
+    global $conexion;
+    $auth = auth_current();
+    if (!$auth) {
+        auth_deny(401, "No autenticado.");
+    }
+    $rol = (int)$auth['rol'];
+    if ($rol === 3 || $rol === 4) {
+        return $auth;
+    }
+    $id = intval($idPoster);
+    if ($id <= 0) {
+        auth_deny(400, "ID de póster inválido.");
+    }
+    $stmt = $conexion->prepare("SELECT id_usuario FROM cargar_posters WHERE id = ? AND activo = 1 LIMIT 1");
+    if (!$stmt) {
+        auth_deny(500, "Error interno.");
+    }
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$row) {
+        auth_deny(404, "Póster no encontrado.");
+    }
+    if ((int)$row['id_usuario'] !== (int)$auth['id']) {
+        auth_deny(403, "No puedes modificar un póster que no te pertenece.");
+    }
+    return $auth;
+}
+
 function traerPosters()
 {
     global $conexion;
     try {
         $id_usuario = isset($_GET['id_usuario']) ? intval($_GET['id_usuario']) : null;
         $id_evaluador = isset($_GET['id_evaluador']) ? intval($_GET['id_evaluador']) : null;
+        $id_poster_exacto = isset($_GET['id']) ? intval($_GET['id']) : 0;
         $id_ronda = 0;
         if (isset($_GET['id_ronda'])) $id_ronda = intval($_GET['id_ronda']);
         if (isset($_GET['ronda'])) $id_ronda = intval($_GET['ronda']);
@@ -110,11 +148,12 @@ function traerPosters()
                         )
                         ELSE NULL
                     END AS ubicacion_detallada,
+                    -- Contrato único: devolver SOLO la clave del archivo.
+                    -- La URL pública la arma el frontend (urlArchivo / FILES_BASE).
                     CASE
-                        WHEN p.ruta_imagen LIKE 'http%' THEN p.ruta_imagen
-                        WHEN p.ruta_imagen LIKE 'imgPosters/%' THEN CONCAT('http://localhost/app-posters/backend/', p.ruta_imagen)
-                        WHEN p.ruta_imagen LIKE 'src/assets/imgPosters/%' THEN CONCAT('http://localhost/app-posters/backend/', SUBSTRING(p.ruta_imagen, 11))
-                        ELSE CONCAT('http://localhost/app-posters/backend/imgPosters/', p.ruta_imagen)
+                        WHEN p.ruta_imagen IS NULL OR p.ruta_imagen = '' THEN NULL
+                        WHEN p.ruta_imagen LIKE 'http%' THEN SUBSTRING_INDEX(p.ruta_imagen, '/', -1)
+                        ELSE SUBSTRING_INDEX(p.ruta_imagen, '/', -1)
                     END AS imagen,
                     DATE_FORMAT(p.fecha_registro, '%d/%m/%Y %H:%i') AS fecha_registro,
                     CONCAT(u.nombres, ' ', u.apellidos) AS nombre_usuario,
@@ -157,6 +196,13 @@ function traerPosters()
         }
 
         $condiciones[] = "p.activo = 1";
+
+        // Búsqueda por id exacto (usado por la ruta estable /poster/:id de los QR)
+        if ($id_poster_exacto > 0) {
+            $condiciones[] = "p.id = ?";
+            $tipos .= "i";
+            $params[] = $id_poster_exacto;
+        }
 
         // Con ronda activa o filtro por evento (Admin de evento / filtro Super Admin)
         $idEvEfectivo = $ronda ? intval($ronda['id_evento']) : $id_evento_filtro;
@@ -497,6 +543,9 @@ function modificarPoster()
         return;
     }
 
+    // A1: solo el dueño o admin/superadmin puede editar.
+    pp_exigir_dueno_o_admin($id);
+
     if (mb_strlen($descripcion, 'UTF-8') > 255) {
         echo json_encode([
             "success" => false,
@@ -597,10 +646,11 @@ function modificarPoster()
         return;
     } catch (Throwable $e) {
         @$conexion->rollback();
+        error_log('TablaPosters modificar: ' . $e->getMessage());
         echo json_encode([
             "status" => "error",
             "success" => false,
-            "message" => "Error al modificar póster: " . $e->getMessage()
+            "message" => "No se pudo modificar el póster."
         ]);
     }
 }
@@ -610,7 +660,18 @@ function eliminarPoster()
     global $conexion;
 
     $data = json_decode(file_get_contents('php://input'), true);
-    $id = $data['id'];
+    $id = intval($data['id'] ?? 0);
+
+    if ($id <= 0) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'ID de póster inválido'
+        ]);
+        return;
+    }
+
+    // A1: solo el dueño o admin/superadmin puede eliminar.
+    pp_exigir_dueno_o_admin($id);
 
     $sql = "UPDATE cargar_posters SET activo = 0 WHERE id = ?";
     $sentencia = $conexion->prepare($sql);

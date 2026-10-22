@@ -14,8 +14,8 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 /**
- * Lee una variable de configuración SMTP desde el entorno (getenv / $_ENV / .env)
- * con valor de respaldo para desarrollo local.
+ * Lee una variable de configuración SMTP desde el entorno (getenv / $_ENV / .env).
+ * Sin respaldos en código: en producción SMTP_USER y SMTP_PASS son obligatorios.
  */
 function correo_env($clave, $porDefecto = '')
 {
@@ -81,12 +81,17 @@ function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
     try {
         $mail = new PHPMailer(true);
 
-        $smtpHost = correo_env('SMTP_HOST', 'smtp.gmail.com');
+        $smtpHost = correo_env('SMTP_HOST', '');
         $smtpPort = intval(correo_env('SMTP_PORT', '587'));
-        $smtpUser = correo_env('SMTP_USER', 'REMOVED_EMAIL');
-        $smtpPass = correo_env('SMTP_PASS', 'REMOVED_SECRET');
+        $smtpUser = correo_env('SMTP_USER', '');
+        $smtpPass = correo_env('SMTP_PASS', '');
         $smtpFrom = correo_env('SMTP_FROM', $smtpUser);
         $smtpFromName = correo_env('SMTP_FROM_NAME', 'Sistema de Pósteres');
+
+        if ($smtpHost === '' || $smtpUser === '' || $smtpPass === '') {
+            file_put_contents('/tmp/correo_debug.txt', "SMTP no configurado (faltan SMTP_HOST/SMTP_USER/SMTP_PASS). Correo omitido a {$destinatario}\n", FILE_APPEND);
+            return false;
+        }
 
         $mail->isSMTP();
         $mail->Host = $smtpHost;
@@ -117,18 +122,41 @@ function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
     }
 }
 
-// Encola el correo en un proceso PHP en segundo plano para no bloquear
-// la respuesta al cliente (el handshake SMTP con Gmail tarda 3-5s).
+// Encola el correo en la tabla cola_correos (drenada por cron).
+// Si la tabla no existe, cae al exec en segundo plano (compatibilidad temporal).
 function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml)
 {
+    global $conexion;
+    $html = correo_asegurar_plantilla($asunto, $mensajeHtml);
+
+    if (isset($conexion) && $conexion instanceof mysqli) {
+        try {
+            $stmt = $conexion->prepare(
+                "INSERT INTO cola_correos (destinatario, asunto, mensaje, estado, intentos) VALUES (?, ?, ?, 'pendiente', 0)"
+            );
+            if ($stmt) {
+                $stmt->bind_param("sss", $destinatario, $asunto, $html);
+                if ($stmt->execute()) {
+                    $stmt->close();
+                    return true;
+                }
+                $stmt->close();
+            }
+        } catch (Throwable $e) {
+            // Tabla aún no creada: caer al método clásico.
+            error_log('encolarCorreoFondo: ' . $e->getMessage());
+        }
+    }
+
+    // Fallback: proceso CLI en segundo plano (legacy).
     $script = __DIR__ . '/EnviarCorreoFondo.php';
     $payload = base64_encode(json_encode([
         'destinatario' => $destinatario,
         'asunto' => $asunto,
-        'mensaje' => correo_asegurar_plantilla($asunto, $mensajeHtml),
+        'mensaje' => $html,
     ]));
-    // Proceso separado: la petición actual termina de inmediato.
     exec('php ' . escapeshellarg($script) . ' ' . escapeshellarg($payload) . ' > /dev/null 2>&1 &');
+    return true;
 }
 
 // Envía la respuesta JSON al cliente de inmediato y deja el correo en fondo.

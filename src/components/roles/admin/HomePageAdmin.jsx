@@ -14,8 +14,9 @@ import VolverArriba from "../../generales/VolverArriba.jsx";
 import { tituloRonda } from '../generales/rondasUtils.js';
 import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
 import "../generales/roles.css";
+import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const HomePageAdmin = () => {
     const [mostrarSolicitudes, setMostrarSolicitudes] = useState(false);
@@ -42,7 +43,7 @@ const HomePageAdmin = () => {
 
     const cargarEspaciosResumen = async () => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Espacios.php`);
+            const res = await fetch(`${API_BASE}/Espacios.php`);
             const data = await res.json();
             if (data.status === 'success' || data.success) {
                 setEspaciosResumen(data.data || []);
@@ -221,6 +222,7 @@ const HomePageAdmin = () => {
                 <span className="seccion-eyebrow">Ubicaciones</span>
                 <h2>Gestión de Espacios Físicos y Capacidad</h2>
                 <div className="contenedor-tabla">
+                  <HintScrollTabla />
                     <table>
                         <thead>
                             <tr>
@@ -320,6 +322,7 @@ const HomePageAdmin = () => {
                 <span className="seccion-eyebrow">Rondas y premios</span>
                 <h2>Rondas de Evaluación y Premios</h2>
                 <div className="contenedor-tabla">
+                  <HintScrollTabla />
                     <table>
                         <thead>
                             <tr>

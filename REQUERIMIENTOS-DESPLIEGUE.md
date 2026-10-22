@@ -9,7 +9,7 @@ Este documento especifica los requisitos técnicos de infraestructura, hardware,
 * **Frontend:** Single Page Application (SPA) desarrollada en **React 19 + Vite**, servida como archivos estáticos optimizados (`HTML`, `CSS`, `JS`).
 * **Backend:** API REST desarrollada en **PHP** ubicada en `/backend/api`.
 * **Base de Datos:** Relacional **MySQL / MariaDB**.
-* **Almacenamiento de Archivos:** Almacenamiento local en disco en el servidor para pósteres e imágenes (`/backend/imgPosters/`).
+* **Almacenamiento de Archivos:** Volumen local persistente fuera del repo (`UPLOAD_DIR`, ej. `/srv/posters-uploads`) para pósteres e imágenes.
 * **Notificaciones por Correo:** Envío transaccional vía **SMTP** mediante PHPMailer (procesamiento asíncrono en segundo plano mediante `exec php`).
 
 ---
@@ -45,8 +45,8 @@ Este documento especifica los requisitos técnicos de infraestructura, hardware,
   * `php-curl` (peticiones HTTP salientes si se requieren).
   * `php-cli` (indispensable: el sistema ejecuta scripts en segundo plano vía CLI: `php EnviarCorreoFondo.php`).
 * **Ajustes sugeridos en `php.ini`:**
-  * `upload_max_filesize = 25M` (o superior, según el peso de los archivos de pósteres).
-  * `post_max_size = 30M`.
+  * `upload_max_filesize = 10M`
+  * `post_max_size = 12M`
   * `memory_limit = 256M`.
 
 ### B. Base de Datos
@@ -75,27 +75,41 @@ Este documento especifica los requisitos técnicos de infraestructura, hardware,
 
 ## 6. Permisos de Archivos y Almacenamiento
 
-El aplicativo almacena archivos subidos por los usuarios en el servidor:
-* El directorio `backend/imgPosters/` debe tener permisos de lectura y escritura para el usuario del servidor web (`www-data` en Ubuntu/Debian):
+El aplicativo almacena archivos subidos por los usuarios en `UPLOAD_DIR` (fuera del checkout de git):
+* El directorio debe tener permisos de escritura para el usuario del servidor web (`www-data`):
   ```bash
-  sudo chown -R www-data:www-data backend/imgPosters/
-  sudo chmod -R 775 backend/imgPosters/
+  sudo mkdir -p /srv/posters-uploads
+  sudo chown -R www-data:www-data /srv/posters-uploads
+  sudo chmod 755 /srv/posters-uploads
   ```
+* PHP **no** debe ejecutarse en esa ruta. Backup sugerido: `scripts/backup-uploads.sh`.
 
 ---
 
 ## 7. Variables de Entorno para Producción
 
-En el servidor (o en la configuración del servicio web / PHP-FPM) se deben definir las siguientes variables de entorno:
+En el servidor (PHP-FPM / Apache / `backend/.env`) se deben definir:
 
 | Variable | Descripción | Ejemplo / Valor |
 | :--- | :--- | :--- |
-| `DB_HOST` | Host del servidor de base de datos | `localhost` o IP del servidor BD |
+| `DB_HOST` | Host del servidor de base de datos | `localhost` |
 | `DB_NAME` | Nombre de la base de datos | `posters` |
 | `DB_USER` | Usuario con permisos en la BD | `usuario_posters` |
-| `DB_PASS` | Contraseña del usuario de la BD | *(contraseña segura)* |
-| `AUTH_SECRET` | Clave secreta para la firma de tokens HMAC | *(cadena aleatoria de 32+ caracteres)* |
-| `VITE_API_BASE` | URL base pública de la API consumida por el frontend | `https://posters.ucc.edu.co/api` |
+| `DB_PASS` | Contraseña del usuario de la BD | *(contraseña segura; sin fallback en el código)* |
+| `AUTH_SECRET` | Clave HMAC de tokens. **Obligatorio**: sin ella la API responde 500 | `openssl rand -hex 32` |
+| `UPLOAD_DIR` | Ruta absoluta de pósters, **fuera** del checkout de git | `/srv/posters-uploads` |
+| `PUBLIC_FILES_URL` | Prefijo público de `UPLOAD_DIR` | `/imgPosters` |
+| `CORS_ORIGINS` | Orígenes permitidos (coma) | `https://posters.ucc.edu.co` |
+| `SMTP_HOST` | Host SMTP (si se envía correo) | `smtp.ucc.edu.co` |
+| `SMTP_PORT` | Puerto SMTP | `587` |
+| `SMTP_USER` | Usuario SMTP | *(solo por env)* |
+| `SMTP_PASS` | Contraseña / app password SMTP | *(solo por env)* |
+| `SMTP_FROM` / `SMTP_FROM_NAME` | Remitente | `Sistema de Pósteres` |
+| `VITE_API_BASE` | *(build)* Por defecto `/api` (relativo) | solo si el backend está en otro origen |
+| `VITE_FILES_BASE` | *(build)* Por defecto `/imgPosters` | solo si los archivos están en otro origen |
+
+Plantilla lista para copiar: [`.env.example`](.env.example).  
+Pendientes de confirmar (SMTP institucional, dominio, rotación de secretos): [ `PENDIENTES-DESPLIEGUE.md` ](PENDIENTES-DESPLIEGUE.md).
 
 ---
 

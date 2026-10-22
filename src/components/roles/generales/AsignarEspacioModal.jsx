@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './roles.css';
+import { API_BASE } from '../../../config.js';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const AsignarEspacioModal = ({ poster, cerrarModal, alActualizar }) => {
     const [espacios, setEspacios] = useState([]);
@@ -16,7 +16,7 @@ const AsignarEspacioModal = ({ poster, cerrarModal, alActualizar }) => {
     const cargarEspacios = async () => {
         try {
             const qs = poster?.id_evento ? `?id_evento=${encodeURIComponent(poster.id_evento)}` : '';
-            const res = await fetch(`${SERVER_URL}/api/Espacios.php${qs}`);
+            const res = await fetch(`${API_BASE}/Espacios.php${qs}`);
             const data = await res.json();
 
             // Verificamos ambas opciones (success booleano o status 'success')
@@ -34,7 +34,7 @@ const AsignarEspacioModal = ({ poster, cerrarModal, alActualizar }) => {
         setMensaje(null);
 
         try {
-            const res = await fetch(`${SERVER_URL}/api/Espacios.php`, {
+            const res = await fetch(`${API_BASE}/Espacios.php`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

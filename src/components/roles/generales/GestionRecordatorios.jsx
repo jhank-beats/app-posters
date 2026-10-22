@@ -3,8 +3,9 @@ import { FaTrashAlt } from 'react-icons/fa';
 import { FaRegPenToSquare } from 'react-icons/fa6';
 import './roles.css';
 import '../../formularios/Formulario.css';
+import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const ETIQUETAS_ACCION = {
     recordatorio: '🔔 Recordatorio de calificación',
@@ -46,7 +47,7 @@ const GestionRecordatorios = ({ modo = 'resumen', abrirModal, cerrarModal }) => 
         try {
             setCargando(true);
             const qs = autoCheck ? '?auto_check=1' : '';
-            const res = await fetch(`${SERVER_URL}/api/Recordatorios.php${qs}`);
+            const res = await fetch(`${API_BASE}/Recordatorios.php${qs}`);
             const texto = await res.text();
             let data = null;
             try {
@@ -118,7 +119,7 @@ const GestionRecordatorios = ({ modo = 'resumen', abrirModal, cerrarModal }) => 
                 reprogramar_hoy: true,
             };
 
-            const res = await fetch(`${SERVER_URL}/api/Recordatorios.php`, {
+            const res = await fetch(`${API_BASE}/Recordatorios.php`, {
                 method: metodo,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -143,7 +144,7 @@ const GestionRecordatorios = ({ modo = 'resumen', abrirModal, cerrarModal }) => 
         try {
             setProcesando(true);
             const nuevoEstado = Number(item.activo) === 1 ? 0 : 1;
-            const res = await fetch(`${SERVER_URL}/api/Recordatorios.php`, {
+            const res = await fetch(`${API_BASE}/Recordatorios.php`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -168,7 +169,7 @@ const GestionRecordatorios = ({ modo = 'resumen', abrirModal, cerrarModal }) => 
         if (!window.confirm(`¿Eliminar el recordatorio programado de las ${item.hora}?`)) return;
         try {
             setProcesando(true);
-            const res = await fetch(`${SERVER_URL}/api/Recordatorios.php?id_config=${item.id_config}`, {
+            const res = await fetch(`${API_BASE}/Recordatorios.php?id_config=${item.id_config}`, {
                 method: 'DELETE',
             });
             const data = await res.json();
@@ -190,7 +191,7 @@ const GestionRecordatorios = ({ modo = 'resumen', abrirModal, cerrarModal }) => 
     const ejecutarAccionAhora = async (opciones = {}) => {
         try {
             setProcesando(true);
-            const res = await fetch(`${SERVER_URL}/api/Recordatorios.php`, {
+            const res = await fetch(`${API_BASE}/Recordatorios.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -387,6 +388,7 @@ const GestionRecordatorios = ({ modo = 'resumen', abrirModal, cerrarModal }) => 
     if (modo === 'resumen') {
         return (
             <div className="contenedor-tabla">
+              <HintScrollTabla />
                 {alerta && (
                     <div
                         className={`alerta-recordatorio alerta-recordatorio--${alerta.tipo}`}
@@ -681,6 +683,7 @@ const GestionRecordatorios = ({ modo = 'resumen', abrirModal, cerrarModal }) => 
             </div>
 
             <div className="contenedor-tabla" style={{ margin: 0 }}>
+              <HintScrollTabla />
                 <table>
                     <thead>
                         <tr>
@@ -784,6 +787,7 @@ const GestionRecordatorios = ({ modo = 'resumen', abrirModal, cerrarModal }) => 
                         Bitácora reciente de verificaciones y envíos
                     </h3>
                     <div className="contenedor-tabla" style={{ margin: 0 }}>
+                      <HintScrollTabla />
                         <table>
                             <thead>
                                 <tr>

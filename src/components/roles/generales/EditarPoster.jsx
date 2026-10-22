@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../../../config.js';
+import BuscadorSelect from '../../generales/BuscadorSelect.jsx';
 import "./roles.css";
 
 // Nombres legibles de las categorías (mismas etiquetas que usa CargarPosters.jsx)
@@ -237,19 +238,17 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
                         <div className="lista-pares-profesores">
                             {profesoresMaterias.map((par, idx) => (
                                 <div className="fila-profesor-materia" key={idx}>
-                                    <select
+                                    <BuscadorSelect
+                                        items={profesoresDisponibles.map((prof) => ({
+                                            value: prof.id,
+                                            label: `${prof.nombre_completo || `${prof.nombres} ${prof.apellidos}`}${prof.carrera ? ` (${prof.carrera})` : ''}`,
+                                        }))}
                                         value={par.id_usuario}
-                                        onChange={(e) => actualizarParProfesor(idx, 'id_usuario', e.target.value)}
+                                        onChange={(id) => actualizarParProfesor(idx, 'id_usuario', id)}
+                                        placeholder="👨‍🏫 Busca el profesor por nombre..."
+                                        emptyLabel="Sin resultados para esa búsqueda"
                                         aria-label={`Profesor ${idx + 1}`}
-                                    >
-                                        <option value="">👨‍🏫 Selecciona profesor...</option>
-                                        {profesoresDisponibles.map(prof => (
-                                            <option key={prof.id} value={prof.id}>
-                                                {prof.nombre_completo || `${prof.nombres} ${prof.apellidos}`}
-                                                {prof.carrera ? ` (${prof.carrera})` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    />
 
                                     <input
                                         type="text"

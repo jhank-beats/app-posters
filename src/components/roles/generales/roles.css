@@ -3099,3 +3099,35 @@ Overlay Formularios - Registro/Login (dentro de modal-registro)
 
 
 
+
+/* --- Pista de scroll horizontal en tablas (móvil) --- */
+.hint-scroll-tabla-oculto { display: none; }
+
+.hint-scroll-tabla {
+  display: block;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  width: fit-content;
+  margin: 0 0 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: #e6f7fb;
+  border: 1px solid #9fd8e4;
+  color: #0b6b7d;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(19, 39, 64, 0.08);
+}
+
+.hint-scroll-tabla:hover {
+  background: #d3f1f8;
+}
+
+@media (min-width: 769px) {
+  .hint-scroll-tabla {
+    display: none;
+  }
+}

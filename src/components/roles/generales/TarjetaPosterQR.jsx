@@ -4,8 +4,12 @@ import { QRCodeCanvas } from 'qrcode.react';
 const TarjetaPosterQR = ({ poster, urlDigital }) => {
     const qrRef = useRef(null);
 
-    // URL a la que apuntará el código QR: prop explícita, imagen digital o fallback por id.
-    const valorQR = urlDigital || poster.imagen || `http://localhost/app-posters/backend/imgPosters/${poster.id}`;
+    // El QR SIEMPRE apunta a la ruta estable /poster/:id de la SPA.
+    // Así el QR no se rompe si cambia el dominio, el puerto o el nombre del archivo.
+    const valorQR = urlDigital
+        || (poster?.id != null
+            ? `${window.location.origin}/poster/${poster.id}`
+            : null);
 
     const descargarQR = () => {
         const canvas = qrRef.current?.querySelector('canvas');

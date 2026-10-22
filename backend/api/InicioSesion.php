@@ -5,13 +5,8 @@ cors_headers("POST, OPTIONS");
 include '../Conexion.php';
 $conexion->set_charset('utf8mb4');
 
-// Anti fuerza-bruta por IP
-$ipKey = 'login_' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
-if (!auth_rate_limit($ipKey, 10, 300)) {
-    http_response_code(429);
-    echo json_encode(["status" => "error", "message" => "Demasiados intentos. Espera 5 minutos."]);
-    exit;
-}
+// Anti fuerza-bruta: clave por IP+correo. Solo se registran intentos FALLIDOS.
+$ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -23,6 +18,14 @@ if (empty($input['correo']) || empty($input['contrasena'])) {
 
 $correo = trim($input['correo']);
 $contrasena = $input['contrasena'];
+$rateKey = 'login_' . $ip . '_' . $correo;
+
+// 20 fallos / 15 min por IP+correo
+if (auth_rate_limit_exceeded($rateKey, 20, 900)) {
+    http_response_code(429);
+    echo json_encode(["status" => "error", "message" => "Demasiados intentos. Espera unos minutos."]);
+    exit;
+}
 
 $stmt = $conexion->prepare("
     SELECT u.id, u.nombres, u.apellidos, u.correo, u.carrera, u.`contraseña` AS pass_hash,
@@ -45,6 +48,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows !== 1) {
+    auth_rate_limit($rateKey, 20, 900);
     http_response_code(401);
     // Mensaje genérico: no revela si el correo existe
     echo json_encode(["status" => "error", "message" => "Credenciales inválidas"]);
@@ -55,6 +59,7 @@ $user = $result->fetch_assoc();
 
 // Verificar si está activo
 if ((int)$user['activo'] !== 1) {
+    auth_rate_limit($rateKey, 20, 900);
     http_response_code(403);
     echo json_encode(["status" => "error", "message" => "Credenciales inválidas o cuenta inactiva"]);
     exit;
@@ -62,6 +67,7 @@ if ((int)$user['activo'] !== 1) {
 
 // Verificar contraseña (tiempo aprox. constante contra enumeración)
 if (!password_verify($contrasena, $user['pass_hash'])) {
+    auth_rate_limit($rateKey, 20, 900);
     http_response_code(401);
     echo json_encode(["status" => "error", "message" => "Credenciales inválidas"]);
     exit;
@@ -85,11 +91,12 @@ if ((int)$user['id_rol'] === 3 && empty($user['id_evento'])) {
     }
 }
 
-// Login OK: quitar campos sensibles antes de responder
+// Login OK: limpiar contador de fallos y quitar campos sensibles
+auth_rate_limit_reset($rateKey);
 unset($user['pass_hash']);
 unset($user['activo']);
 
-// Emitir token HMAC (12h) — el frontend lo guarda y lo envía en cada petición
+// Emitir token HMAC (4h por defecto) — el frontend lo guarda y lo envía en cada petición
 $token = auth_issue_token($user['id'], (int)$user['id_rol']);
 
 http_response_code(200);

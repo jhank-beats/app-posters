@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaBell } from 'react-icons/fa';
 import './roles.css';
+import { API_BASE } from '../../../config.js';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const NotificacionesBell = ({ tipo }) => {
     const [notifs, setNotifs] = useState([]);
@@ -36,12 +36,12 @@ const NotificacionesBell = ({ tipo }) => {
 
             // 1. Fuentes independientes: UNA tanda de peticiones en paralelo.
             const [dNotifs, dSolicitudes, dPosters] = await Promise.all([
-                pedir(`${SERVER_URL}/api/Notificaciones.php`),
-                esAdmin ? pedir(`${SERVER_URL}/api/TablaSolicitudes.php`) : Promise.resolve(null),
+                pedir(`${API_BASE}/Notificaciones.php`),
+                esAdmin ? pedir(`${API_BASE}/TablaSolicitudes.php`) : Promise.resolve(null),
                 esAdmin
-                    ? pedir(`${SERVER_URL}/api/TablaPosters.php`)
+                    ? pedir(`${API_BASE}/TablaPosters.php`)
                     : (conPosters
-                        ? pedir(`${SERVER_URL}/api/TablaPosters.php?${esUsuario ? 'id_usuario' : 'id_evaluador'}=${idUsuario}`)
+                        ? pedir(`${API_BASE}/TablaPosters.php?${esUsuario ? 'id_usuario' : 'id_evaluador'}=${idUsuario}`)
                         : Promise.resolve(null)),
             ]);
 
@@ -53,7 +53,7 @@ const NotificacionesBell = ({ tipo }) => {
             if (conPosters && misPosters.length > 0) {
                 const ids = misPosters.map(p => p.id);
                 const extra = esEvaluador ? `&id_evaluador=${idUsuario}` : '';
-                dEvals = await pedir(`${SERVER_URL}/api/Evaluaciones.php?ids=${ids.join(',')}${extra}`);
+                dEvals = await pedir(`${API_BASE}/Evaluaciones.php?ids=${ids.join(',')}${extra}`);
             }
             const resultados = (dEvals && dEvals.resultados) || {};
             const tieneEvaluaciones = (id) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './roles.css';
+import { API_BASE } from '../../../config.js';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const DetallesCalificacionModal = ({ poster, evaluacion, criterios: criteriosProp = [], cerrarModal }) => {
     const [criteriosLocales, setCriteriosLocales] = useState([]);
@@ -13,7 +13,7 @@ const DetallesCalificacionModal = ({ poster, evaluacion, criterios: criteriosPro
             const cargarCriterios = async () => {
                 try {
                     setLoadingCriterios(true);
-                    const res = await fetch(`${SERVER_URL}/api/Criterios.php`);
+                    const res = await fetch(`${API_BASE}/Criterios.php`);
                     const data = await res.json();
                     if (data.success && isMounted) setCriteriosLocales(data.data || []);
                 } catch (err) {

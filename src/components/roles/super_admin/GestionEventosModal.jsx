@@ -3,8 +3,9 @@ import { FaCheckCircle } from "react-icons/fa";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import "../generales/roles.css";
 import "../../formularios/Formulario.css";
+import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const etiquetaCarrera = (carrera) => {
     const c = (carrera || 'sistemas').toLowerCase();
@@ -36,7 +37,7 @@ const GestionEventosModal = ({ cerrarTabla, cerrarModal }) => {
 
     const cargarEventos = async () => {
         try {
-            const respuesta = await fetch(`${SERVER_URL}/api/Eventos.php`);
+            const respuesta = await fetch(`${API_BASE}/Eventos.php`);
             const datos = await respuesta.json();
             if (datos.status === 'success' || datos.success) setEventos(datos.data || []);
         } catch (err) { console.error("Error al cargar eventos:", err); }
@@ -56,7 +57,7 @@ const GestionEventosModal = ({ cerrarTabla, cerrarModal }) => {
 
     const activarEvento = async (id_evento) => {
         try {
-            const respuesta = await fetch(`${SERVER_URL}/api/Eventos.php`, {
+            const respuesta = await fetch(`${API_BASE}/Eventos.php`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ accion: 'activar', id_evento })
@@ -84,7 +85,7 @@ const GestionEventosModal = ({ cerrarTabla, cerrarModal }) => {
             fecha_fin: fechaFin
         };
         try {
-            const respuesta = await fetch(`${SERVER_URL}/api/Eventos.php`, {
+            const respuesta = await fetch(`${API_BASE}/Eventos.php`, {
                 method: metodo,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -127,6 +128,7 @@ const GestionEventosModal = ({ cerrarTabla, cerrarModal }) => {
             {/* Cuerpo con scroll: el header con la X y los botones quedan fijos. */}
             <div className="formularios-body">
                 <div className="contenedor-tabla">
+                  <HintScrollTabla />
                     <table>
                     <thead>
                         <tr>

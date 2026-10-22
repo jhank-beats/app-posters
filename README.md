@@ -6,10 +6,10 @@ Plataforma integral web para la recepción, organización espacial, asignación 
 
 ## 🏗️ 1. Arquitectura del Sistema
 
-* **Frontend:** Single Page Application (SPA) desarrollada en **React 19 + Vite**, componentes con TailwindCSS / CSS3 y soporte responsive para dispositivos móviles y quioscos táctiles.
+* **Frontend:** Single Page Application (SPA) desarrollada en **React 19 + Vite**, estilos con **CSS3** (no usa Tailwind) y soporte responsive para dispositivos móviles y quioscos táctiles.
 * **Backend:** API REST desarrollada en **PHP 8.1+** modular estructurada en `/backend/api/` con capa de helpers de negocio y autenticación JWT / HMAC.
 * **Base de Datos:** Relacional **MySQL 8.0+ / MariaDB 10.6+** con codificación `utf8mb4`.
-* **Almacenamiento de Archivos:** Almacenamiento local seguro en `/backend/imgPosters/` con validación MIME, límites de peso y hashes anti-duplicados SHA-256.
+* **Almacenamiento de Archivos:** Volumen local **fuera del checkout de git** (`UPLOAD_DIR`, ej. `/srv/posters-uploads`) con lista blanca PDF/PNG/JPG, nombres aleatorios, límite de peso y hashes anti-duplicados SHA-256.
 * **Notificaciones y Automatización:** Notificaciones internas en tiempo real y correos transaccionales vía **SMTP** mediante PHPMailer y tareas programadas en segundo plano (`backend/tareas/Recordatorios.php`).
 
 ---
@@ -40,8 +40,8 @@ Plataforma integral web para la recepción, organización espacial, asignación 
 
 ### Ajustes Sugeridos en `php.ini`
 ```ini
-upload_max_filesize = 30M
-post_max_size = 35M
+upload_max_filesize = 10M
+post_max_size = 12M
 memory_limit = 256M
 max_execution_time = 120
 ```
@@ -73,29 +73,37 @@ cd app-posters
    mysql -u posters_user -p posters < BD/migracion_fase4_notificaciones.sql
    mysql -u posters_user -p posters < BD/migracion_fase5_recordatorios.sql
    mysql -u posters_user -p posters < BD/migracion_fase6_eventos_roles.sql
+   mysql -u posters_user -p posters < BD/migracion_ruta_archivo.sql
+   mysql -u posters_user -p posters < BD/migracion_cola_correos.sql
    ```
-   *(Opcional para ambiente de pruebas/demo con 5 usuarios y configuración limpia)*:
+   *(Opcional para ambiente de pruebas/demo con usuarios ficticios y configuración limpia)*:
    ```bash
    mysql -u posters_user -p posters < BD/reset_demo.sql
    ```
+   **No importar** dumps con datos personales reales. En producción, crear el superadmin a mano.
 
 ### Paso 3: Configurar Permisos y Directorio de Archivos
-El servidor web debe tener permisos de escritura sobre la carpeta de almacenamiento de pósteres:
+Los pósters se guardan en `UPLOAD_DIR` (fuera del checkout de git). Ejemplo:
 ```bash
-sudo chown -R www-data:www-data backend/imgPosters/
-sudo chmod -R 775 backend/imgPosters/
+sudo mkdir -p /srv/posters-uploads
+sudo chown -R www-data:www-data /srv/posters-uploads
+sudo chmod 755 /srv/posters-uploads
 ```
 
 ### Paso 4: Variables de Entorno (Producción)
-En el servidor o en la configuración del pool de PHP-FPM (`/etc/php/8.x/fpm/pool.d/www.conf`) configure las variables de entorno de conexión y seguridad:
-
+En el pool de PHP-FPM o en `backend/.env` (ver `.env.example`). **Obligatorias:**
 ```ini
 env[DB_HOST] = "localhost"
 env[DB_NAME] = "posters"
 env[DB_USER] = "posters_user"
 env[DB_PASS] = "TuPasswordSeguro123"
 env[AUTH_SECRET] = "clave_secreta_super_aleatoria_de_mas_de_32_caracteres"
+env[UPLOAD_DIR] = "/srv/posters-uploads"
+env[PUBLIC_FILES_URL] = "/imgPosters"
+env[CORS_ORIGINS] = "https://posters.tudominio.edu.co"
 ```
+SMTP solo si se envía correo: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`.
+Ver checklist completo en `PENDIENTES-DESPLIEGUE.md`.
 
 ### Paso 5: Compilar el Frontend (React + Vite)
 Instalar paquetes de Node.js y generar la versión optimizada de producción:
@@ -128,7 +136,7 @@ server {
     root /var/www/app-posters/dist;
     index index.html;
 
-    client_max_body_size 35M;
+    client_max_body_size 12M;
 
     # Frontend SPA: redirección de rutas al index.html
     location / {
@@ -148,11 +156,20 @@ server {
         }
     }
 
-    # Acceso a los archivos de pósteres
-    location /backend/imgPosters/ {
-        alias /var/www/app-posters/backend/imgPosters/;
+    # Archivos de pósteres: volumen UPLOAD_DIR SIN ejecución PHP
+    location /imgPosters/ {
+        alias /srv/posters-uploads/;
         expires 30d;
         add_header Cache-Control "public, no-transform";
+        add_header X-Content-Type-Options "nosniff";
+        location ~ \.php$ { deny all; }
+        types {
+            image/jpeg jpg jpeg;
+            image/png png;
+            image/webp webp;
+            application/pdf pdf;
+        }
+        default_type application/octet-stream;
     }
 
     location @apiphp {

@@ -17,8 +17,9 @@ import VolverArriba from "../../generales/VolverArriba.jsx";
 import { tituloRonda } from '../generales/rondasUtils.js';
 import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
 import "../generales/roles.css";
+import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const HomePageSuperAdmin = () => {
     const [mostrarSolicitudes, setMostrarSolicitudes] = useState(false);
@@ -56,7 +57,7 @@ const HomePageSuperAdmin = () => {
 
     const obtenerUrlApi = async () => {
         // Ruta correcta del backend (el PHP server sirve /api desde backend/)
-        const urlApi = `${SERVER_URL}/api/Eventos.php`;
+        const urlApi = `${API_BASE}/Eventos.php`;
         try {
             const res = await fetch(urlApi);
             return res.ok ? urlApi : urlApi;
@@ -85,7 +86,7 @@ const HomePageSuperAdmin = () => {
 
     const cargarEspaciosResumen = async () => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Espacios.php`);
+            const res = await fetch(`${API_BASE}/Espacios.php`);
             const data = await res.json();
             if (data.status === 'success' || data.success) {
                 setEspaciosResumen(data.data || []);
@@ -97,7 +98,7 @@ const HomePageSuperAdmin = () => {
 
     const cargarCriteriosResumen = async () => {
         try {
-            const res = await fetch(`${SERVER_URL}/api/Criterios.php`);
+            const res = await fetch(`${API_BASE}/Criterios.php`);
             const data = await res.json();
             if (data.success) {
                 setCriteriosResumen(data.data || []);
@@ -220,6 +221,7 @@ const HomePageSuperAdmin = () => {
                 <span className="seccion-eyebrow">Parametrización</span>
                 <h2>Criterios de Evaluación Dinámicos</h2>
                 <div className="contenedor-tabla">
+                  <HintScrollTabla />
                     <table>
                         <thead>
                             <tr>
@@ -302,6 +304,7 @@ const HomePageSuperAdmin = () => {
                 <span className="seccion-eyebrow">Ubicaciones</span>
                 <h2>Gestión de Espacios Físicos y Capacidad</h2>
                 <div className="contenedor-tabla">
+                  <HintScrollTabla />
                     <table>
                         <thead>
                             <tr>
@@ -411,6 +414,7 @@ const HomePageSuperAdmin = () => {
                     <p>Cargando lista de eventos...</p>
                 ) : (
                     <div className="contenedor-tabla">
+                      <HintScrollTabla />
                         <table>
                             <thead>
                                 <tr>
@@ -483,6 +487,7 @@ const HomePageSuperAdmin = () => {
                 <span className="seccion-eyebrow">Rondas y premios</span>
                 <h2>Rondas de Evaluación y Premios</h2>
                 <div className="contenedor-tabla">
+                  <HintScrollTabla />
                     <table>
                         <thead>
                             <tr>

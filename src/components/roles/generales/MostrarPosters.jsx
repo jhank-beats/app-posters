@@ -7,17 +7,14 @@ import TarjetaPosterQR from './TarjetaPosterQR.jsx';
 import VistaPreviaPoster from './VistaPreviaPoster.jsx';
 import { imprimirCertificados } from './CertificadoPremio.jsx';
 import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
+import { API_BASE, urlArchivo } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
-
-const construirUrlArchivo = (rutaImagen) => {
-    if (!rutaImagen) return null;
-    const nombreArchivo = rutaImagen.split('/').pop();
-    return `${SERVER_URL}/imgPosters/${encodeURIComponent(nombreArchivo)}`;
-};
+const construirUrlArchivo = urlArchivo;
 
 // Estado del póster en el evento, para la vista del autor (§6.3).
 // Se exporta para pruebas y reutilización.
+// eslint-disable-next-line react-refresh/only-export-components
 export const estadoDelAutor = (poster) => {
     const rondas = (poster.rondas || []).slice().sort((a, b) => a.numero - b.numero);
     if (rondas.length === 0) return { texto: 'En espera', clase: 'rol-1', ganadora: null };
@@ -203,8 +200,8 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             // Los criterios SIEMPRE son los de la ronda de trabajo: sin filtro,
             // Criterios.php devuelve los de todas las rondas (duplicados).
             const urlCrit = rondaTrabajoId
-                ? `${SERVER_URL}/api/Criterios.php?id_ronda=${rondaTrabajoId}`
-                : `${SERVER_URL}/api/Criterios.php`;
+                ? `${API_BASE}/Criterios.php?id_ronda=${rondaTrabajoId}`
+                : `${API_BASE}/Criterios.php`;
 
             const params = [];
 
@@ -234,7 +231,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                 params.push(`id_evaluador=${idUsr}`);
             }
 
-            const url = `${SERVER_URL}/api/TablaPosters.php${params.length > 0 ? `?${params.join('&')}` : ''}`;
+            const url = `${API_BASE}/TablaPosters.php${params.length > 0 ? `?${params.join('&')}` : ''}`;
 
             const [dataCrit, datos] = await Promise.all([
                 fetch(urlCrit).then(r => r.json()).catch(() => null),
@@ -275,7 +272,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             // Misma ronda de trabajo que el listado: si no, la nota mostrada
             // promedia todas las rondas mientras la tabla es de una sola.
             const urlRonda = rondaTrabajoId ? `&id_ronda=${rondaTrabajoId}` : '';
-            const res = await fetch(`${SERVER_URL}/api/Evaluaciones.php?ids=${ids.join(',')}${urlRonda}`);
+            const res = await fetch(`${API_BASE}/Evaluaciones.php?ids=${ids.join(',')}${urlRonda}`);
             const data = await res.json();
             const resultados = data.resultados || {};
             const mapaCalificaciones = {};
@@ -302,7 +299,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             // Notas de la ronda de trabajo: sin esto se mezclaban las notas de
             // rondas distintas y el promedio salía con las de todas.
             const urlRonda = rondaTrabajoId ? `&id_ronda=${rondaTrabajoId}` : '';
-            const res = await fetch(`${SERVER_URL}/api/Evaluaciones.php?ids=${ids.join(',')}&id_evaluador=${idEv}${urlRonda}`);
+            const res = await fetch(`${API_BASE}/Evaluaciones.php?ids=${ids.join(',')}&id_evaluador=${idEv}${urlRonda}`);
             const data = await res.json();
             const resultados = data.resultados || {};
 
@@ -441,6 +438,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             )}
 
             <div className="contenedor-tabla">
+              <HintScrollTabla />
                 <table>
                     <thead>
                         <tr>
@@ -935,7 +933,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                         <p>Escanea para ver la versión digital</p>
                         <TarjetaPosterQR
                             poster={posterParaQR}
-                            urlDigital={construirUrlArchivo(posterParaQR.imagen) || `${window.location.origin}/poster/${posterParaQR.id}`}
+                            urlDigital={`${window.location.origin}/poster/${posterParaQR.id}`}
                         />
                     </section>
                 </div>

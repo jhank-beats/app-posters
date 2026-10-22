@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Evaluar.css';
+import { API_BASE } from '../../../config.js';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuardado, idRonda = null, nombreRonda = null, soloLectura = false }) => {
     const [valores, setValores] = useState({});
@@ -91,7 +91,7 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
         setCargando(true);
         setMensaje(null);
         try {
-            const res = await fetch(`${SERVER_URL}/api/Evaluaciones.php`, {
+            const res = await fetch(`${API_BASE}/Evaluaciones.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

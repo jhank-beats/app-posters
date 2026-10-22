@@ -114,6 +114,7 @@ const construirCertificado = (ganador, evento) => {
 
 // Abre la ventana con uno o varios certificados y dispara la impresión.
 // Se exporta para reutilizarla en la vista del autor (su diploma).
+// eslint-disable-next-line react-refresh/only-export-components
 export const imprimirCertificados = (ganadores, evento, { autoPrint = true, titulo = 'Certificado' } = {}) => {
     const lista = Array.isArray(ganadores) ? ganadores : [ganadores];
     const win = window.open('', '_blank', 'width=1100,height=760');

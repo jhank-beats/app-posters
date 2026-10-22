@@ -9,8 +9,8 @@ import VolverArriba from "../../generales/VolverArriba.jsx";
 import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
 
 import "../generales/roles.css";
+import { API_BASE } from '../../../config.js';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const HomePageEvaluador = () => {
     const [mostrarPosters, setMostrarPosters] = useState(false);
@@ -73,7 +73,7 @@ const HomePageEvaluador = () => {
             const avance = {};
             await Promise.all(lista.map(async (r) => {
                 try {
-                    const rp = await fetch(`${SERVER_URL}/api/TablaPosters.php?ronda=${r.id_ronda}&id_evaluador=${idEvaluador}`);
+                    const rp = await fetch(`${API_BASE}/TablaPosters.php?ronda=${r.id_ronda}&id_evaluador=${idEvaluador}`);
                     const dp = await rp.json();
                     const filas = dp.data || [];
                     const mias = filas.filter(p => p.calificable !== false);

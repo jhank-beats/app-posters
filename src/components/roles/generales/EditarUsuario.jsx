@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './roles.css';
+import { API_BASE } from '../../../config.js';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const EditarUsuario = ({ usuario, eventosDisponibles = [], cerrarModal, alGuardarExitoso }) => {
     const [datosUsuario, setDatosUsuario] = useState({
@@ -55,7 +55,7 @@ const EditarUsuario = ({ usuario, eventosDisponibles = [], cerrarModal, alGuarda
                 payload.id_evento = datosUsuario.id_evento ? parseInt(datosUsuario.id_evento, 10) : null;
             }
 
-            const respuesta = await fetch(`${SERVER_URL}/api/TablaUsuarios.php`, {
+            const respuesta = await fetch(`${API_BASE}/TablaUsuarios.php`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

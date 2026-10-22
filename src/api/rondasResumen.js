@@ -1,4 +1,4 @@
-const SERVER_URL = `http://${window.location.hostname}:8000`;
+import { API_BASE } from '../config.js';
 const TTL_MS = 5000;
 
 let cache = null; // { data, timestamp }
@@ -9,7 +9,7 @@ export const obtenerRondasResumen = ({ refetch = false } = {}) => {
     if (!refetch && cache && Date.now() - cache.timestamp < TTL_MS) {
         return Promise.resolve(cache.data);
     }
-    inflight = fetch(`${SERVER_URL}/api/Rondas.php?action=resumen`)
+    inflight = fetch(`${API_BASE}/Rondas.php?action=resumen`)
         .then((res) => res.json())
         .then((data) => {
             cache = { data, timestamp: Date.now() };

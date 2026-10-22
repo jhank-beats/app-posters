@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FaTrashAlt } from "react-icons/fa";
 import "./roles.css";
+import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
 
 const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
     const [solicitudesRegistro, setSolicitudesRegistro] = useState([]);
@@ -16,7 +17,7 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
     const cargarSolicitudes = async () => {
         try {
             // CORREGIDO: Se quitó '/backend' para apuntar correctamente a la raíz del servidor PHP
-            const respuesta = await fetch(`${SERVER_URL}/api/TablaSolicitudes.php`);
+            const respuesta = await fetch(`${API_BASE}/TablaSolicitudes.php`);
             const datos = await respuesta.json();
             if (datos.success) setSolicitudesRegistro(datos.data);
         } catch (error) {
@@ -33,7 +34,7 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
             );
 
             // CORREGIDO: Se quitó '/backend'
-            const respuesta = await fetch(`${SERVER_URL}/api/TablaSolicitudes.php`, {
+            const respuesta = await fetch(`${API_BASE}/TablaSolicitudes.php`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, activo: !estadoActual }),
@@ -54,7 +55,7 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
 
         try {
             // CORREGIDO: Se quitó '/backend'
-            const respuesta = await fetch(`${SERVER_URL}/api/TablaSolicitudes.php`, {
+            const respuesta = await fetch(`${API_BASE}/TablaSolicitudes.php`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id }),
@@ -94,6 +95,7 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
             {!limite && <h2>Todos los Usuarios Pendientes por Aceptación</h2>}
 
             <div className="contenedor-tabla">
+              <HintScrollTabla />
                 <table>
                     <thead>
                         <tr>

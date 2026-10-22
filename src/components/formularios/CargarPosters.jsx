@@ -1,6 +1,7 @@
 import './Formulario.css'
 import { useState, useEffect } from 'react'
 import { API_BASE } from '../../config.js'
+import BuscadorSelect from '../generales/BuscadorSelect.jsx'
 
 const CATEGORIAS_RESPALDO = [
   { id_categorias: 1, nombre_categorias: 'desarrolloWeb' },
@@ -357,21 +358,17 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
           <div className="lista-pares-profesores">
             {profesoresMaterias.map((par, idx) => (
               <div className="fila-profesor-materia" key={idx}>
-                <select
+                <BuscadorSelect
+                  items={profesoresDisponibles.map((prof) => ({
+                    value: prof.id,
+                    label: `${prof.nombre_completo || `${prof.nombres} ${prof.apellidos}`}${prof.carrera ? ` (${prof.carrera})` : ''}`,
+                  }))}
                   value={par.id_usuario}
-                  onChange={(e) =>
-                    actualizarParProfesor(idx, 'id_usuario', e.target.value)
-                  }
+                  onChange={(id) => actualizarParProfesor(idx, 'id_usuario', id)}
+                  placeholder="👨‍🏫 Busca el profesor por nombre..."
+                  emptyLabel="Sin resultados para esa búsqueda"
                   aria-label={`Profesor ${idx + 1}`}
-                >
-                  <option value="">👨‍🏫 Selecciona profesor...</option>
-                  {profesoresDisponibles.map((prof) => (
-                    <option key={prof.id} value={prof.id}>
-                      {prof.nombre_completo || `${prof.nombres} ${prof.apellidos}`}
-                      {prof.carrera ? ` (${prof.carrera})` : ''}
-                    </option>
-                  ))}
-                </select>
+                />
 
                 <input
                   type="text"
@@ -427,7 +424,7 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
             required
           />
           <span className="ayuda-campo">
-            Selecciona el archivo digital de tu póster (.pdf, .png, .jpg o .jpeg)
+            Archivo digital del póster: PDF, JPG o PNG · máximo 10 MB. En celular, busca el profesor escribiendo sus primeras letras.
           </span>
         </div>
 

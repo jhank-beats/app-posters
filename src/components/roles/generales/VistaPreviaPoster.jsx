@@ -2,18 +2,10 @@ import React, { useEffect } from 'react';
 import { FaFilePdf, FaImage } from 'react-icons/fa6';
 import { FaExternalLinkAlt, FaDownload } from 'react-icons/fa';
 import './roles.css';
-
-const SERVER_URL = `http://${window.location.hostname}:8000`;
-
-// Misma regla de nombres que usan las tablas para resolver el archivo en el backend.
-const construirUrlArchivo = (rutaImagen) => {
-    if (!rutaImagen) return null;
-    const nombreArchivo = rutaImagen.split('/').pop();
-    return `${SERVER_URL}/imgPosters/${encodeURIComponent(nombreArchivo)}`;
-};
+import { urlArchivo as resolverUrlArchivo } from '../../../config.js';
 
 const VistaPreviaPoster = ({ poster, cerrarModal }) => {
-    const urlArchivo = construirUrlArchivo(poster?.imagen);
+    const urlArchivo = resolverUrlArchivo(poster?.imagen);
     const esPdf = (poster?.imagen || '').toLowerCase().endsWith('.pdf');
 
     // Cerrar con Escape y evitar el scroll del fondo mientras el modal está abierto.

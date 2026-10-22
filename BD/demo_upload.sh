@@ -114,6 +114,6 @@ echo ""
 echo "======================================================"
 echo " RESUMEN EN BD"
 echo "======================================================"
-mysql -u root -pREMOVED_PASS posters -e \
+mysql -u posters_user -p posters -e \
   "SELECT p.id, p.titulo, p.categoria, CONCAT(u.nombres,' ',u.apellidos) AS usuario, p.id_espacio
    FROM cargar_posters p LEFT JOIN usuario u ON u.id=p.id_usuario ORDER BY p.id;" 2>/dev/null

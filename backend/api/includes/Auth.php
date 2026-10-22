@@ -7,10 +7,18 @@
 //   // $auth = ['id'=>..., 'rol'=>...] verificado desde el token.
 
 function auth_secret() {
-    // En producción define AUTH_SECRET en el entorno / Apache. Fallback solo para dev.
+    // AUTH_SECRET es OBLIGATORIO en producción. Sin fallback conocido.
     $s = getenv('AUTH_SECRET');
     if (!$s && isset($_SERVER['AUTH_SECRET'])) $s = $_SERVER['AUTH_SECRET'];
-    return $s ? $s : 'REMOVED_SECRET';
+    if (!$s && isset($_ENV['AUTH_SECRET'])) $s = $_ENV['AUTH_SECRET'];
+    if (!$s || strlen($s) < 16) {
+        error_log('AUTH_SECRET no definido o demasiado corto. La API no puede firmar tokens.');
+        http_response_code(500);
+        header("Content-Type: application/json; charset=UTF-8");
+        echo json_encode(["status" => "error", "success" => false, "message" => "Error de configuración del servidor."]);
+        exit;
+    }
+    return $s;
 }
 
 function auth_b64url_encode($bin) {
@@ -23,7 +31,8 @@ function auth_b64url_decode($str) {
     return $bin === false ? null : $bin;
 }
 
-function auth_issue_token($userId, $rol, $ttl = 43200) {
+function auth_issue_token($userId, $rol, $ttl = 14400) {
+    // TTL por defecto 4 h (antes 12 h). Renovable al re-login.
     $payload = json_encode([
         'id' => (int)$userId,
         'rol' => (int)$rol,
@@ -47,7 +56,8 @@ function auth_verify_token($token) {
     return ['id' => (int)$p['id'], 'rol' => (int)$p['rol']];
 }
 
-// Extrae el token: header Authorization Bearer, X-Auth-Token, ?auth_token=, $_POST['auth_token'] o body.auth_token
+// Extrae el token: header Authorization Bearer, X-Auth-Token, $_POST['auth_token'] o body.auth_token
+// NOTA: ya NO se acepta ?auth_token= en la URL (queda en logs / Referer).
 function auth_current() {
     $token = null;
     $headers = function_exists('getallheaders') ? getallheaders() : [];
@@ -62,8 +72,6 @@ function auth_current() {
         $token = trim(substr($norm['authorization'], 7));
     } elseif (!empty($norm['x-auth-token'])) {
         $token = trim($norm['x-auth-token']);
-    } elseif (!empty($_GET['auth_token'])) {
-        $token = trim($_GET['auth_token']);
     } elseif (!empty($_POST['auth_token'])) {
         $token = trim($_POST['auth_token']);
     }
@@ -142,8 +150,23 @@ function auth_id_evento_admin($conexion, $auth = null) {
 }
 
 function require_role($roles = null) {
+    global $conexion;
     $auth = auth_current();
     if (!$auth) auth_deny(401, "No autenticado. Inicia sesión.");
+    // M2: re-validar que la cuenta siga activa (invalida tokens al desactivar).
+    if (isset($conexion) && $conexion instanceof mysqli) {
+        $stmt = $conexion->prepare("SELECT activo FROM usuario WHERE id = ? LIMIT 1");
+        if ($stmt) {
+            $uid = (int)$auth['id'];
+            $stmt->bind_param("i", $uid);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if (!$row || (int)$row['activo'] !== 1) {
+                auth_deny(401, "Sesión inválida. Inicia sesión de nuevo.");
+            }
+        }
+    }
     if (is_array($roles) && count($roles) > 0) {
         if ((int)$auth['rol'] === 4) return $auth; // superadmin bypass
         if (!in_array($auth['rol'], $roles, true)) {
@@ -154,30 +177,76 @@ function require_role($roles = null) {
 }
 function require_login() { return require_role(null); }
 
-// CORS común: mantiene compatibilidad con Vite en localhost y permite el header del token.
+// CORS: restringido a CORS_ORIGINS (lista por coma). Dev: localhost:5173.
 function cors_headers($methods = "POST, GET, PUT, DELETE, OPTIONS") {
-    header("Access-Control-Allow-Origin: *");
+    $permitidos = getenv('CORS_ORIGINS');
+    if ($permitidos === false || $permitidos === '') $permitidos = $_ENV['CORS_ORIGINS'] ?? $_SERVER['CORS_ORIGINS'] ?? '';
+    if ($permitidos === '' || $permitidos === null) {
+        $permitidos = 'http://localhost:5173,http://127.0.0.1:5173';
+    }
+    $lista = array_filter(array_map('trim', explode(',', (string)$permitidos)));
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if ($origin !== '' && in_array($origin, $lista, true)) {
+        header("Access-Control-Allow-Origin: " . $origin);
+        header("Vary: Origin");
+        header("Access-Control-Allow-Credentials: true");
+    }
     header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token, X-Requested-With");
     header("Access-Control-Allow-Methods: " . $methods);
     header("Content-Type: application/json; charset=UTF-8");
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 }
 
-// Rate-limit simple por IP en /tmp (anti fuerza-bruta). 10 intentos / 5 min.
-function auth_rate_limit($key, $max = 10, $window = 300) {
+// Consulta sin incrementar (para decidir si se bloquea antes de verificar).
+function auth_rate_limit_exceeded($key, $max = 20, $window = 900) {
+    $file = sys_get_temp_dir() . '/ratelimit_' . preg_replace('/[^a-z0-9_]/i', '_', $key) . '.json';
+    if (!is_file($file)) return false;
+    $j = json_decode((string)@file_get_contents($file), true);
+    if (!is_array($j) || !isset($j['hits'])) return false;
+    $now = time();
+    $hits = array_filter($j['hits'], function ($t) use ($now, $window) {
+        return ($now - (int)$t) < $window;
+    });
+    return count($hits) >= $max;
+}
+
+// Registra un intento (usar solo en fallos).
+function auth_rate_limit($key, $max = 20, $window = 900) {
     $file = sys_get_temp_dir() . '/ratelimit_' . preg_replace('/[^a-z0-9_]/i', '_', $key) . '.json';
     $now = time();
+    $fp = @fopen($file, 'c+');
+    if (!$fp) return true;
+    if (!flock($fp, LOCK_EX)) {
+        fclose($fp);
+        return true;
+    }
+    $raw = stream_get_contents($fp);
     $data = ['hits' => []];
-    if (is_file($file)) {
-        $j = json_decode(@file_get_contents($file), true);
+    if ($raw) {
+        $j = json_decode($raw, true);
         if (is_array($j) && isset($j['hits'])) $data = $j;
     }
     $data['hits'] = array_values(array_filter($data['hits'], function ($t) use ($now, $window) {
         return ($now - (int)$t) < $window;
     }));
-    if (count($data['hits']) >= $max) return false;
+    if (count($data['hits']) >= $max) {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        return false;
+    }
     $data['hits'][] = $now;
-    @file_put_contents($file, json_encode($data));
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($data));
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
     return true;
+}
+
+// Borra el contador de intentos (p. ej. tras login exitoso).
+function auth_rate_limit_reset($key) {
+    $file = sys_get_temp_dir() . '/ratelimit_' . preg_replace('/[^a-z0-9_]/i', '_', $key) . '.json';
+    @unlink($file);
 }
 ?>

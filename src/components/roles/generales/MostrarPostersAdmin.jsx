@@ -8,14 +8,10 @@ import TarjetaPosterQR from './TarjetaPosterQR';
 import VistaPreviaPoster from './VistaPreviaPoster';
 import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
 import "./roles.css";
+import { API_BASE, urlArchivo } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
-const SERVER_URL = `http://${window.location.hostname}:8000`;
-
-const construirUrlArchivo = (rutaImagen) => {
-    if (!rutaImagen) return null;
-    const nombreArchivo = rutaImagen.split('/').pop();
-    return `${SERVER_URL}/imgPosters/${encodeURIComponent(nombreArchivo)}`;
-};
+const construirUrlArchivo = urlArchivo;
 
 const MostrarPostersAdmin = ({ cerrarTabla, onVerRanking = null }) => {
     const [posterParaAsignar, setPosterParaAsignar] = useState(null);
@@ -96,7 +92,7 @@ const MostrarPostersAdmin = ({ cerrarTabla, onVerRanking = null }) => {
                 params.push(`id_ronda=${idRonda}`);
                 if (soloSeleccionados) params.push('solo_seleccionados=1');
             }
-            const respuesta = await fetch(`${SERVER_URL}/api/TablaPosters.php?${params.join('&')}`);
+            const respuesta = await fetch(`${API_BASE}/TablaPosters.php?${params.join('&')}`);
             const datos = await respuesta.json();
 
             if (datos.success) {
@@ -113,7 +109,7 @@ const MostrarPostersAdmin = ({ cerrarTabla, onVerRanking = null }) => {
         if (!window.confirm("¿Está seguro de que desea eliminar lógicamente este póster?")) return;
 
         try {
-            const respuesta = await fetch(`${SERVER_URL}/api/TablaPosters.php`, {
+            const respuesta = await fetch(`${API_BASE}/TablaPosters.php`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id }),
@@ -375,6 +371,7 @@ const MostrarPostersAdmin = ({ cerrarTabla, onVerRanking = null }) => {
             </div>
 
             <div className="contenedor-tabla">
+              <HintScrollTabla />
                 <table>
                     <thead>
                         <tr>
@@ -665,7 +662,7 @@ const MostrarPostersAdmin = ({ cerrarTabla, onVerRanking = null }) => {
                         <p>Escanea para ver la versión digital</p>
                         <TarjetaPosterQR
                             poster={posterParaQR}
-                            urlDigital={construirUrlArchivo(posterParaQR.imagen) || `${window.location.origin}/poster/${posterParaQR.id}`}
+                            urlDigital={`${window.location.origin}/poster/${posterParaQR.id}`}
                         />
                     </section>
                 </div>

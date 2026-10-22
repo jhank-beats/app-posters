@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { FaTrashAlt } from "react-icons/fa";
 import { FaRegPenToSquare } from "react-icons/fa6";
 import EditarUsuario from './EditarUsuario';
+import ImportarUsuariosModal from './ImportarUsuariosModal';
 import "./roles.css";
 import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
 const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
     const [usuarios, setUsuarios] = useState([]);
@@ -12,6 +14,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
 
     // Estado para controlar el modal de edición de usuario
     const [usuarioAEditar, setUsuarioAEditar] = useState(null);
+    const [importarAbierto, setImportarAbierto] = useState(false);
 
     // Estados para filtros
     const [filtroGeneral, setFiltroGeneral] = useState("");
@@ -225,9 +228,25 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
     return (
         <section id="usuarios" className={limite ? "preview-usuarios" : "todos-usuarios"}>
             {cerrarTabla && <button className="cerrar-tabla" onClick={cerrarTabla}>X</button>}
-            {!limite && <h2>Gestión de Usuarios</h2>}
+            {!limite && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h2 style={{ margin: 0 }}>Gestión de Usuarios</h2>
+                    {rolSesionActual === 4 && (
+                        <button
+                            type="button"
+                            className="btn-accion-tabla"
+                            onClick={() => setImportarAbierto(true)}
+                            title="Cargar usuarios desde un archivo CSV"
+                            style={{ background: '#132740', color: '#fff', border: 'none', padding: '0.55rem 1rem', borderRadius: 8, cursor: 'pointer' }}
+                        >
+                            📥 Importar CSV
+                        </button>
+                    )}
+                </div>
+            )}
 
             <div className="contenedor-tabla">
+              <HintScrollTabla />
                 <table>
                     <thead>
                         <tr>
@@ -386,6 +405,14 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                     eventosDisponibles={eventosDisponibles}
                     cerrarModal={() => setUsuarioAEditar(null)}
                     alGuardarExitoso={cargarUsuarios}
+                />
+            )}
+
+            {/* Importación masiva por CSV (superadmin) */}
+            {importarAbierto && (
+                <ImportarUsuariosModal
+                    cerrar={() => setImportarAbierto(false)}
+                    onImportado={() => cargarUsuarios()}
                 />
             )}
         </section>
