@@ -234,10 +234,9 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                     {rolSesionActual === 4 && (
                         <button
                             type="button"
-                            className="btn-accion-tabla"
+                            className="boton-primario"
                             onClick={() => setImportarAbierto(true)}
                             title="Cargar usuarios desde un archivo CSV"
-                            style={{ background: '#132740', color: '#fff', border: 'none', padding: '0.55rem 1rem', borderRadius: 8, cursor: 'pointer' }}
                         >
                             📥 Importar CSV
                         </button>

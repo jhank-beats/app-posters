@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { saveSession } from '../../auth.js'
 import { API_BASE } from '../../config.js'
 
-const Login = ({ setUser, cerrarLogin }) => {
+const Login = ({ setUser, cerrarLogin, abrirRegistro }) => {
     const [email, setEmail] = useState("")
     const [contrasena, setContrasena] = useState("")
     const [error, setError] = useState(false)
@@ -111,8 +111,14 @@ const Login = ({ setUser, cerrarLogin }) => {
                 <button className="boton-primario" type="submit">Iniciar Sesión</button>
 
                 <div className="formulario-texto">
-                    <button type="button" onClick={() => { if (cerrarLogin) cerrarLogin(); }}>
-                        ¿Ya tienes Cuenta? Inicia Sesión
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (cerrarLogin) cerrarLogin();
+                            if (abrirRegistro) abrirRegistro();
+                        }}
+                    >
+                        ¿No tienes cuenta? Regístrate
                     </button>
                 </div>
             </form>

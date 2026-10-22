@@ -2,11 +2,11 @@
 require_once __DIR__ . '/includes/Auth.php';
 cors_headers("POST, GET, PUT, DELETE, OPTIONS");
 
-// Solo admin / superadmin (identidad verificada por token).
-$auth = require_role([3, 4]);
-
 include '../Conexion.php';
-include_once __DIR__ . '/includes/Correos.php'; // <-- 1. Importamos el archivo de correos
+include_once __DIR__ . '/includes/Correos.php';
+
+// Solo admin / superadmin (identidad verificada por token + cuenta activa).
+$auth = require_role([3, 4]);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -118,7 +118,7 @@ function actualizarEstado()
         file_put_contents('/tmp/correo_debug.txt', "EXCEPCIÓN CAPTURADA: " . $e->getMessage() . "\n", FILE_APPEND);
         $response = [
             'success' => false,
-            'message' => 'Excepción capturada: ' . $e->getMessage()
+            'message' => 'No se pudo actualizar la solicitud.'
         ];
     }
 

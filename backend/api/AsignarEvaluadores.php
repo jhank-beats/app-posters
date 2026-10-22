@@ -1,14 +1,5 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token, X-Requested-With");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Content-Type: application/json; charset=UTF-8");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
+// CORS lo gestiona cors_headers() según CORS_ORIGINS (sin Allow-Origin: *).
 include_once __DIR__ . '/includes/Auth.php';
 cors_headers("GET, POST, OPTIONS");
 
@@ -162,9 +153,10 @@ function obtenerEvaluadoresYAsignaciones($conexion)
         ]);
 
     } catch (Exception $e) {
+        error_log('AsignarEvaluadores obtener: ' . $e->getMessage());
         echo json_encode([
             'success' => false,
-            'message' => 'Error al obtener evaluadores: ' . $e->getMessage()
+            'message' => 'No se pudieron obtener los evaluadores.'
         ]);
     }
 }
@@ -347,10 +339,11 @@ function guardarAsignacion($conexion)
         return;
 
     } catch (Exception $e) {
+        error_log('AsignarEvaluadores guardar: ' . $e->getMessage());
         $conexion->rollback();
         echo json_encode([
             'success' => false,
-            'message' => 'Error al guardar asignación: ' . $e->getMessage()
+            'message' => 'No se pudo guardar la asignación.'
         ]);
     }
 }

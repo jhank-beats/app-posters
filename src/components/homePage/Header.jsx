@@ -139,6 +139,10 @@ const Header = () => {
                 <div className='modal-registro'>
                     <Login setUser={setUser}
                     cerrarLogin={() => setMostrarLogin(false)}
+                    abrirRegistro={() => {
+                        setMostrarLogin(false);
+                        setMostrarRegistro(true);
+                    }}
                     />
                 </div>
             )}

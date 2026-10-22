@@ -240,8 +240,9 @@ switch ($method) {
                     "message" => "Evento activado correctamente para " . ph_etiqueta_carrera($carreraEv),
                 ]);
             } catch (Exception $e) {
+                error_log('Eventos activar: ' . $e->getMessage());
                 $conexion->rollback();
-                echo json_encode(["status" => "error", "success" => false, "message" => "Error al activar el evento: " . $e->getMessage()]);
+                echo json_encode(["status" => "error", "success" => false, "message" => "No se pudo activar el evento."]);
             }
             exit;
         }

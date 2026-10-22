@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { API_BASE } from '../../../config.js';
+import './roles.css';
 
 const COLUMNAS = [
   { nombre: 'nombres', req: 'sí', ejemplo: 'Ana' },
@@ -72,105 +73,138 @@ export default function ImportarUsuariosModal({ cerrar, onImportado }) {
   };
 
   return (
-    <div className="modal activo" role="dialog" aria-modal="true" aria-label="Importar usuarios por CSV">
-      <div className="formularios-body" style={{ maxWidth: 720, margin: '2rem auto', background: '#fff', borderRadius: 12, padding: '1.25rem 1.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <h2 style={{ margin: 0, fontSize: '1.15rem' }}>📥 Importar usuarios por CSV</h2>
-          <button type="button" className="btn-accion-tabla" onClick={cerrar} aria-label="Cerrar">✕</button>
-        </div>
-
-        <p className="ayuda-campo" style={{ marginTop: 10 }}>
-          Solo superadmin. Se crea cada usuario <strong>activo</strong> con una <strong>contraseña temporal</strong>
-          que debe cambiar luego en su cuenta. No se importan filas con correo repetido ni el rol superadmin.
-        </p>
-
-        <h3 style={{ fontSize: '0.98rem', margin: '1rem 0 0.4rem' }}>Formato de columnas</h3>
-        <div className="contenedor-tabla" style={{ padding: 0, maxWidth: 'none' }}>
-          <table>
-            <thead>
-              <tr>
-                <th>Columna</th>
-                <th>¿Obligatoria?</th>
-                <th>Ejemplo / valores</th>
-              </tr>
-            </thead>
-            <tbody>
-              {COLUMNAS.map((c) => (
-                <tr key={c.nombre}>
-                  <td><code>{c.nombre}</code></td>
-                  <td>{c.req}</td>
-                  <td>{c.ejemplo}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <p style={{ margin: '0.75rem 0' }}>
-          <button type="button" className="btn-agregar-par" onClick={descargarPlantilla}>
-            ⬇️ Descargar plantilla CSV de ejemplo
+    <div className="modal" role="dialog" aria-modal="true" aria-label="Importar usuarios por CSV">
+      <section className="formularios" style={{ maxWidth: '720px', width: '100%' }}>
+        {cerrar && (
+          <button className="cerrar-formulario" onClick={cerrar} aria-label="Cerrar">
+            X
           </button>
-        </p>
-
-        <div className="campo-formulario">
-          <input type="file" accept=".csv,text/csv" onChange={alElegirArchivo} />
-          {nombreArchivo && <span className="ayuda-campo">Archivo: {nombreArchivo}</span>}
-        </div>
-
-        <details style={{ margin: '0.5rem 0 1rem' }}>
-          <summary style={{ cursor: 'pointer' }}>Pegar CSV a mano (opcional)</summary>
-          <textarea
-            value={textoCsv}
-            onChange={(e) => { setTextoCsv(e.target.value); setNombreArchivo(''); }}
-            rows={6}
-            style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'monospace', fontSize: 12, marginTop: 8 }}
-            placeholder="nombres,apellidos,correo,carrera,rol"
-          />
-        </details>
-
-        {error && (
-          <div className="alerta-duplicados" role="alert" style={{ marginBottom: 12 }}>
-            <strong>⚠️</strong> {error}
-          </div>
         )}
 
-        {resultado && (
-          <div className="caja-ayuda-botones-rec" style={{ marginBottom: 12 }}>
-            <p>
-              <strong>✅ {resultado.message}</strong>
-            </p>
-            {resultado.password_temporal && (
-              <p>
-                Contraseña temporal usada: <code>{resultado.password_temporal}</code>
-                {' '}— comunícala a los usuarios y pídeles que la cambien.
-              </p>
-            )}
-            {Array.isArray(resultado.errores) && resultado.errores.length > 0 && (
-              <details open>
-                <summary>Detalle ({resultado.errores.length})</summary>
-                <ul>
-                  {resultado.errores.map((e, i) => (
-                    <li key={i}>Fila {e.fila}: {e.motivo}</li>
+        <div className="formularios-header">
+          <span className="formularios-eyebrow">Carga masiva</span>
+          <h2>📥 Importar usuarios por CSV</h2>
+          <p>
+            Solo superadmin. Crea usuarios activos con una contraseña temporal que cada uno
+            debe cambiar luego en su cuenta.
+          </p>
+        </div>
+
+        <div className="formularios-body">
+          <p className="ayuda-campo">
+            No se importan correos repetidos ni el rol superadmin. Formato del archivo: filas
+            con encabezados de columna en la primera línea.
+          </p>
+
+          <div className="campo-formulario">
+            <label className="etiqueta-campo" style={{ display: 'block', marginBottom: 6 }}>
+              📋 Formato de columnas
+            </label>
+            <div className="contenedor-tabla" style={{ padding: 0, maxWidth: 'none' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Columna</th>
+                    <th>¿Obligatoria?</th>
+                    <th>Ejemplo / valores</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {COLUMNAS.map((c) => (
+                    <tr key={c.nombre}>
+                      <td><code>{c.nombre}</code></td>
+                      <td>{c.req}</td>
+                      <td>{c.ejemplo}</td>
+                    </tr>
                   ))}
-                </ul>
-              </details>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="campo-formulario" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            <button type="button" className="boton-primario" onClick={descargarPlantilla}>
+              ⬇️ Descargar plantilla CSV
+            </button>
+          </div>
+
+          <div className="campo-formulario">
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={alElegirArchivo}
+            />
+            {nombreArchivo && (
+              <span className="ayuda-campo">Archivo: {nombreArchivo}</span>
             )}
           </div>
-        )}
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button type="button" className="btn-accion-tabla" onClick={cerrar}>Cerrar</button>
-          <button
-            type="button"
-            className="btn-rec-primario btn-accion-tabla"
-            onClick={importar}
-            disabled={cargando}
-            style={{ background: '#132740', color: '#fff', border: 'none', padding: '0.55rem 1rem', borderRadius: 8, cursor: cargando ? 'wait' : 'pointer' }}
-          >
-            {cargando ? 'Importando…' : 'Importar usuarios'}
-          </button>
+          <details style={{ margin: '0.5rem 0 1rem' }}>
+            <summary style={{ cursor: 'pointer' }}>Pegar CSV a mano (opcional)</summary>
+            <div className="campo-formulario">
+              <textarea
+                value={textoCsv}
+                onChange={(e) => {
+                  setTextoCsv(e.target.value);
+                  setNombreArchivo('');
+                }}
+                rows={6}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  marginTop: 8,
+                  padding: '0.55rem 0.75rem',
+                  border: '1px solid #c5cdd8',
+                  borderRadius: 8,
+                }}
+                placeholder="nombres,apellidos,correo,carrera,rol"
+              />
+            </div>
+          </details>
+
+          {error && <p className="error-mensaje">{error}</p>}
+
+          {resultado && (
+            <div className="caja-ayuda-botones-rec" style={{ marginBottom: 12 }}>
+              <p style={{ margin: '0 0 0.5rem' }}>
+                <strong>✅ {resultado.message}</strong>
+              </p>
+              {resultado.password_temporal && (
+                <p style={{ margin: '0 0 0.5rem' }}>
+                  Contraseña temporal usada: <code>{resultado.password_temporal}</code>
+                  {' '}— comunícala a los usuarios y pídeles que la cambien.
+                </p>
+              )}
+              {Array.isArray(resultado.errores) && resultado.errores.length > 0 && (
+                <details open>
+                  <summary>Detalle ({resultado.errores.length})</summary>
+                  <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.2rem' }}>
+                    {resultado.errores.map((e, i) => (
+                      <li key={i}>Fila {e.fila}: {e.motivo}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="boton-primario"
+              onClick={importar}
+              disabled={cargando}
+            >
+              {cargando ? 'Importando…' : 'Importar usuarios'}
+            </button>
+            <button type="button" className="boton-secundario" onClick={cerrar}>
+              Cerrar
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

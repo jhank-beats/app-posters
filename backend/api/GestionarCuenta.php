@@ -2,17 +2,18 @@
 require_once __DIR__ . '/includes/Auth.php';
 cors_headers("GET, POST, OPTIONS");
 
-// Toda operación exige sesión válida; el acceso a datos ajenos solo para admin/superadmin.
+include '../Conexion.php';
+include_once __DIR__ . '/includes/PostersHelper.php';
+$conexion->set_charset('utf8mb4');
+
+// Toda operación exige sesión válida (se revalida que la cuenta siga activa).
+// El acceso a datos ajenos solo para admin/superadmin.
 $auth = require_login();
 function cuenta_puede_acceder($targetId) {
     $a = $GLOBALS['auth'];
     if ((int)$targetId === (int)$a['id']) return true;
     return in_array($a['rol'], [3, 4], true);
 }
-
-include '../Conexion.php';
-include_once __DIR__ . '/includes/PostersHelper.php';
-$conexion->set_charset('utf8mb4');
 
 // GET: Obtener datos del usuario
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

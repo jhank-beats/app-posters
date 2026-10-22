@@ -354,11 +354,15 @@ const HomePage = () => {
             )}
 
             {/* Modal de Login */}
-            {mostrarLogin && ( // 👈 4. RENDERIZAR LOGIN
+            {mostrarLogin && (
                 <div className="modal-registro">
                     <Login
                         setUser={setUser}
                         cerrarLogin={() => setMostrarLogin(false)}
+                        abrirRegistro={() => {
+                            setMostrarLogin(false);
+                            setMostrarRegistro(true);
+                        }}
                     />
                 </div>
             )}

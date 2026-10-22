@@ -1,5 +1,6 @@
 // src/auth.js — Sesión del lado cliente + inyección automática del token.
 // El backend verifica el token (HMAC) en cada endpoint protegido.
+import { API_BASE } from './config.js';
 
 const TOKEN_KEY = "authToken";
 
@@ -44,7 +45,7 @@ export function authHeaders(extra = {}) {
   return t ? { ...extra, Authorization: `Bearer ${t}` } : { ...extra };
 }
 
-// Parche global: todo fetch() a /api/ lleva el token sin tocar los 54 call-sites.
+// Parche global: todo fetch() a la API lleva el token sin tocar los call-sites.
 function patchFetch() {
   if (window.__authFetchPatched) return;
   window.__authFetchPatched = true;
@@ -52,7 +53,9 @@ function patchFetch() {
   window.fetch = (input, init = {}) => {
     const url = typeof input === "string" ? input : input?.url || "";
     const token = getToken();
-    if (token && url.includes("/api/")) {
+    const base = String(API_BASE || "").replace(/\/$/, "");
+    const esApi = base && (url.startsWith(base) || url.includes("/api/"));
+    if (token && esApi) {
       const headers = new Headers(init.headers || (typeof input !== "string" && input.headers) || {});
       if (!headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
       init = { ...init, headers };

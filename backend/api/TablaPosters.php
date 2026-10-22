@@ -58,9 +58,6 @@ function pp_exigir_dueno_o_admin($idPoster)
         auth_deny(401, "No autenticado.");
     }
     $rol = (int)$auth['rol'];
-    if ($rol === 3 || $rol === 4) {
-        return $auth;
-    }
     $id = intval($idPoster);
     if ($id <= 0) {
         auth_deny(400, "ID de póster inválido.");
@@ -75,6 +72,9 @@ function pp_exigir_dueno_o_admin($idPoster)
     $stmt->close();
     if (!$row) {
         auth_deny(404, "Póster no encontrado.");
+    }
+    if ($rol === 3 || $rol === 4) {
+        return $auth;
     }
     if ((int)$row['id_usuario'] !== (int)$auth['id']) {
         auth_deny(403, "No puedes modificar un póster que no te pertenece.");

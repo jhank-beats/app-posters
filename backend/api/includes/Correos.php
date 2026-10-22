@@ -104,10 +104,19 @@ function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
 }
 
 // Encola el correo en la tabla cola_correos (drenada por cron).
-// Si la tabla no existe, cae al exec en segundo plano (compatibilidad temporal).
+// Si SMTP no está configurado, no encola (evita filas que nunca se envían).
 function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml)
 {
     global $conexion;
+
+    $smtpUser = correo_env('SMTP_USER', '');
+    $smtpPass = correo_env('SMTP_PASS', '');
+    $smtpHost = correo_env('SMTP_HOST', '');
+    if ($smtpHost === '' || $smtpUser === '' || $smtpPass === '') {
+        error_log("encolarCorreoFondo: SMTP no configurado; correo omitido a {$destinatario}");
+        return false;
+    }
+
     $html = correo_asegurar_plantilla($asunto, $mensajeHtml);
 
     if (isset($conexion) && $conexion instanceof mysqli) {
@@ -124,20 +133,24 @@ function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml)
                 $stmt->close();
             }
         } catch (Throwable $e) {
-            // Tabla aún no creada: caer al método clásico.
             error_log('encolarCorreoFondo: ' . $e->getMessage());
         }
     }
 
-    // Fallback: proceso CLI en segundo plano (legacy).
-    $script = __DIR__ . '/EnviarCorreoFondo.php';
-    $payload = base64_encode(json_encode([
-        'destinatario' => $destinatario,
-        'asunto' => $asunto,
-        'mensaje' => $html,
-    ]));
-    exec('php ' . escapeshellarg($script) . ' ' . escapeshellarg($payload) . ' > /dev/null 2>&1 &');
-    return true;
+    // Fallback legacy: proceso CLI (solo si exec está disponible).
+    if (function_exists('exec') && strpos((string)ini_get('disable_functions'), 'exec') === false) {
+        $script = __DIR__ . '/EnviarCorreoFondo.php';
+        $payload = base64_encode(json_encode([
+            'destinatario' => $destinatario,
+            'asunto' => $asunto,
+            'mensaje' => $html,
+        ]));
+        exec('php ' . escapeshellarg($script) . ' ' . escapeshellarg($payload) . ' > /dev/null 2>&1 &', $out, $code);
+        return $code === 0;
+    }
+
+    error_log('encolarCorreoFondo: no se pudo encolar (sin tabla ni exec)');
+    return false;
 }
 
 // Envía la respuesta JSON al cliente de inmediato y deja el correo en fondo.
