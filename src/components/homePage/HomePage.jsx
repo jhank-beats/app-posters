@@ -267,17 +267,21 @@ const HomePage = () => {
                 <div className='poster-semestre'>
 
                     <div className='tarjeta-maqueta'>
-                        <h3>Poster del Semestre</h3>
+                        <h3>Plantilla del Poster (Bienal 2026)</h3>
                         <img
                             className='imagen-poster'
                             src="/img/poster.png"
-                            alt="Maqueta del poster para este semestre"
+                            alt="Vista previa de la plantilla del póster"
                             loading="lazy"
                             decoding="async"
                         />
-                        <a className='boton-descargar-poster' href="/img/poster.png" download="Maqueta-Poster.png">
+                        <a
+                            className='boton-descargar-poster'
+                            href="/img/Plantilla-Poster-Bienal-2026.pptx"
+                            download="Frm.Poster.Bienal.2026.pptx"
+                        >
                             <FontAwesomeIcon icon={faDownload} />
-                            Descargar maqueta
+                            Descargar plantilla (PPTX)
                         </a>
                     </div>
 
