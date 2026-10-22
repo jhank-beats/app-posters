@@ -7,7 +7,7 @@ $autoloadPath = __DIR__ . '/../../vendor/autoload.php';
 if (file_exists($autoloadPath)) {
     require_once $autoloadPath;
 } else {
-    file_put_contents('/tmp/correo_debug.txt', "ERROR: No se encontró el autoload en: {$autoloadPath}\n", FILE_APPEND);
+    error_log('correo: falta autoload PHPMailer');
 }
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -57,7 +57,7 @@ function correo_asegurar_plantilla($asunto, $mensajeHtml)
 
 function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
 {
-    file_put_contents('/tmp/correo_debug.txt', "Iniciando envío de correo a: {$destinatario}\n", FILE_APPEND);
+    error_log('correo: iniciando envío');
 
     try {
         $mail = new PHPMailer(true);
@@ -70,7 +70,7 @@ function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
         $smtpFromName = correo_env('SMTP_FROM_NAME', 'Sistema de Pósteres');
 
         if ($smtpHost === '' || $smtpUser === '' || $smtpPass === '') {
-            file_put_contents('/tmp/correo_debug.txt', "SMTP no configurado (faltan SMTP_HOST/SMTP_USER/SMTP_PASS). Correo omitido a {$destinatario}\n", FILE_APPEND);
+            error_log('correo: SMTP no configurado; omitido');
             return false;
         }
 
@@ -95,10 +95,10 @@ function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
         $mail->Body = correo_asegurar_plantilla($asunto, $mensajeHtml);
 
         $mail->send();
-        file_put_contents('/tmp/correo_debug.txt', "¡Correo enviado exitosamente a {$destinatario}!\n", FILE_APPEND);
+        error_log('correo: enviado');
         return true;
     } catch (Exception $e) {
-        file_put_contents('/tmp/correo_debug.txt', "EXCEPCIÓN PHPMailer: " . $e->getMessage() . "\n", FILE_APPEND);
+        error_log('correo: fallo PHPMailer: ' . $e->getMessage());
         return false;
     }
 }

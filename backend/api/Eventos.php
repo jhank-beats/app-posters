@@ -263,7 +263,8 @@ switch ($method) {
             if ($stmt->execute()) {
                 echo json_encode(["status" => "success", "success" => true, "message" => "Evento actualizado correctamente"]);
             } else {
-                echo json_encode(["status" => "error", "success" => false, "message" => "Error al actualizar el evento: " . $conexion->error]);
+                error_log('Eventos actualizar: ' . $conexion->error);
+                echo json_encode(["status" => "error", "success" => false, "message" => "No se pudo actualizar el evento."]);
             }
             $stmt->close();
         } else {

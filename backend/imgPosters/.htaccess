@@ -1,0 +1,24 @@
+# Carpeta de pósters: solo estáticos de imagen/PDF. Sin ejecución de código.
+
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phar .cgi .pl .py
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phar
+
+# Nunca servir ni ejecutar scripts
+<FilesMatch "\.(?i:php|phtml|php\d|phar|cgi|pl|py|sh|htaccess)$">
+  Require all denied
+</FilesMatch>
+
+# Solo imágenes y PDF
+<FilesMatch "\.(?i:jpe?g|png|gif|webp|pdf)$">
+  Require all granted
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header set Access-Control-Allow-Origin "*"
+  Header set Access-Control-Allow-Methods "GET, OPTIONS"
+  Header set Access-Control-Allow-Headers "Content-Type"
+  Header set X-Content-Type-Options "nosniff"
+</IfModule>

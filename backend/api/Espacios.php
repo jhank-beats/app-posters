@@ -89,7 +89,8 @@ switch ($method) {
             if ($stmt->execute()) {
                 echo json_encode(["status" => "success", "message" => "Espacio creado correctamente"]);
             } else {
-                echo json_encode(["status" => "error", "message" => "Error al guardar el espacio: " . $conexion->error]);
+                error_log('Espacios guardar: ' . $conexion->error);
+                echo json_encode(["status" => "error", "message" => "No se pudo guardar el espacio."]);
             }
             $stmt->close();
         } else {
@@ -286,7 +287,8 @@ switch ($method) {
                 );
                 exit;
             } else {
-                $errMsg = "Error al actualizar la ubicación: " . $conexion->error;
+                error_log('Espacios ubicación: ' . $conexion->error);
+                $errMsg = "No se pudo actualizar la ubicación.";
                 $stmtAsignar->close();
                 echo json_encode(["status" => "error", "message" => $errMsg]);
             }

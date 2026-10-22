@@ -36,10 +36,10 @@ function traerCategorias() {
     $resultado = $conexion->query($sql);
     
     if (!$resultado) {
+        error_log('Categorias: ' . $conexion->error);
         echo json_encode([
             'success' => false,
-            'message' => 'Error en la consulta',
-            'error' => $conexion->error
+            'message' => 'No se pudieron cargar las categorías.'
         ]);
         return;
     }

@@ -173,8 +173,8 @@ export default function ImportarUsuariosModal({ cerrar, onImportado }) {
               </p>
               {resultado.password_temporal && (
                 <p style={{ margin: '0 0 0.5rem' }}>
-                  Contraseña temporal usada: <code>{resultado.password_temporal}</code>
-                  {' '}— comunícala a los usuarios y pídeles que la cambien.
+                  Contraseña temporal de esta importación: <code>{resultado.password_temporal}</code>
+                  {' '}— comunícala a los usuarios y pídeles que la cambien de inmediato.
                 </p>
               )}
               {Array.isArray(resultado.errores) && resultado.errores.length > 0 && (

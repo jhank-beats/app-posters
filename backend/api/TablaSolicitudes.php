@@ -58,7 +58,7 @@ function actualizarEstado()
     global $conexion;
 
     // LOG DE PRUEBA INICIAL: Esto DEBE crear el archivo sí o sí al entrar a la función
-    file_put_contents('/tmp/correo_debug.txt', "ENTRO A ACTUALIZAR ESTADO\n", FILE_APPEND);
+    error_log('solicitudes: actualizar estado');
 
     // Aseguramos que la respuesta sea siempre JSON por más que ocurra un desastre
     $response = ['success' => false, 'message' => 'Error desconocido'];
@@ -67,7 +67,7 @@ function actualizarEstado()
         $data = json_decode(file_get_contents('php://input'), true);
 
         // Guardamos los datos recibidos para verlos en el log
-        file_put_contents('/tmp/correo_debug.txt', "Datos recibidos: " . json_encode($data) . "\n", FILE_APPEND);
+        
 
         $id = isset($data['id']) ? intval($data['id']) : 0;
         $activo = isset($data['activo']) && ($data['activo'] === true || $data['activo'] == 1) ? 1 : 0;
@@ -85,7 +85,7 @@ function actualizarEstado()
         // 2. Si la cuenta fue aprobada, preparamos el correo (se envía tras responder)
         $destSol = null; $asuntoSol = null; $mensajeSol = null;
         if ($activo === 1 && $id > 0) {
-            file_put_contents('/tmp/correo_debug.txt', "Condición de correo cumplida para ID: $id\n", FILE_APPEND);
+            error_log('solicitudes: notificar id=' . (int)$id);
 
             $sqlInfo = "SELECT nombres, apellidos, correo FROM usuario WHERE id = ?";
             $stmtInfo = $conexion->prepare($sqlInfo);
@@ -102,7 +102,7 @@ function actualizarEstado()
                     <p>Tu solicitud de registro ha sido aprobada por el administrador.</p>
                     <p>Ya puedes iniciar sesión en la plataforma y comenzar a utilizar el sistema.</p>
                 ";
-                file_put_contents('/tmp/correo_debug.txt', "Correo preparado para: {$destSol}\n", FILE_APPEND);
+                error_log('solicitudes: correo preparado');
             }
             if (isset($stmtInfo)) {
                 $stmtInfo->close();
@@ -115,7 +115,7 @@ function actualizarEstado()
         ];
 
     } catch (\Throwable $e) {
-        file_put_contents('/tmp/correo_debug.txt', "EXCEPCIÓN CAPTURADA: " . $e->getMessage() . "\n", FILE_APPEND);
+        error_log('solicitudes: ' . $e->getMessage());
         $response = [
             'success' => false,
             'message' => 'No se pudo actualizar la solicitud.'

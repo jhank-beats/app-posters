@@ -67,7 +67,8 @@ if ($stmt) {
     } else {
         $err = $stmt->error;
         $stmt->close();
-        echo json_encode(["status" => "error", "success" => false, "message" => "Error al registrar la solicitud: " . $err]);
+        error_log('Registro: ' . $err);
+        echo json_encode(["status" => "error", "success" => false, "message" => "No se pudo enviar la solicitud."]);
     }
 } else {
     echo json_encode(["status" => "error", "success" => false, "message" => "Error al preparar el registro."]);

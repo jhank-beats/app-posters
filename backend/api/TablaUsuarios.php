@@ -8,9 +8,9 @@ include_once __DIR__ . '/includes/PostersHelper.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Endpoint de profesores (Fase 2.3): disponible para cualquier usuario autenticado
-// al subir o editar un póster.
+// Endpoint de profesores: solo usuarios autenticados (selector de profesor al subir/editar).
 if ($method === 'GET' && (($_GET['action'] ?? '') === 'profesores' || ($_GET['tipo'] ?? '') === 'profesores')) {
+    require_login();
     echo json_encode([
         'success' => true,
         'data' => ph_obtener_profesores_disponibles($conexion),
@@ -212,7 +212,7 @@ function actualizarUsuario()
             $stmtActivo->close();
             // ENVIAR CORREO SIEMPRE QUE SE ACTIVE LA CUENTA (después de responder)
             if ($valActivoInt === 1) {
-                file_put_contents('/tmp/correo_debug.txt', "Disparando correo de admisión para: {$correoObjetivo}\n", FILE_APPEND);
+                error_log('usuarios: correo admisión');
                 responderJsonYNotificar(['success' => true, 'message' => 'Estado de activación actualizado correctamente'], $correoObjetivo, "¡Bienvenido! Has sido admitido en la plataforma", "
                     <h2>¡Hola, {$nombreObjetivo}!</h2>
                     <p>Nos complace informarte que tu cuenta ha sido <strong>admitida</strong> y activada exitosamente en la plataforma de pósteres.</p>

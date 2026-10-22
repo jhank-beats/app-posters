@@ -16,7 +16,8 @@ include_once __DIR__ . '/includes/ArchivosHelper.php';
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    // Lista de profesores para el selector múltiple del formulario de subir/editar póster.
+    // Lista de profesores: solo usuarios autenticados (subir/editar póster).
+    require_login();
     $profesores = ph_obtener_profesores_disponibles($conexion);
     echo json_encode([
         'success' => true,

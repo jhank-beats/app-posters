@@ -96,6 +96,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $carrera = ph_etiqueta_carrera($carreraNorm);
     $idEventoAsignado = ph_evento_activo($conexion, $carreraNorm);
 
+    // El correo debe ser único (evita colisiones de login).
+    $stmtDup = $conexion->prepare("SELECT id FROM usuario WHERE correo = ? AND id <> ? LIMIT 1");
+    if ($stmtDup) {
+        $stmtDup->bind_param("si", $correo, $id);
+        $stmtDup->execute();
+        if ($stmtDup->get_result()->fetch_assoc()) {
+            $stmtDup->close();
+            http_response_code(409);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Ese correo ya está en uso por otra cuenta.'
+            ]);
+            exit;
+        }
+        $stmtDup->close();
+    }
+
     // Verificar si se está cambiando la contraseña
     $cambiarContrasena = !empty($input['contrasenaActual']) && !empty($input['contrasenaNueva']);
 
@@ -149,9 +166,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
     } else {
         http_response_code(500);
+        error_log('GestionarCuenta actualizar: ' . $stmt->error);
         echo json_encode([
             'success' => false,
-            'message' => 'Error al actualizar los datos: ' . $stmt->error
+            'message' => 'No se pudieron actualizar los datos.'
         ]);
     }
 

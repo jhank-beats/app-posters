@@ -153,9 +153,9 @@ function require_role($roles = null) {
     global $conexion;
     $auth = auth_current();
     if (!$auth) auth_deny(401, "No autenticado. Inicia sesión.");
-    // M2: re-validar que la cuenta siga activa (invalida tokens al desactivar).
+    // Revalidar cuenta activa y rol actual (el token puede estar desactualizado).
     if (isset($conexion) && $conexion instanceof mysqli) {
-        $stmt = $conexion->prepare("SELECT activo FROM usuario WHERE id = ? LIMIT 1");
+        $stmt = $conexion->prepare("SELECT activo, id_rol FROM usuario WHERE id = ? LIMIT 1");
         if ($stmt) {
             $uid = (int)$auth['id'];
             $stmt->bind_param("i", $uid);
@@ -165,11 +165,13 @@ function require_role($roles = null) {
             if (!$row || (int)$row['activo'] !== 1) {
                 auth_deny(401, "Sesión inválida. Inicia sesión de nuevo.");
             }
+            // El rol del token no debe ganar si ya cambió en la BD.
+            $auth['rol'] = (int)$row['id_rol'];
         }
     }
     if (is_array($roles) && count($roles) > 0) {
         if ((int)$auth['rol'] === 4) return $auth; // superadmin bypass
-        if (!in_array($auth['rol'], $roles, true)) {
+        if (!in_array((int)$auth['rol'], $roles, true)) {
             auth_deny(403, "Sin permiso para esta operación.");
         }
     }

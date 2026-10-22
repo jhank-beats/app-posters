@@ -9,7 +9,7 @@
 //   nombres*, apellidos*, correo*, carrera*, rol?, id_evento?
 // rol: usuario|1, evaluador|2, admin|3  (NUNCA 4)
 //
-// Contraseña temporal: env PASS_TEMPORAL_IMPORT o por defecto Ucc*2026.
+// Contraseña temporal: PASS_TEMPORAL_IMPORT o aleatoria por importación.
 
 require_once __DIR__ . '/includes/Auth.php';
 cors_headers("POST, OPTIONS");
@@ -97,7 +97,12 @@ if (count($lineas) > $MAX_FILAS) {
     exit;
 }
 
-$passTemp = app_env('PASS_TEMPORAL_IMPORT', 'Ucc*2026');
+// Contraseña temporal por importación: PASS_TEMPORAL_IMPORT o aleatoria.
+// Se devuelve una sola vez en la respuesta al superadmin (no se guarda en claro).
+$passTemp = app_env('PASS_TEMPORAL_IMPORT');
+if ($passTemp === null || $passTemp === '') {
+    $passTemp = 'Ucc-' . bin2hex(random_bytes(4)) . '!';
+}
 $hashTemp = password_hash($passTemp, PASSWORD_DEFAULT);
 
 $creados = 0;
@@ -176,7 +181,8 @@ foreach ($lineas as $i => $linea) {
     } else {
         $detalle = $stmtIns ? $stmtIns->error : 'prepare falló';
         if ($stmtIns) $stmtIns->close();
-        $errores[] = ['fila' => $numFila, 'motivo' => "No se pudo guardar: {$detalle}"];
+        error_log("ImportarUsuarios fila {$numFila}: {$detalle}");
+        $errores[] = ['fila' => $numFila, 'motivo' => 'No se pudo guardar la fila.'];
     }
 }
 
