@@ -97,9 +97,7 @@ if (count($lineas) > $MAX_FILAS) {
     exit;
 }
 
-$passTemp = getenv('PASS_TEMPORAL_IMPORT');
-if (!$passTemp && isset($_ENV['PASS_TEMPORAL_IMPORT'])) $passTemp = $_ENV['PASS_TEMPORAL_IMPORT'];
-if (!$passTemp) $passTemp = 'Ucc*2026';
+$passTemp = app_env('PASS_TEMPORAL_IMPORT', 'Ucc*2026');
 $hashTemp = password_hash($passTemp, PASSWORD_DEFAULT);
 
 $creados = 0;

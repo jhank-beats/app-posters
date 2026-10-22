@@ -1,5 +1,7 @@
 <?php
 // includes/Auth.php — Autenticación stateless con tokens HMAC (sin cambios de BD).
+require_once __DIR__ . '/Env.php';
+
 // Uso:
 //   require_once __DIR__ . '/includes/Auth.php';
 //   cors_headers("POST, GET, OPTIONS");
@@ -7,10 +9,8 @@
 //   // $auth = ['id'=>..., 'rol'=>...] verificado desde el token.
 
 function auth_secret() {
-    // AUTH_SECRET es OBLIGATORIO en producción. Sin fallback conocido.
-    $s = getenv('AUTH_SECRET');
-    if (!$s && isset($_SERVER['AUTH_SECRET'])) $s = $_SERVER['AUTH_SECRET'];
-    if (!$s && isset($_ENV['AUTH_SECRET'])) $s = $_ENV['AUTH_SECRET'];
+    // AUTH_SECRET es OBLIGATORIO. Sin fallback conocido.
+    $s = app_env('AUTH_SECRET');
     if (!$s || strlen($s) < 16) {
         error_log('AUTH_SECRET no definido o demasiado corto. La API no puede firmar tokens.');
         http_response_code(500);
@@ -179,8 +179,7 @@ function require_login() { return require_role(null); }
 
 // CORS: restringido a CORS_ORIGINS (lista por coma). Dev: localhost:5173.
 function cors_headers($methods = "POST, GET, PUT, DELETE, OPTIONS") {
-    $permitidos = getenv('CORS_ORIGINS');
-    if ($permitidos === false || $permitidos === '') $permitidos = $_ENV['CORS_ORIGINS'] ?? $_SERVER['CORS_ORIGINS'] ?? '';
+    $permitidos = app_env('CORS_ORIGINS', '');
     if ($permitidos === '' || $permitidos === null) {
         $permitidos = 'http://localhost:5173,http://127.0.0.1:5173';
     }

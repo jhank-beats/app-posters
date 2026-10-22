@@ -1,17 +1,15 @@
 <?php
 // backend/api/includes/ArchivosHelper.php
 // Contrato único de almacenamiento y URL de pósters.
+require_once __DIR__ . '/Env.php';
+
 // - En disco: UPLOAD_DIR (fuera del checkout de git en producción).
 // - En BD: solo la clave del archivo (nombre aleatorio + extensión).
 // - En URL: PUBLIC_FILES_URL + clave.
 
 function archivos_env($clave, $porDefecto = null)
 {
-    $v = getenv($clave);
-    if ($v !== false && $v !== '') return $v;
-    if (isset($_ENV[$clave]) && $_ENV[$clave] !== '') return $_ENV[$clave];
-    if (isset($_SERVER[$clave]) && $_SERVER[$clave] !== '') return $_SERVER[$clave];
-    return $porDefecto;
+    return app_env($clave, $porDefecto);
 }
 
 /** Directorio absoluto donde se guardan los archivos. */

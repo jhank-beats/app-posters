@@ -1,19 +1,11 @@
 <?php
-// Credenciales solo por entorno. Sin fallbacks en código.
-// Define DB_HOST, DB_NAME, DB_USER y DB_PASS (ver .env.example).
-function conexion_env($clave, $porDefecto = null)
-{
-    $v = getenv($clave);
-    if ($v !== false && $v !== '') return $v;
-    if (isset($_ENV[$clave]) && $_ENV[$clave] !== '') return $_ENV[$clave];
-    if (isset($_SERVER[$clave]) && $_SERVER[$clave] !== '') return $_SERVER[$clave];
-    return $porDefecto;
-}
+// Credenciales solo por entorno o backend/.env. Sin fallbacks en código.
+require_once __DIR__ . '/api/includes/Env.php';
 
-$host = conexion_env('DB_HOST', 'localhost');
-$db   = conexion_env('DB_NAME');
-$user = conexion_env('DB_USER');
-$pass = conexion_env('DB_PASS');
+$host = app_env('DB_HOST', 'localhost');
+$db   = app_env('DB_NAME');
+$user = app_env('DB_USER');
+$pass = app_env('DB_PASS');
 
 if ($db === null || $user === null || $pass === null) {
     if (!headers_sent()) {

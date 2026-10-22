@@ -14,35 +14,16 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 /**
- * Lee una variable de configuración SMTP desde el entorno (getenv / $_ENV / .env).
+ * Lee una variable de configuración SMTP desde el entorno o backend/.env.
  * Sin respaldos en código: en producción SMTP_USER y SMTP_PASS son obligatorios.
  */
 function correo_env($clave, $porDefecto = '')
 {
-    static $envArchivo = null;
-    if ($envArchivo === null) {
-        $envArchivo = [];
-        $rutasEnv = [__DIR__ . '/../../.env', __DIR__ . '/../../../.env'];
-        foreach ($rutasEnv as $ruta) {
-            if (is_readable($ruta)) {
-                $lineas = @file($ruta, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                if (is_array($lineas)) {
-                    foreach ($lineas as $linea) {
-                        $linea = trim($linea);
-                        if ($linea === '' || $linea[0] === '#' || strpos($linea, '=') === false) continue;
-                        list($k, $v) = explode('=', $linea, 2);
-                        $envArchivo[trim($k)] = trim($v, " \t\n\r\0\x0B\"'");
-                    }
-                }
-                break;
-            }
-        }
+    if (!function_exists('app_env')) {
+        require_once __DIR__ . '/Env.php';
     }
-    $val = getenv($clave);
-    if ($val !== false && $val !== '') return $val;
-    if (isset($_ENV[$clave]) && $_ENV[$clave] !== '') return $_ENV[$clave];
-    if (isset($envArchivo[$clave]) && $envArchivo[$clave] !== '') return $envArchivo[$clave];
-    return $porDefecto;
+    $v = app_env($clave);
+    return ($v === null || $v === '') ? $porDefecto : $v;
 }
 
 /**
