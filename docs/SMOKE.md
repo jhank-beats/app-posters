@@ -23,6 +23,6 @@ Ejecutar en el **servidor final** después de cada despliegue. Marcar cada ítem
 12. [ ] Correo de prueba (si SMTP está configurado) aparece en `cola_correos` y se envía
 
 ## Seguridad rápida
-- [ ] `git grep -E 'yrpy|AIza|REMOVED_PASS|DEV-ONLY'` no devuelve secretos
+- [ ] `git grep -E 'buscar patrones de secretos conocidos'` no devuelve secretos
 - [ ] No hay PDFs personales en `backend/imgPosters/`
 - [ ] Sin `AUTH_SECRET` la API responde 500 (no emite tokens)
