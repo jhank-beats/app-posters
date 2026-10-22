@@ -27,3 +27,31 @@ dist-ssr
 verificacion-responsive/
 .playwright-mcp/
 mejoras aplicativo
+
+# Secrets and local tool config
+conf continue.txt
+.continue/
+.env
+.env.*
+!.env.example
+
+# Runtime / debug artifacts
+backend/test.php
+**/debug_log.txt
+~$*
+.~lock.*
+
+# Uploads (posters) — keep only the hardened .htaccess
+backend/imgPosters/*
+!backend/imgPosters/.htaccess
+src/assets/imgPosters/*
+!src/assets/imgPosters/.gitkeep
+
+# OS
+desktop.ini
+Thumbs.db
+
+# Informes de auditoría locales (contienen hallazgos de secretos)
+auditora-app.md
+auditoria-app-posters-consolidado.pdf
+.mimocode/
