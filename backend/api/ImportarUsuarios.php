@@ -97,11 +97,17 @@ if (count($lineas) > $MAX_FILAS) {
     exit;
 }
 
-// Contraseña temporal por importación: PASS_TEMPORAL_IMPORT o aleatoria.
-// Se devuelve una sola vez en la respuesta al superadmin (no se guarda en claro).
+// Contraseña temporal: PASS_TEMPORAL_IMPORT o aleatoria corta (fácil de escribir).
+// Formato: Ucc-XXXX (4 caracteres de alfabeto claro, sin 0/O/1/I).
 $passTemp = app_env('PASS_TEMPORAL_IMPORT');
 if ($passTemp === null || $passTemp === '') {
-    $passTemp = 'Ucc-' . bin2hex(random_bytes(4)) . '!';
+    $abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    $rand = '';
+    $len = strlen($abc);
+    for ($i = 0; $i < 4; $i++) {
+        $rand .= $abc[random_int(0, $len - 1)];
+    }
+    $passTemp = 'Ucc-' . $rand;
 }
 $hashTemp = password_hash($passTemp, PASSWORD_DEFAULT);
 

@@ -55,3 +55,13 @@ Thumbs.db
 auditora-app.md
 auditoria-app-posters-consolidado.pdf
 .mimocode/
+
+# Docs locales / internos que no se publican al repo del servidor
+docs/LOCAL.md
+docs/SMOKE.md
+docs/SOLICITUD-TI-DOMINIO-SMTP.md
+REQUERIMIENTOS-DESPLIEGUE.md
+SEGURIDAD-CAMBIOS.txt
+PENDIENTES-DESPLIEGUE.md
+mejoras aplicativo
+nombres_separados.csv
