@@ -672,6 +672,8 @@ function ph_asignar_evaluadores_al_subir($conexion, $id_poster, $id_evento, $id_
     })));
 
     $patronCarrera = '%' . ($carreraClave !== '' ? $carreraClave : 'sistema') . '%';
+    // Excluir SIEMPRE autor y profesores del póster (conflicto de intereses).
+    // Sin respaldo: si no queda nadie, no se asigna y se pide asignación manual.
     $sqlCand = "SELECT u.id, u.correo, u.carrera,
                        CONCAT(u.nombres, ' ', u.apellidos) AS nombre_evaluador,
                        (SELECT COUNT(*) FROM asignaciones_evaluadores ae
@@ -681,6 +683,10 @@ function ph_asignar_evaluadores_al_subir($conexion, $id_poster, $id_evento, $id_
                 WHERE (u.id_rol = 2 OR LOWER(r.nombre_rol) = 'evaluador')
                   AND u.activo = 1 AND u.desactivado = 0
                   AND u.id <> ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM poster_profesores pp
+                      WHERE pp.id_poster = ? AND pp.id_usuario = u.id
+                  )
                 ORDER BY
                   CASE WHEN LOWER(COALESCE(u.carrera, '')) LIKE ? THEN 0 ELSE 1 END ASC,
                   carga_ronda ASC,
@@ -688,39 +694,55 @@ function ph_asignar_evaluadores_al_subir($conexion, $id_poster, $id_evento, $id_
 
     $stmtCand = $conexion->prepare($sqlCand);
     if (!$stmtCand) {
-        return ['id_ronda' => $id_ronda, 'evaluadores' => [], 'notificaciones' => []];
+        return ['id_ronda' => $id_ronda, 'evaluadores' => [], 'notificaciones' => [], 'sin_evaluadores_disponibles' => true];
     }
-    $stmtCand->bind_param("iis", $id_ronda, $id_autor, $patronCarrera);
+    $stmtCand->bind_param("iiis", $id_ronda, $id_autor, $id_poster, $patronCarrera);
     $stmtCand->execute();
     $resCand = $stmtCand->get_result();
 
-    $preferidos = [];
-    $respaldo = [];
+    $pool = [];
     while ($ev = $resCand->fetch_assoc()) {
         $idEv = intval($ev['id']);
         if (!in_array($idEv, $excluirProfs, true)) {
-            $preferidos[] = $ev;
-        } else {
-            $respaldo[] = $ev;
+            $pool[] = $ev;
         }
     }
     $stmtCand->close();
 
-    $pool = array_merge($preferidos, $respaldo);
     $elegidos = array_slice($pool, 0, $nEvaluadores);
 
     if (empty($elegidos)) {
-        return ['id_ronda' => $id_ronda, 'evaluadores' => [], 'notificaciones' => []];
+        return [
+            'id_ronda' => $id_ronda,
+            'evaluadores' => [],
+            'notificaciones' => [],
+            'sin_evaluadores_disponibles' => true,
+            'mensaje_sin_evaluador' => 'No se registró evaluador porque no hay evaluadores disponibles (los disponibles son quienes subieron el póster o figuran como profesores asignados). Se requiere asignación manual.',
+        ];
     }
 
     // 4) Información de ubicación del póster para incluirla en el correo.
     $textoUbicacion = 'sin ubicar todavía';
-    if ($id_espacio !== null && $id_espacio !== 'NULL' && intval($id_espacio) > 0) {
+    if (function_exists('rh_ubicacion_poster')) {
+        $ubi = rh_ubicacion_poster($conexion, $id_poster);
+        if (!empty($ubi['etiqueta']) && $ubi['etiqueta'] !== 'sin ubicar todavía') {
+            $textoUbicacion = $ubi['etiqueta'];
+        } elseif (!empty($ubi['nombre_espacio'])) {
+            $textoUbicacion = $ubi['nombre_espacio'] . (isset($ubi['numero']) && $ubi['numero'] ? ' #' . $ubi['numero'] : '');
+        }
+    } elseif ($id_espacio !== null && $id_espacio !== 'NULL' && intval($id_espacio) > 0) {
         $idEspInt = intval($id_espacio);
         $stmtEsp = $conexion->prepare("
             SELECT e.nombre_espacio,
-                   (SELECT COUNT(*) FROM cargar_posters p2
-                     WHERE p2.id_espacio = e.id_espacio AND p2.id <= ? AND p2.activo = 1) AS puesto
+                   COALESCE((
+                       SELECT SUM(e_prev.capacidad)
+                       FROM espacios_fisicos e_prev
+                       WHERE e_prev.id_evento = e.id_evento
+                         AND e_prev.id_espacio < e.id_espacio
+                   ), 0) + (
+                       SELECT COUNT(*) FROM cargar_posters p2
+                       WHERE p2.id_espacio = e.id_espacio AND p2.id <= ? AND p2.activo = 1
+                   ) AS puesto
             FROM espacios_fisicos e
             WHERE e.id_espacio = ?
             LIMIT 1
@@ -784,6 +806,7 @@ function ph_asignar_evaluadores_al_subir($conexion, $id_poster, $id_evento, $id_
         'id_ronda' => $id_ronda,
         'evaluadores' => $evaluadoresAsignados,
         'notificaciones' => $notificaciones,
+        'sin_evaluadores_disponibles' => false,
     ];
 }
 ?>

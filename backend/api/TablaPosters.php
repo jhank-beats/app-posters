@@ -143,8 +143,15 @@ function traerPosters()
                     e.nombre_espacio,
                     CASE
                         WHEN p.id_espacio IS NOT NULL THEN (
-                            SELECT COUNT(*) FROM cargar_posters p2 
-                            WHERE p2.id_espacio = p.id_espacio AND p2.id <= p.id AND p2.activo = 1
+                            COALESCE((
+                                SELECT SUM(e_prev.capacidad)
+                                FROM espacios_fisicos e_prev
+                                WHERE e_prev.id_evento = e.id_evento
+                                  AND e_prev.id_espacio < e.id_espacio
+                            ), 0) + (
+                                SELECT COUNT(*) FROM cargar_posters p2
+                                WHERE p2.id_espacio = p.id_espacio AND p2.id <= p.id AND p2.activo = 1
+                            )
                         )
                         ELSE NULL
                     END AS ubicacion_detallada,
@@ -616,6 +623,28 @@ function modificarPoster()
                 $data['profesores_materias'] ?? null
             );
             ph_guardar_profesores_poster($conexion, $id, $pares);
+
+            // Conflicto de intereses: si alguien ahora es profesor del póster y
+            // tenía asignación sin calificar, se retira (la reasigna el admin/cron).
+            $idsProfsNuevos = array_map(function ($x) {
+                return intval($x['id_usuario']);
+            }, $pares);
+            if (count($idsProfsNuevos) > 0) {
+                $marcasProfIds = implode(',', $idsProfsNuevos);
+                $sqlQuitar = "DELETE a FROM asignaciones_evaluadores a
+                    LEFT JOIN (
+                        SELECT DISTINCT d.id_poster, d.id_evaluador, d.id_ronda
+                        FROM evaluaciones_detalles d
+                        WHERE d.calificacion > 0
+                    ) t ON t.id_poster = a.id_poster AND t.id_evaluador = a.id_evaluador AND t.id_ronda = a.id_ronda
+                    WHERE a.id_poster = ? AND a.id_evaluador IN ({$marcasProfIds}) AND t.id_poster IS NULL";
+                $stmtQuitar = $conexion->prepare($sqlQuitar);
+                if ($stmtQuitar) {
+                    $stmtQuitar->bind_param("i", $id);
+                    $stmtQuitar->execute();
+                    $stmtQuitar->close();
+                }
+            }
         }
 
         $conexion->commit();

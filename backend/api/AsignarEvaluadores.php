@@ -102,20 +102,23 @@ function obtenerEvaluadoresYAsignaciones($conexion)
             }
         }
 
-        // Fase 3: excluir al autor del póster de la lista de evaluadores disponibles
-        // para impedir la autoevaluación desde la asignación.
-        $sql = "SELECT 
-                    u.id, 
+        // Excluir al autor Y a los profesores asignados (conflicto de intereses).
+        $sql = "SELECT
+                    u.id,
                     CONCAT(u.nombres, ' ', u.apellidos) AS nombre_completo,
                     u.correo,
                     u.carrera,
                     IF(ae.id_asignacion IS NOT NULL, 1, 0) AS asignado
                 FROM usuario u
                 INNER JOIN roles r ON u.id_rol = r.id_rol
-                LEFT JOIN asignaciones_evaluadores ae 
+                LEFT JOIN asignaciones_evaluadores ae
                     ON u.id = ae.id_evaluador AND ae.id_poster = ? AND ae.id_ronda = ?
                 WHERE r.nombre_rol = 'Evaluador'
-                  AND u.id <> COALESCE((SELECT id_usuario FROM cargar_posters WHERE id = ?), 0)";
+                  AND u.id <> COALESCE((SELECT id_usuario FROM cargar_posters WHERE id = ?), 0)
+                  AND NOT EXISTS (
+                      SELECT 1 FROM poster_profesores pp
+                      WHERE pp.id_poster = ? AND pp.id_usuario = u.id
+                  )";
 
         if (!empty($carrera)) {
             $sql .= " AND u.carrera LIKE ?";
@@ -127,9 +130,9 @@ function obtenerEvaluadoresYAsignaciones($conexion)
 
         if (!empty($carrera)) {
             $term = "%" . $carrera . "%";
-            $stmt->bind_param("iiis", $id_poster, $id_ronda, $id_poster, $term);
+            $stmt->bind_param("iiiis", $id_poster, $id_ronda, $id_poster, $id_poster, $term);
         } else {
-            $stmt->bind_param("iii", $id_poster, $id_ronda, $id_poster);
+            $stmt->bind_param("iiii", $id_poster, $id_ronda, $id_poster, $id_poster);
         }
 
         $stmt->execute();
@@ -142,13 +145,38 @@ function obtenerEvaluadoresYAsignaciones($conexion)
             $evaluadores[] = $row;
         }
 
+        // Profesores del póster (excluidos en UI por conflicto de interés)
+        $idsProfesores = [];
+        $profesoresExcluidos = [];
+        if ($id_poster > 0) {
+            $stmtProf = $conexion->prepare(
+                "SELECT pp.id_usuario, CONCAT(u.nombres, ' ', u.apellidos) AS nombre
+                 FROM poster_profesores pp
+                 JOIN usuario u ON u.id = pp.id_usuario
+                 WHERE pp.id_poster = ?"
+            );
+            if ($stmtProf) {
+                $stmtProf->bind_param("i", $id_poster);
+                $stmtProf->execute();
+                $resProf = $stmtProf->get_result();
+                while ($fp = $resProf->fetch_assoc()) {
+                    $idsProfesores[] = intval($fp['id_usuario']);
+                    $profesoresExcluidos[] = [
+                        'id' => intval($fp['id_usuario']),
+                        'nombre' => $fp['nombre'],
+                    ];
+                }
+                $stmtProf->close();
+            }
+        }
+
         echo json_encode([
             'success' => true,
-            // `ronda` y `limite`: en la Ronda 1 solo cabe 1 evaluador (la
-            // interfaz debe mostrar selección única); desde la Ronda 2, varios.
             'ronda' => $rondaCtx,
             'limite' => $rondaCtx['limite'],
             'id_autor' => $id_autor,
+            'ids_profesores' => $idsProfesores,
+            'profesores_excluidos' => $profesoresExcluidos,
             'data' => $evaluadores
         ]);
 
@@ -199,6 +227,29 @@ function guardarAsignacion($conexion)
                 'success' => false,
                 'codigo' => 'conflicto_interes_autor',
                 'message' => 'No se puede asignar al autor del póster como evaluador de su propio póster (no autoevaluación).'
+            ]);
+            return;
+        }
+
+        // Conflicto de intereses: tampoco se puede asignar a un profesor del póster.
+        $idsProfesoresAsig = [];
+        $stmtProf = $conexion->prepare("SELECT id_usuario FROM poster_profesores WHERE id_poster = ?");
+        if ($stmtProf) {
+            $stmtProf->bind_param("i", $id_poster);
+            $stmtProf->execute();
+            $resProf = $stmtProf->get_result();
+            while ($fp = $resProf->fetch_assoc()) {
+                $idsProfesoresAsig[] = intval($fp['id_usuario']);
+            }
+            $stmtProf->close();
+        }
+        $conflictoProf = array_values(array_intersect($evaluadores_ids, $idsProfesoresAsig));
+        if (count($conflictoProf) > 0) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'codigo' => 'conflicto_interes_profesor',
+                'message' => 'No se puede asignar a un profesor del póster como evaluador (conflicto de intereses).'
             ]);
             return;
         }

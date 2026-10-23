@@ -98,10 +98,16 @@ switch ($method) {
         }
         break;
 
-    // 3. ASIGNAR ESPACIO A UN PÓSTER (VALIDANDO CAPACIDAD MÁXIMA)
+    // 3. ASIGNAR ESPACIO A UN PÓSTER o EDITAR ESPACIO (accion=editar_espacio)
     case 'PUT':
         $auth = require_role([3, 4]);
         $data = json_decode(file_get_contents("php://input"));
+        $accion = isset($data->accion) ? trim((string)$data->accion) : '';
+
+        if ($accion === 'editar_espacio' || (isset($data->id_espacio) && !isset($data->id_poster) && $accion !== 'asignar_poster')) {
+            editar_espacio($conexion, $auth, $data);
+            exit;
+        }
 
         if (isset($data->id_poster)) {
             $id_poster = intval($data->id_poster);
@@ -297,8 +303,180 @@ switch ($method) {
         }
         break;
 
+    // 4. ELIMINAR ESPACIO FÍSICO
+    case 'DELETE':
+        $auth = require_role([3, 4]);
+        $idEsp = isset($_GET['id_espacio']) ? intval($_GET['id_espacio']) : 0;
+        if ($idEsp <= 0) {
+            $raw = file_get_contents('php://input');
+            $j = json_decode($raw, true);
+            if (is_array($j) && !empty($j['id_espacio'])) {
+                $idEsp = intval($j['id_espacio']);
+            } elseif (is_array($j) && !empty($j['id'])) {
+                $idEsp = intval($j['id']);
+            }
+        }
+        if ($idEsp <= 0) {
+            echo json_encode(["status" => "error", "message" => "Falta el ID del espacio"]);
+            break;
+        }
+        eliminar_espacio($conexion, $auth, $idEsp);
+        break;
+
     default:
         echo json_encode(["status" => "error", "message" => "Método no permitido"]);
         break;
+}
+
+/**
+ * Editar nombre/capacidad (y evento si es superadmin) de un espacio físico.
+ * La capacidad no puede bajar por debajo de la ocupación actual.
+ */
+function editar_espacio($conexion, $auth, $data)
+{
+    $idEsp = intval($data->id_espacio ?? 0);
+    if ($idEsp <= 0) {
+        echo json_encode(["status" => "error", "message" => "ID de espacio inválido"]);
+        return;
+    }
+
+    $row = null;
+    $stmt = $conexion->prepare("SELECT id_evento, nombre_espacio, capacidad FROM espacios_fisicos WHERE id_espacio = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param("i", $idEsp);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+    }
+    if (!$row) {
+        echo json_encode(["status" => "error", "message" => "Espacio no encontrado"]);
+        return;
+    }
+
+    // Admin de evento solo puede editar espacios de SU evento
+    $idEventoAdmin = auth_id_evento_admin($conexion, $auth);
+    if ($idEventoAdmin !== null && intval($row['id_evento']) !== $idEventoAdmin) {
+        echo json_encode(["status" => "error", "message" => "Este espacio no pertenece a tu evento"]);
+        return;
+    }
+
+    $nombre = isset($data->nombre_espacio) ? trim((string)$data->nombre_espacio) : $row['nombre_espacio'];
+    if ($nombre === '') {
+        echo json_encode(["status" => "error", "message" => "El nombre es obligatorio"]);
+        return;
+    }
+
+    $capacidad = isset($data->capacidad) ? intval($data->capacidad) : intval($row['capacidad']);
+    if ($capacidad < 1) {
+        echo json_encode(["status" => "error", "message" => "La capacidad debe ser al menos 1"]);
+        return;
+    }
+
+    $stmtOc = $conexion->prepare("SELECT COUNT(*) FROM cargar_posters WHERE id_espacio = ? AND activo = 1");
+    $ocupacion = 0;
+    if ($stmtOc) {
+        $stmtOc->bind_param("i", $idEsp);
+        $stmtOc->execute();
+        $tmp = $stmtOc->get_result()->fetch_row();
+        $ocupacion = intval($tmp[0] ?? 0);
+        $stmtOc->close();
+    }
+    if ($capacidad < $ocupacion) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "La capacidad ({$capacidad}) no puede ser menor que la ocupación actual ({$ocupacion} pósters).",
+        ]);
+        return;
+    }
+
+    $idEvento = intval($row['id_evento']);
+    if ((int)$auth['rol'] === 4 && isset($data->id_evento) && intval($data->id_evento) > 0) {
+        $idEvento = intval($data->id_evento);
+    }
+
+    $ubicacion = $data->ubicacion_detallada ?? null;
+    if ($ubicacion !== null) {
+        $ubicacion = trim((string)$ubicacion);
+        $stmtUpd = $conexion->prepare("UPDATE espacios_fisicos SET nombre_espacio = ?, capacidad = ?, id_evento = ?, ubicacion_detallada = ? WHERE id_espacio = ?");
+        $stmtUpd->bind_param("siisi", $nombre, $capacidad, $idEvento, $ubicacion, $idEsp);
+    } else {
+        $stmtUpd = $conexion->prepare("UPDATE espacios_fisicos SET nombre_espacio = ?, capacidad = ?, id_evento = ? WHERE id_espacio = ?");
+        $stmtUpd->bind_param("siii", $nombre, $capacidad, $idEvento, $idEsp);
+    }
+
+    if ($stmtUpd && $stmtUpd->execute()) {
+        echo json_encode(["status" => "success", "message" => "Espacio actualizado correctamente"]);
+    } else {
+        error_log('Espacios editar: ' . $conexion->error);
+        echo json_encode(["status" => "error", "message" => "No se pudo actualizar el espacio."]);
+    }
+    if ($stmtUpd) $stmtUpd->close();
+}
+
+/**
+ * Eliminar espacio. Si tiene pósters activos, se desasignan antes (en transacción).
+ */
+function eliminar_espacio($conexion, $auth, $idEsp)
+{
+    $row = null;
+    $stmt = $conexion->prepare("SELECT id_evento FROM espacios_fisicos WHERE id_espacio = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param("i", $idEsp);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+    }
+    if (!$row) {
+        echo json_encode(["status" => "error", "message" => "Espacio no encontrado"]);
+        return;
+    }
+
+    $idEventoAdmin = auth_id_evento_admin($conexion, $auth);
+    if ($idEventoAdmin !== null && intval($row['id_evento']) !== $idEventoAdmin) {
+        echo json_encode(["status" => "error", "message" => "Este espacio no pertenece a tu evento"]);
+        return;
+    }
+
+    $stmtOc = $conexion->prepare("SELECT COUNT(*) FROM cargar_posters WHERE id_espacio = ? AND activo = 1");
+    $ocupacion = 0;
+    if ($stmtOc) {
+        $stmtOc->bind_param("i", $idEsp);
+        $stmtOc->execute();
+        $tmp = $stmtOc->get_result()->fetch_row();
+        $ocupacion = intval($tmp[0] ?? 0);
+        $stmtOc->close();
+    }
+
+    $conexion->begin_transaction();
+    try {
+        if ($ocupacion > 0) {
+            $stmtDes = $conexion->prepare("UPDATE cargar_posters SET id_espacio = NULL WHERE id_espacio = ? AND activo = 1");
+            if (!$stmtDes) throw new Exception('desasignar prepare failed');
+            $stmtDes->bind_param("i", $idEsp);
+            $stmtDes->execute();
+            $stmtDes->close();
+        }
+        $stmtDel = $conexion->prepare("DELETE FROM espacios_fisicos WHERE id_espacio = ?");
+        if (!$stmtDel) throw new Exception('delete prepare failed');
+        $stmtDel->bind_param("i", $idEsp);
+        if (!$stmtDel->execute()) throw new Exception($stmtDel->error);
+        $stmtDel->close();
+        $conexion->commit();
+    } catch (Throwable $e) {
+        $conexion->rollback();
+        error_log('Espacios eliminar: ' . $e->getMessage());
+        echo json_encode(["status" => "error", "message" => "No se pudo eliminar el espacio."]);
+        return;
+    }
+
+    $msg = "Espacio eliminado correctamente";
+    if ($ocupacion > 0) {
+        $msg .= ". {$ocupacion} póster(es) quedaron sin ubicación y deben reubicarse.";
+    }
+    echo json_encode([
+        "status" => "success",
+        "message" => $msg,
+        "pordesasignar" => $ocupacion,
+    ]);
 }
 ?>

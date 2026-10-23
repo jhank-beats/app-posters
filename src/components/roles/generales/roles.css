@@ -3131,3 +3131,29 @@ Overlay Formularios - Registro/Login (dentro de modal-registro)
     display: none;
   }
 }
+
+/* === Botones de póster en home de roles (escritorio y móvil) === */
+.btn-cargar-posters,
+#mis-posters .boton-primario {
+  width: auto !important;
+  max-width: 260px;
+  padding: 0.7rem 1.4rem;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .btn-cargar-posters,
+  #mis-posters .boton-primario {
+    width: auto !important;
+    min-width: 200px;
+    max-width: calc(100% - 2rem);
+    padding: 0.68rem 1.25rem;
+    font-size: 0.9rem;
+  }
+}

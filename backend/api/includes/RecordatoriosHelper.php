@@ -132,9 +132,16 @@ function rec_obtener_pendientes_evaluadores($conexion, $id_evento_filtro = null)
                    e.nombre_espacio,
                    CASE
                        WHEN p.id_espacio IS NOT NULL THEN (
-                           SELECT COUNT(*)
-                           FROM cargar_posters p2
-                           WHERE p2.id_espacio = p.id_espacio AND p2.id <= p.id AND p2.activo = 1
+                           COALESCE((
+                               SELECT SUM(e_prev.capacidad)
+                               FROM espacios_fisicos e_prev
+                               WHERE e_prev.id_evento = e.id_evento
+                                 AND e_prev.id_espacio < e.id_espacio
+                           ), 0) + (
+                               SELECT COUNT(*)
+                               FROM cargar_posters p2
+                               WHERE p2.id_espacio = p.id_espacio AND p2.id <= p.id AND p2.activo = 1
+                           )
                        )
                        ELSE NULL
                    END AS numero_espacio,
@@ -152,6 +159,10 @@ function rec_obtener_pendientes_evaluadores($conexion, $id_evento_filtro = null)
               AND p.activo = 1
               AND u.activo = 1 AND u.desactivado = 0
               AND p.id_usuario <> a.id_evaluador
+              AND NOT EXISTS (
+                  SELECT 1 FROM poster_profesores pp
+                  WHERE pp.id_poster = a.id_poster AND pp.id_usuario = a.id_evaluador
+              )
               AND NOT EXISTS (
                   SELECT 1 FROM evaluaciones_detalles d
                   WHERE d.id_poster = a.id_poster
@@ -415,12 +426,12 @@ function rec_ejecutar_asignar_huerfanos($conexion, $ejecutadoPor = 'sistema', $e
             $r = ph_asignar_evaluadores_al_subir(
                 $conexion,
                 $idPoster,
-                intval($p['id_usuario']),
                 intval($p['id_evento']),
-                (string)$p['categoria'],
-                $p['id_espacio'],
+                intval($p['id_usuario']),
                 (string)$p['titulo'],
+                (string)$p['categoria'],
                 $idsProfs,
+                $p['id_espacio'],
                 2
             );
             if (!empty($r['evaluadores'])) {
@@ -540,11 +551,15 @@ function rec_ejecutar_reasignar_pendientes($conexion, $ejecutadoPor = 'sistema',
                            SELECT 1 FROM asignaciones_evaluadores ax
                            WHERE ax.id_poster = ? AND ax.id_ronda = ? AND ax.id_evaluador = u.id
                        )
+                       AND NOT EXISTS (
+                           SELECT 1 FROM poster_profesores pp
+                           WHERE pp.id_poster = ? AND pp.id_usuario = u.id
+                       )
                      ORDER BY pendientes_ronda ASC, RAND()
                      LIMIT 1";
         $stmtL = $conexion->prepare($sqlLibre);
         if (!$stmtL) continue;
-        $stmtL->bind_param("iiii", $idRonda, $idAutor, $idPoster, $idRonda);
+        $stmtL->bind_param("iiiii", $idRonda, $idAutor, $idPoster, $idRonda, $idPoster);
         $stmtL->execute();
         $cand = $stmtL->get_result()->fetch_assoc();
         $stmtL->close();

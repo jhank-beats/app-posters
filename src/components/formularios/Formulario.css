@@ -233,6 +233,13 @@
 }
 
 /* === BOTONES === */
+/* width 100% SOLO dentro de tarjetas de formulario (no en home de roles) */
+.formularios .boton-primario,
+.formularios-body .boton-primario {
+  width: 100%;
+  margin-top: 0.3rem;
+}
+
 .boton-primario {
   padding: 0.9rem 1.5rem;
   font-size: 1rem;
@@ -244,8 +251,7 @@
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 172, 201, 0.3);
-  width: 100%;
-  margin-top: 0.3rem;
+  width: auto;
 }
 
 .boton-primario:hover {
@@ -260,6 +266,12 @@
   box-shadow: 0 2px 8px rgba(0, 172, 201, 0.2);
 }
 
+.formularios .boton-secundario,
+.formularios-body .boton-secundario {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
 .boton-secundario {
   padding: 0.7rem 1.5rem;
   font-size: 0.95rem;
@@ -270,8 +282,7 @@
   border-radius: 12px;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
-  width: 100%;
-  margin-top: 0.5rem;
+  width: auto;
 }
 
 .boton-secundario:hover {

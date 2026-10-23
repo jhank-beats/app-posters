@@ -287,6 +287,20 @@ try {
         $stmtUsr->close();
     }
 
+    $sinEvaluador = !empty($resultadoAsignacion['evaluadores']) ? false
+        : (bool)($resultadoAsignacion['sin_evaluadores_disponibles'] ?? false);
+    $mensajeSinEval = $resultadoAsignacion['mensaje_sin_evaluador'] ?? null;
+
+    if ($destSub && $asuntoSub && $mensajeSub) {
+        if ($sinEvaluador) {
+            $mensajeSub = str_replace(
+                '<p>El sistema ya asignó evaluador(es) para la primera ronda. Te notificaremos cuando reciba actualizaciones.</p>',
+                '<p><strong>Aún no se asignó evaluador</strong>: no hay evaluadores disponibles (no pueden ser el autor ni los profesores del póster). Un administrador hará la asignación manual.</p>',
+                $mensajeSub
+            );
+        }
+    }
+
     $respuesta = [
         'status' => 'success',
         'success' => true,
@@ -300,6 +314,8 @@ try {
             'id_espacio' => $id_espacio_asignado,
             'profesores' => $profesoresGuardados,
             'evaluadores_asignados' => $resultadoAsignacion['evaluadores'],
+            'sin_evaluadores_disponibles' => $sinEvaluador,
+            'mensaje_sin_evaluador' => $mensajeSinEval,
         ],
     ];
 

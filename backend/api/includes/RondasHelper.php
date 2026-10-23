@@ -135,6 +135,23 @@ function rh_es_autor_poster($conexion, $id_poster, $id_usuario)
     return $fila && intval($fila['id_usuario']) === $id_usuario;
 }
 
+// ¿Figura el usuario como profesor asignado del póster? (conflicto de intereses)
+function rh_es_profesor_poster($conexion, $id_poster, $id_usuario)
+{
+    $id_poster = intval($id_poster);
+    $id_usuario = intval($id_usuario);
+    if ($id_poster <= 0 || $id_usuario <= 0) return false;
+    $stmt = $conexion->prepare(
+        "SELECT 1 FROM poster_profesores WHERE id_poster = ? AND id_usuario = ? LIMIT 1"
+    );
+    if (!$stmt) return false;
+    $stmt->bind_param("ii", $id_poster, $id_usuario);
+    $stmt->execute();
+    $existe = (bool)$stmt->get_result()->fetch_row();
+    $stmt->close();
+    return $existe;
+}
+
 // Ronda previa a la que se está evaluando (para la elegibilidad de la ronda 2+).
 function rh_ronda_previa($conexion, $ronda)
 {
@@ -166,6 +183,10 @@ function rh_elegibilidad($conexion, $id_evaluador, $ronda, $id_poster)
 
     if (rh_es_autor_poster($conexion, $id_poster, $id_evaluador)) {
         return ['puede' => false, 'motivo' => 'No puedes evaluar tu propio póster (conflicto de intereses).'];
+    }
+
+    if (rh_es_profesor_poster($conexion, $id_poster, $id_evaluador)) {
+        return ['puede' => false, 'motivo' => 'No puedes evaluar un póster en el que figuras como profesor asignado (conflicto de intereses).'];
     }
 
     $id_ronda = intval($ronda['id_ronda']);
@@ -234,6 +255,25 @@ function rh_elegibilidad_lote($conexion, $id_evaluador, $ronda, $posters)
         $esAutor[intval($id_poster)] = isset($fila['id_usuario']) && intval($fila['id_usuario']) === $id_evaluador;
     }
 
+    // Profesores asignados de ESTE evaluador entre los pósters del lote (1 consulta).
+    $esProfesorDe = [];
+    $idsPosters = array_map('intval', array_keys($posters));
+    if (count($idsPosters) > 0) {
+        $marcasProf = implode(',', $idsPosters);
+        $stmtProf = $conexion->prepare(
+            "SELECT id_poster FROM poster_profesores WHERE id_usuario = ? AND id_poster IN ($marcasProf)"
+        );
+        if ($stmtProf) {
+            $stmtProf->bind_param("i", $id_evaluador);
+            $stmtProf->execute();
+            $resProf = $stmtProf->get_result();
+            while ($fp = $resProf->fetch_assoc()) {
+                $esProfesorDe[intval($fp['id_poster'])] = true;
+            }
+            $stmtProf->close();
+        }
+    }
+
     $id_ronda = intval($ronda['id_ronda']);
     $id_evento_ronda = intval($ronda['id_evento'] ?? 0);
 
@@ -284,6 +324,8 @@ function rh_elegibilidad_lote($conexion, $id_evaluador, $ronda, $posters)
         $id = intval($id_poster);
         if ($esAutor[$id]) {
             $resultado[$id] = ['puede' => false, 'motivo' => 'No puedes evaluar tu propio póster (conflicto de intereses).', 'es_autor' => true];
+        } elseif (isset($esProfesorDe[$id])) {
+            $resultado[$id] = ['puede' => false, 'motivo' => 'No puedes evaluar un póster en el que figuras como profesor asignado (conflicto de intereses).', 'es_autor' => false];
         } elseif ($seleccionados !== null && !isset($seleccionados[$id])) {
             $resultado[$id] = ['puede' => false, 'motivo' => 'Este póster no fue seleccionado para esta ronda.', 'es_autor' => false];
         } elseif (!isset($asignados[$id])) {
@@ -781,6 +823,10 @@ function rh_reasignar_aleatorio_ronda($conexion, $id_ronda_anterior, $id_ronda_s
                       JOIN rondas r_ev ON r_ev.id_ronda = e.id_ronda
                       WHERE e.id_poster = ? AND e.id_evaluador = u.id AND r_ev.id_evento = ?
                   )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM poster_profesores pp
+                      WHERE pp.id_poster = ? AND pp.id_usuario = u.id
+                  )
                 ORDER BY
                   CASE WHEN u.id_evento = ? OR LOWER(COALESCE(u.carrera, '')) LIKE ? THEN 0 ELSE 1 END ASC,
                   carga_ronda ASC,
@@ -788,13 +834,14 @@ function rh_reasignar_aleatorio_ronda($conexion, $id_ronda_anterior, $id_ronda_s
                 LIMIT ?";
         $stmt = $conexion->prepare($sql);
         $stmt->bind_param(
-            "iiiiiiisi",
+            "iiiiiiiiisi",
             $id_ronda_siguiente,
             $id_autor,
             $id_poster,
             $id_ronda_siguiente,
             $id_poster,
             $idEventoDestino,
+            $id_poster,
             $idEventoDestino,
             $patronCarreraDestino,
             $faltan
@@ -896,8 +943,15 @@ function rh_ubicacion_poster($conexion, $id_poster)
                    e.nombre_espacio,
                    CASE
                        WHEN p.id_espacio IS NOT NULL THEN (
-                           SELECT COUNT(*) FROM cargar_posters p2
-                           WHERE p2.id_espacio = p.id_espacio AND p2.id <= p.id AND p2.activo = 1
+                           COALESCE((
+                               SELECT SUM(e_prev.capacidad)
+                               FROM espacios_fisicos e_prev
+                               WHERE e_prev.id_evento = e.id_evento
+                                 AND e_prev.id_espacio < e.id_espacio
+                           ), 0) + (
+                               SELECT COUNT(*) FROM cargar_posters p2
+                               WHERE p2.id_espacio = p.id_espacio AND p2.id <= p.id AND p2.activo = 1
+                           )
                        )
                        ELSE NULL
                    END AS numero_espacio

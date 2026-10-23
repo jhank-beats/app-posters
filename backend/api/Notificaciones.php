@@ -139,9 +139,16 @@ if ($rol === 2) {
         $sqlPend = "SELECT p.id, p.titulo, e.nombre_espacio,
                            CASE
                                WHEN p.id_espacio IS NOT NULL THEN (
-                                   SELECT COUNT(*)
-                                   FROM cargar_posters p2
-                                   WHERE p2.id_espacio = p.id_espacio AND p2.id <= p.id AND p2.activo = 1
+                                   COALESCE((
+                                       SELECT SUM(e_prev.capacidad)
+                                       FROM espacios_fisicos e_prev
+                                       WHERE e_prev.id_evento = e.id_evento
+                                         AND e_prev.id_espacio < e.id_espacio
+                                   ), 0) + (
+                                       SELECT COUNT(*)
+                                       FROM cargar_posters p2
+                                       WHERE p2.id_espacio = p.id_espacio AND p2.id <= p.id AND p2.activo = 1
+                                   )
                                )
                                ELSE NULL
                            END AS numero_espacio
@@ -149,6 +156,10 @@ if ($rol === 2) {
                     JOIN cargar_posters p ON p.id = a.id_poster
                     LEFT JOIN espacios_fisicos e ON e.id_espacio = p.id_espacio
                     WHERE a.id_evaluador = ? AND a.id_ronda = ? AND p.id_usuario <> ? AND p.activo = 1
+                      AND NOT EXISTS (
+                          SELECT 1 FROM poster_profesores pp
+                          WHERE pp.id_poster = a.id_poster AND pp.id_usuario = a.id_evaluador
+                      )
                       AND NOT EXISTS (
                           SELECT 1 FROM evaluaciones_detalles d
                           WHERE d.id_poster = a.id_poster

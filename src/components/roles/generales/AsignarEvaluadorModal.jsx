@@ -11,6 +11,7 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal, idRonda = null }) => {
     const [seleccionados, setSeleccionados] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [mensaje, setMensaje] = useState(null);
+    const [profesoresExcluidos, setProfesoresExcluidos] = useState([]);
     // Contexto de ronda: en la Ronda 1 solo cabe UN evaluador (radio);
     // desde la Ronda 2 pueden ser varios (checkbox con tope).
     const [rondaCtx, setRondaCtx] = useState({ id_ronda: 0, numero: 0, limite: 1 });
@@ -36,14 +37,15 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal, idRonda = null }) => {
             if (data.success) {
                 const autorId = Number(data.id_autor || poster?.id_usuario || 0);
                 if (autorId > 0) setIdAutorPoster(autorId);
+                setProfesoresExcluidos(Array.isArray(data.profesores_excluidos) ? data.profesores_excluidos : []);
 
-                // Fase 3: ocultar al autor del póster en la lista de evaluadores
+                // Fase 3: ocultar autor y profesores (el backend ya los excluye)
+                const profeIds = new Set((data.ids_profesores || []).map(Number));
                 const listaFiltrada = (data.data || []).filter(
-                    e => Number(e.id) !== autorId
+                    e => Number(e.id) !== autorId && !profeIds.has(Number(e.id))
                 );
                 setEvaluadores(listaFiltrada);
                 if (data.ronda) setRondaCtx(data.ronda);
-                // Pre-seleccionar evaluadores que ya están asignados a este póster (excluyendo siempre al autor)
                 const yaAsignados = listaFiltrada.filter(e => e.asignado).map(e => e.id);
                 setSeleccionados(yaAsignados);
             } else {
@@ -130,6 +132,13 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal, idRonda = null }) => {
                                 : ` — pueden evaluarse hasta ${rondaCtx.limite} evaluadores por póster.`}
                         </p>
                     )}
+                    {profesoresExcluidos.length > 0 && (
+                        <p>
+                            <strong>Profesores del póster (excluidos):</strong>{' '}
+                            {profesoresExcluidos.map(p => p.nombre).join(', ')}
+                            {' '}<small style={{ color: '#8a5a00' }}>(conflicto de intereses)</small>
+                        </p>
+                    )}
                 </div>
 
                 <div className="filtro-contenedor">
@@ -152,7 +161,10 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal, idRonda = null }) => {
                     {cargando ? (
                         <p>Cargando lista de evaluadores...</p>
                     ) : evaluadores.length === 0 ? (
-                        <p>No se encontraron evaluadores.</p>
+                        <p style={{ color: '#8a5a00' }}>
+                            No hay evaluadores disponibles distintos al autor o a los profesores asignados
+                            (conflicto de intereses). No se puede autoasignar.
+                        </p>
                     ) : (
                         evaluadores.map(e => (
                             <label key={e.id} className="item-evaluador">
