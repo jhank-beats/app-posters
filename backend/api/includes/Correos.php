@@ -83,7 +83,6 @@ function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
         $mail->Port = $smtpPort > 0 ? $smtpPort : 587;
         // Evitar esperas largas: Gmail suele tardar 2-4s en el handshake TLS.
         $mail->Timeout = 10;
-        $mail->Timelimit = 10;
         $mail->SMTPDebug = 0;
 
         $mail->setFrom($smtpFrom, $smtpFromName);
@@ -103,7 +102,21 @@ function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
     }
 }
 
-// Encola el correo en la tabla cola_correos (drenada por cron).
+// Dispara el drenaje de cola en segundo plano (no depende solo del cron).
+function correo_disparar_drenaje_cola()
+{
+    if (!function_exists('exec') || strpos((string)ini_get('disable_functions'), 'exec') !== false) {
+        return false;
+    }
+    $script = __DIR__ . '/../../tareas/ColaCorreos.php';
+    if (!is_file($script)) {
+        return false;
+    }
+    exec('php ' . escapeshellarg($script) . ' > /dev/null 2>&1 &');
+    return true;
+}
+
+// Encola el correo en la tabla cola_correos (drenada por cron + disparo en vivo).
 // Si SMTP no está configurado, no encola (evita filas que nunca se envían).
 function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml)
 {
@@ -113,7 +126,7 @@ function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml)
     $smtpPass = correo_env('SMTP_PASS', '');
     $smtpHost = correo_env('SMTP_HOST', '');
     if ($smtpHost === '' || $smtpUser === '' || $smtpPass === '') {
-        error_log("encolarCorreoFondo: SMTP no configurado; correo omitido a {$destinatario}");
+        error_log('encolarCorreoFondo: SMTP no configurado; correo omitido');
         return false;
     }
 
@@ -128,6 +141,8 @@ function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml)
                 $stmt->bind_param("sss", $destinatario, $asunto, $html);
                 if ($stmt->execute()) {
                     $stmt->close();
+                    // Intentar enviar de inmediato; el cron es respaldo de reintentos.
+                    correo_disparar_drenaje_cola();
                     return true;
                 }
                 $stmt->close();
@@ -137,7 +152,7 @@ function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml)
         }
     }
 
-    // Fallback legacy: proceso CLI (solo si exec está disponible).
+    // Fallback legacy: proceso CLI de un solo correo (si exec está disponible).
     if (function_exists('exec') && strpos((string)ini_get('disable_functions'), 'exec') === false) {
         $script = __DIR__ . '/EnviarCorreoFondo.php';
         $payload = base64_encode(json_encode([

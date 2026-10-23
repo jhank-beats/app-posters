@@ -107,7 +107,60 @@ sudo systemctl restart php8.x-fpm
 | `UPLOAD_DIR` | Carpeta **absoluta** donde se guardan los pósters | `/srv/posters-uploads` |
 | `PUBLIC_FILES_URL` | Prefijo público de esa carpeta | normalmente `/imgPosters` |
 | `CORS_ORIGINS` | URL(s) desde la que el navegador puede llamar a la API (coma si hay varias) | `https://su-dominio.edu.co` |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_FROM_NAME` | Opcionales. Solo si se enviarán correos | ver `PENDIENTES-DESPLIEGUE.md` |
+### 2.3 Correo (SMTP) — necesario para que salgan avisos
+
+Sin estas variables la app **no envía** correos (registra en log y continúa).
+
+Ejemplo con Gmail (cuenta del evento):
+
+```ini
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=correo_del_evento@gmail.com
+SMTP_PASS=contraseña_de_aplicacion_de_16_caracteres
+SMTP_FROM=correo_del_evento@gmail.com
+SMTP_FROM_NAME=Sistema de Pósteres UCC
+```
+
+También en PHP-FPM:
+
+```ini
+env[SMTP_HOST] = "smtp.gmail.com"
+env[SMTP_PORT] = "587"
+env[SMTP_USER] = "..."
+env[SMTP_PASS] = "..."
+env[SMTP_FROM] = "..."
+env[SMTP_FROM_NAME] = "Sistema de Pósteres UCC"
+```
+
+**Cron (respaldo de envío / reintentos):**
+
+```bash
+crontab -e
+# Cada minuto drena la tabla cola_correos
+* * * * * php /var/www/app-posters/backend/tareas/ColaCorreos.php >> /tmp/cola_posters.log 2>&1
+```
+
+Si `exec` está habilitado, el sistema **también intenta enviar al instante** al encolar; el cron es el respaldo.
+
+**Comprobar en el servidor:**
+
+```bash
+# 1) Tabla existe
+mysql -u posters_user -p posters -e "DESCRIBE cola_correos;"
+
+# 2) Variables leídas (debe imprimir host/user; la pass no se imprime completa)
+php -r 'require "/var/www/app-posters/backend/api/includes/Env.php";
+echo app_env("SMTP_HOST"), " ", app_env("SMTP_USER"), " pass_len=", strlen((string)app_env("SMTP_PASS")), PHP_EOL;'
+
+# 3) Drenar a mano
+php /var/www/app-posters/backend/tareas/ColaCorreos.php
+
+# 4) Ver estado
+mysql -u posters_user -p posters -e "SELECT estado, COUNT(*) FROM cola_correos GROUP BY estado;"
+```
+
+Si `pass_len=0` → faltan variables. Si hay filas `pendiente` tras el drenador → mirar `ultimo_error` y el log de PHP (`error_log`).
 
 ---
 
@@ -218,7 +271,8 @@ Ajustar versión de PHP y ruta de `SCRIPT_FILENAME` según el servidor.
 2. Login: si sale **“Error de configuración del servidor”** o 500 en la API → faltan variables (sobre todo `AUTH_SECRET` y `DB_*`).
 3. Login correcto con un usuario de prueba.
 4. Subir un PDF de prueba → aparece en `/srv/posters-uploads`.
-5. (Opcional) cola de cron para correos: `php backend/tareas/ColaCorreos.php` (requiere tabla `cola_correos` y SMTP).
+5. Si usan correo: definir `SMTP_*` (§2.3), importar `cola_correos` y dejar el cron.
+   Tras subir un póster, en la BD debe quedar fila `enviado` o `pendiente` con drenador en marcha.
 
 ---
 
