@@ -9,6 +9,7 @@ import { imprimirCertificados } from './CertificadoPremio.jsx';
 import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
 import { API_BASE, urlArchivo } from '../../../config.js';
 import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
+import { categoriaLegible } from '../../../categorias.js';
 
 const construirUrlArchivo = urlArchivo;
 
@@ -549,7 +550,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                                         </td>
 
                                         <td>
-                                            <span className="badge-categoria">{poster.categoria}</span>
+                                            <span className="badge-categoria">{categoriaLegible(poster.categoria)}</span>
                                         </td>
 
                                         {/* Celda de Ubicación Física y Número Asignado */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { categoriaLegible } from '../../../categorias.js';
 import './Evaluar.css';
 import { API_BASE } from '../../../config.js';
 
@@ -140,7 +141,7 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
                             {poster.codigo_evento ? ` (${poster.codigo_evento})` : ''}
                         </p>
                     )}
-                    <p><strong>Categoría:</strong> {poster.categoria}</p>
+                    <p><strong>Categoría:</strong> {categoriaLegible(poster.categoria)}</p>
                     {poster.descripcion && <p style={{ marginTop: '6px', fontStyle: 'italic', color: '#5f5e5e' }}>{poster.descripcion.slice(0, 180)}{poster.descripcion.length > 180 ? '...' : ''}</p>}
                 </div>
 

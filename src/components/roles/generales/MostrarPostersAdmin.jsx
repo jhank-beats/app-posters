@@ -10,6 +10,7 @@ import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
 import "./roles.css";
 import { API_BASE, urlArchivo } from '../../../config.js';
 import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
+import { categoriaLegible } from '../../../categorias.js';
 
 const construirUrlArchivo = urlArchivo;
 
@@ -495,7 +496,7 @@ const MostrarPostersAdmin = ({ cerrarTabla, onVerRanking = null }) => {
                                     </td>
 
                                     <td className="descripcion-celda">{poster.descripcion}</td>
-                                    <td><span className="badge-categoria">{poster.categoria}</span></td>
+                                    <td><span className="badge-categoria">{categoriaLegible(poster.categoria)}</span></td>
 
                                     <td>
                                         {poster.nombre_espacio ? (

@@ -3,6 +3,7 @@ import { FaFilePdf, FaImage } from 'react-icons/fa6';
 import { FaExternalLinkAlt, FaDownload } from 'react-icons/fa';
 import './roles.css';
 import { urlArchivo as resolverUrlArchivo } from '../../../config.js';
+import { categoriaLegible } from '../../../categorias.js';
 
 const VistaPreviaPoster = ({ poster, cerrarModal }) => {
     const urlArchivo = resolverUrlArchivo(poster?.imagen);
@@ -39,7 +40,7 @@ const VistaPreviaPoster = ({ poster, cerrarModal }) => {
                 ? `${poster.nombre_evento}${poster.codigo_evento ? ` · ${poster.codigo_evento}` : ''}`
                 : null,
         },
-        { etiqueta: 'Categoría', valor: poster.categoria },
+        { etiqueta: 'Categoría', valor: categoriaLegible(poster.categoria) },
         { etiqueta: 'Palabras clave', valor: poster.palabras_clave },
         {
             etiqueta: 'Espacio físico',
@@ -73,7 +74,7 @@ const VistaPreviaPoster = ({ poster, cerrarModal }) => {
                                 </span>
                             </span>
                         )}
-                        {poster.categoria && <span className="badge-categoria">{poster.categoria}</span>}
+                        {poster.categoria && <span className="badge-categoria">{categoriaLegible(poster.categoria)}</span>}
                     </div>
                 </header>
 

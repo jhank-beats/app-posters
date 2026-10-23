@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { categoriaLegible } from '../../../categorias.js';
 import '../generales/Evaluar.css';
 import { API_BASE } from '../../../config.js';
 
@@ -114,7 +115,7 @@ const AsignarEvaluadorModal = ({ poster, cerrarModal, idRonda = null }) => {
 
                 <div className="info-poster-resumen">
                     <p><strong>Póster:</strong> {poster.titulo}</p>
-                    <p><strong>Categoría/Área:</strong> {poster.categoria}</p>
+                    <p><strong>Categoría/Área:</strong> {categoriaLegible(poster.categoria)}</p>
                     {(poster.nombre_usuario || poster.autores) && (
                         <p>
                             <strong>Autor registrado:</strong> {poster.nombre_usuario || poster.autores}{' '}

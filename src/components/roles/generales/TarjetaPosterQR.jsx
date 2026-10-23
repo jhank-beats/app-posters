@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { categoriaLegible } from '../../../categorias.js';
 import { QRCodeCanvas } from 'qrcode.react';
 
 const TarjetaPosterQR = ({ poster, urlDigital }) => {
@@ -34,7 +35,7 @@ const TarjetaPosterQR = ({ poster, urlDigital }) => {
                     </span>
                 </p>
             )}
-            <p style={{ margin: '0 0 10px', fontSize: '0.9em' }}><strong>Autor(es):</strong> {poster.autores} · <strong>Categoría:</strong> {poster.categoria}</p>
+            <p style={{ margin: '0 0 10px', fontSize: '0.9em' }}><strong>Autor(es):</strong> {poster.autores} · <strong>Categoría:</strong> {categoriaLegible(poster.categoria)}</p>
 
             <div ref={qrRef} style={{ margin: '15px 0', display: 'flex', justifyContent: 'center' }}>
                 <QRCodeCanvas
