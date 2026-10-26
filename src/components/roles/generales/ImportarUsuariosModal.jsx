@@ -85,15 +85,16 @@ export default function ImportarUsuariosModal({ cerrar, onImportado }) {
           <span className="formularios-eyebrow">Carga masiva</span>
           <h2>📥 Importar usuarios por CSV</h2>
           <p>
-            Solo superadmin. Crea usuarios activos con una contraseña temporal que cada uno
-            debe cambiar luego en su cuenta.
+            Crea usuarios activos de forma masiva con una contraseña aleatoria generada automáticamente.
+            El sistema enviará un correo a cada usuario con su contraseña y el recordatorio de cambiarla por seguridad.
           </p>
         </div>
 
         <div className="formularios-body">
           <p className="ayuda-campo">
             No se importan correos repetidos ni el rol superadmin. Formato del archivo: filas
-            con encabezados de columna en la primera línea.
+            con encabezados de columna en la primera línea. Si importas como Administrador de carrera,
+            los usuarios se vincularán automáticamente a tu carrera y evento activo.
           </p>
 
           <div className="campo-formulario">
@@ -171,10 +172,15 @@ export default function ImportarUsuariosModal({ cerrar, onImportado }) {
               <p style={{ margin: '0 0 0.5rem' }}>
                 <strong>✅ {resultado.message}</strong>
               </p>
+              {resultado.correos_enviados !== undefined && (
+                <p style={{ margin: '0 0 0.5rem' }}>
+                  📧 Se enviaron <strong>{resultado.correos_enviados}</strong> correo(s) con la contraseña generada y el recordatorio de cambiarla por seguridad.
+                </p>
+              )}
               {resultado.password_temporal && (
                 <p style={{ margin: '0 0 0.5rem' }}>
-                  Contraseña temporal de esta importación: <code>{resultado.password_temporal}</code>
-                  {' '}— comunícala a los usuarios y pídeles que la cambien de inmediato.
+                  Contraseña temporal de respaldo: <code>{resultado.password_temporal}</code>
+                  {' '}— cada usuario también recibió su contraseña en su correo electrónico.
                 </p>
               )}
               {Array.isArray(resultado.errores) && resultado.errores.length > 0 && (

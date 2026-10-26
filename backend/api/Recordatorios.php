@@ -13,6 +13,7 @@ $auth = require_role([3, 4]);
 $idUsuarioActual = intval($auth['id']);
 $rolActual = intval($auth['rol']);
 $idEventoAdmin = auth_id_evento_admin($conexion, $auth);
+$carreraScope = rec_resolver_carrera_actor($conexion, $auth); // 'civil' para Admin Civil, 'sistemas' para Super Admin y Admin Sistemas
 $etiquetaActor = ($rolActual === 4) ? "super_admin:#{$idUsuarioActual}" : "admin:#{$idUsuarioActual}";
 
 rec_asegurar_tablas($conexion);
@@ -21,12 +22,12 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
-        // Opcionalmente disparar horarios vencidos si se pasa ?auto_check=1
+        // Opcionalmente disparar horarios vencidos de esta carrera si se pasa ?auto_check=1
         if (!empty($_GET['auto_check'])) {
-            rec_verificar_y_disparar_programados($conexion, true);
+            rec_verificar_y_disparar_programados($conexion, true, $carreraScope);
         }
 
-        // 1. Obtener horarios configurados y si ya se ejecutaron hoy
+        // 1. Obtener horarios configurados para esta carrera y si ya se ejecutaron hoy
         $sqlCfg = "SELECT c.*,
                           (SELECT COUNT(*) FROM recordatorios_log l
                             WHERE l.id_config = c.id_config AND l.fecha = CURDATE()) AS ejecutado_hoy,
@@ -37,39 +38,54 @@ switch ($method) {
                             WHERE l3.id_config = c.id_config
                             ORDER BY l3.id_log DESC LIMIT 1) AS ultima_ejecucion
                    FROM recordatorios_config c
+                   WHERE c.carrera = ?
                    ORDER BY c.hora ASC, c.id_config ASC";
-        $resCfg = $conexion->query($sqlCfg);
+        $stmtCfg = $conexion->prepare($sqlCfg);
         $horarios = [];
-        if ($resCfg) {
-            while ($row = $resCfg->fetch_assoc()) {
-                $row['id_config'] = intval($row['id_config']);
-                $row['activo'] = intval($row['activo']);
-                $row['ejecutado_hoy'] = intval($row['ejecutado_hoy']) > 0;
-                $horarios[] = $row;
+        if ($stmtCfg) {
+            $stmtCfg->bind_param("s", $carreraScope);
+            $stmtCfg->execute();
+            $resCfg = $stmtCfg->get_result();
+            if ($resCfg) {
+                while ($row = $resCfg->fetch_assoc()) {
+                    $row['id_config'] = intval($row['id_config']);
+                    $row['activo'] = intval($row['activo']);
+                    $row['ejecutado_hoy'] = intval($row['ejecutado_hoy']) > 0;
+                    $horarios[] = $row;
+                }
             }
+            $stmtCfg->close();
         }
 
-        // 2. Estado actual de pósters pendientes e informe (filtrado por el evento del Admin si es rol 3)
-        $informe = rec_generar_informe($conexion, false, 'sistema', $idEventoAdmin);
+        // 2. Estado actual de pósters pendientes e informe (filtrado estrictamente por carrera: Sistemas para SuperAdmin/AdminSistemas, Civil para AdminCivil)
+        $informe = rec_generar_informe($conexion, false, 'sistema', $idEventoAdmin, $carreraScope);
 
-        // 3. Historial reciente de ejecuciones
-        $sqlHist = "SELECT id_log, id_config, fecha, hora_programada, accion, enviados, detalle, ejecutado_por, ejecutado_en
+        // 3. Historial reciente de ejecuciones de esta carrera
+        $sqlHist = "SELECT id_log, id_config, carrera, fecha, hora_programada, accion, enviados, detalle, ejecutado_por, ejecutado_en
                     FROM recordatorios_log
+                    WHERE carrera = ?
                     ORDER BY id_log DESC
                     LIMIT 20";
-        $resHist = $conexion->query($sqlHist);
+        $stmtHist = $conexion->prepare($sqlHist);
         $historial = [];
-        if ($resHist) {
-            while ($row = $resHist->fetch_assoc()) {
-                $row['id_log'] = intval($row['id_log']);
-                $row['enviados'] = intval($row['enviados']);
-                $historial[] = $row;
+        if ($stmtHist) {
+            $stmtHist->bind_param("s", $carreraScope);
+            $stmtHist->execute();
+            $resHist = $stmtHist->get_result();
+            if ($resHist) {
+                while ($row = $resHist->fetch_assoc()) {
+                    $row['id_log'] = intval($row['id_log']);
+                    $row['enviados'] = intval($row['enviados']);
+                    $historial[] = $row;
+                }
             }
+            $stmtHist->close();
         }
 
         echo json_encode([
             'status' => 'success',
             'success' => true,
+            'carrera' => $carreraScope,
             'hora_servidor' => date('H:i'),
             'fecha_servidor' => date('Y-m-d'),
             'horarios' => $horarios,
@@ -93,8 +109,8 @@ switch ($method) {
             $horaLabel = date('H:i');
 
             if ($idConfig) {
-                $stmtC = $conexion->prepare("SELECT * FROM recordatorios_config WHERE id_config = ?");
-                $stmtC->bind_param("i", $idConfig);
+                $stmtC = $conexion->prepare("SELECT * FROM recordatorios_config WHERE id_config = ? AND carrera = ?");
+                $stmtC->bind_param("is", $idConfig, $carreraScope);
                 $stmtC->execute();
                 $cfgRow = $stmtC->get_result()->fetch_assoc();
                 $stmtC->close();
@@ -107,21 +123,21 @@ switch ($method) {
             }
 
             if ($tipoAccion === 'asignar') {
-                $res = rec_ejecutar_asignar_huerfanos($conexion, $etiquetaActor, false, $idEventoAdmin);
+                $res = rec_ejecutar_asignar_huerfanos($conexion, $etiquetaActor, false, $idEventoAdmin, $carreraScope);
                 $lote = $res['lote_correos'] ?? [];
                 unset($res['lote_correos']);
                 $res['success'] = true;
                 responderJsonYNotificarLote($res, $lote);
                 exit;
             } elseif ($tipoAccion === 'reasignar') {
-                $res = rec_ejecutar_reasignar_pendientes($conexion, $etiquetaActor, false, $idEventoAdmin);
+                $res = rec_ejecutar_reasignar_pendientes($conexion, $etiquetaActor, false, $idEventoAdmin, $carreraScope);
                 $lote = $res['lote_correos'] ?? [];
                 unset($res['lote_correos']);
                 $res['success'] = true;
                 responderJsonYNotificarLote($res, $lote);
                 exit;
             } elseif ($tipoAccion === 'informe') {
-                $inf = rec_generar_informe($conexion, true, $etiquetaActor, $idEventoAdmin);
+                $inf = rec_generar_informe($conexion, true, $etiquetaActor, $idEventoAdmin, $carreraScope);
                 echo json_encode([
                     'status' => 'success',
                     'success' => true,
@@ -138,6 +154,7 @@ switch ($method) {
                     'ejecutado_por' => $etiquetaActor,
                     'sincrono' => false,
                     'id_evento' => $idEventoAdmin,
+                    'carrera' => $carreraScope,
                 ]);
                 $lote = $res['lote_correos'] ?? [];
                 unset($res['lote_correos']);
@@ -147,7 +164,7 @@ switch ($method) {
             }
         }
 
-        // B) CREAR UN NUEVO HORARIO DE RECORDATORIO
+        // B) CREAR UN NUEVO HORARIO DE RECORDATORIO (asociado a la carrera del actor)
         $horaNorm = rec_normalizar_hora($data['hora'] ?? '');
         if (!$horaNorm) {
             http_response_code(400);
@@ -166,10 +183,10 @@ switch ($method) {
         $activo = isset($data['activo']) ? (intval($data['activo']) ? 1 : 0) : 1;
 
         $stmt = $conexion->prepare(
-            "INSERT INTO recordatorios_config (hora, accion, asunto, mensaje_personalizado, activo)
-             VALUES (?, ?, ?, ?, ?)"
+            "INSERT INTO recordatorios_config (carrera, hora, accion, asunto, mensaje_personalizado, activo)
+             VALUES (?, ?, ?, ?, ?, ?)"
         );
-        $stmt->bind_param("ssssi", $horaNorm, $accion, $asunto, $mensaje, $activo);
+        $stmt->bind_param("sssssi", $carreraScope, $horaNorm, $accion, $asunto, $mensaje, $activo);
         if ($stmt->execute()) {
             $nuevoId = $stmt->insert_id;
             $stmt->close();
@@ -177,6 +194,7 @@ switch ($method) {
                 'status' => 'success',
                 'success' => true,
                 'id_config' => $nuevoId,
+                'carrera' => $carreraScope,
                 'message' => "Horario de recordatorio ({$horaNorm}) agregado correctamente.",
             ]);
         } else {
@@ -200,8 +218,8 @@ switch ($method) {
         // Si solo se cambia activo (toggle rápido)
         if (isset($data['solo_estado']) && $data['solo_estado']) {
             $activo = intval($data['activo']) ? 1 : 0;
-            $stmt = $conexion->prepare("UPDATE recordatorios_config SET activo = ? WHERE id_config = ?");
-            $stmt->bind_param("ii", $activo, $idConfig);
+            $stmt = $conexion->prepare("UPDATE recordatorios_config SET activo = ? WHERE id_config = ? AND carrera = ?");
+            $stmt->bind_param("iis", $activo, $idConfig, $carreraScope);
             $stmt->execute();
             $stmt->close();
             echo json_encode([
@@ -232,9 +250,9 @@ switch ($method) {
         $stmt = $conexion->prepare(
             "UPDATE recordatorios_config
              SET hora = ?, accion = ?, asunto = ?, mensaje_personalizado = ?, activo = ?
-             WHERE id_config = ?"
+             WHERE id_config = ? AND carrera = ?"
         );
-        $stmt->bind_param("ssssii", $horaNorm, $accion, $asunto, $mensaje, $activo, $idConfig);
+        $stmt->bind_param("ssssiis", $horaNorm, $accion, $asunto, $mensaje, $activo, $idConfig, $carreraScope);
         if ($stmt->execute()) {
             $stmt->close();
             // Si la nueva hora es posterior a la hora actual o se pidió reprogramar hoy, limpiar el bloqueo de hoy para ese id_config
@@ -274,10 +292,20 @@ switch ($method) {
             exit;
         }
 
-        $stmt = $conexion->prepare("DELETE FROM recordatorios_config WHERE id_config = ?");
-        $stmt->bind_param("i", $idConfig);
+        $stmt = $conexion->prepare("DELETE FROM recordatorios_config WHERE id_config = ? AND carrera = ?");
+        $stmt->bind_param("is", $idConfig, $carreraScope);
         if ($stmt->execute()) {
+            $afectadas = $stmt->affected_rows;
             $stmt->close();
+            if ($afectadas === 0) {
+                http_response_code(403);
+                echo json_encode([
+                    'status' => 'error',
+                    'success' => false,
+                    'message' => 'No tienes permiso para eliminar este horario o no existe en tu carrera.',
+                ]);
+                exit;
+            }
             echo json_encode([
                 'status' => 'success',
                 'success' => true,

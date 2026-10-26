@@ -48,7 +48,16 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
 
     const cargarCategorias = async () => {
         try {
-            const respuesta = await fetch(`${API_BASE}/Categorias.php`);
+            const evNombre = (poster?.nombre_evento || poster?.carrera || "").toLowerCase();
+            const cUsr = (localStorage.getItem("carreraUsuario") || "").toLowerCase();
+            const carreraPoster = evNombre.includes("civil")
+                ? "civil"
+                : evNombre.includes("sistema")
+                ? "sistemas"
+                : cUsr.includes("civil")
+                ? "civil"
+                : "sistemas";
+            const respuesta = await fetch(`${API_BASE}/Categorias.php?carrera=${encodeURIComponent(carreraPoster)}`);
             const datos = await respuesta.json();
             if (datos.success) setCategorias(datos.data);
         } catch (err) {

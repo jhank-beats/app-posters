@@ -583,14 +583,15 @@ function crearRonda($auth, $datos)
     $id_evento = intval($datos['id_evento'] ?? 0);
     if ($id_evento <= 0) rh_error(400, 'Debes indicar el evento de la ronda.', 'parametros_invalidos');
 
-    $stmt = $conexion->prepare("SELECT id_evento FROM eventos WHERE id_evento = ?");
+    $stmt = $conexion->prepare("SELECT id_evento, COALESCE(carrera, 'sistemas') AS carrera FROM eventos WHERE id_evento = ?");
     $stmt->bind_param("i", $id_evento);
     $stmt->execute();
-    if (!$stmt->get_result()->fetch_assoc()) {
-        $stmt->close();
+    $evRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$evRow) {
         rh_error(404, 'No se encontró el evento indicado.', 'evento_no_encontrado');
     }
-    $stmt->close();
+    $esEventoCivil = strpos(mb_strtolower((string)($evRow['carrera'] ?? ''), 'UTF-8'), 'civil') !== false;
 
     $nombre = trim((string)($datos['nombre'] ?? ''));
     if ($nombre === '') rh_error(400, 'El nombre de la ronda es obligatorio.', 'parametros_invalidos');
@@ -613,6 +614,9 @@ function crearRonda($auth, $datos)
     $fila = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     $numero = intval($fila['siguiente']);
+    if ($esEventoCivil && $numero > 1) {
+        rh_error(409, 'Los eventos de Ingeniería Civil manejan únicamente una sola ronda de evaluación por el momento.', 'limite_rondas_civil');
+    }
     if ($numero > 127) rh_error(400, 'El evento ya tiene demasiadas rondas.', 'parametros_invalidos');
 
     $id_creador = intval($auth['id']);
@@ -790,6 +794,18 @@ function cerrarYPasar($auth, $datos)
     $ronda = rh_exigir_ronda($conexion, $datos['id_ronda'] ?? 0);
     if ($ronda['estado'] !== 'abierta') {
         rh_error(409, 'Solo se puede cerrar una ronda abierta.', 'ronda_cerrada');
+    }
+
+    $stmtEvCiv = $conexion->prepare("SELECT COALESCE(carrera, 'sistemas') AS carrera FROM eventos WHERE id_evento = ? LIMIT 1");
+    if ($stmtEvCiv) {
+        $idEvTmp = intval($ronda['id_evento']);
+        $stmtEvCiv->bind_param("i", $idEvTmp);
+        $stmtEvCiv->execute();
+        $rowEvCiv = $stmtEvCiv->get_result()->fetch_assoc();
+        $stmtEvCiv->close();
+        if ($rowEvCiv && strpos(mb_strtolower((string)$rowEvCiv['carrera'], 'UTF-8'), 'civil') !== false) {
+            rh_error(409, 'Ingeniería Civil maneja únicamente una ronda de evaluación por el momento. Usa "Cerrar sin pasar (final)" o publica directamente el podio.', 'limite_rondas_civil');
+        }
     }
 
     $seleccionados = normalizarIdsPosters($datos['ids_seleccionados'] ?? [], 'ids_seleccionados');
@@ -1296,8 +1312,10 @@ function publicarPodio($auth, $datos)
         $stmt->close();
 
         foreach ($premiados as $premiado) {
-            $stmt = $conexion->prepare("UPDATE selecciones SET lugar = ?, premio = ? WHERE id_ronda = ? AND id_poster = ?");
-            $stmt->bind_param("isii", $premiado['lugar'], $premiado['premio'], $id_ronda_sel, $premiado['id_poster']);
+            $stmt = $conexion->prepare("INSERT INTO selecciones (id_ronda, id_poster, seleccion_manual, notificado, lugar, premio)
+                                        VALUES (?, ?, 0, 1, ?, ?)
+                                        ON DUPLICATE KEY UPDATE lugar = VALUES(lugar), premio = VALUES(premio)");
+            $stmt->bind_param("iiis", $id_ronda_sel, $premiado['id_poster'], $premiado['lugar'], $premiado['premio']);
             $stmt->execute();
             if ($stmt->affected_rows < 0) throw new Exception('No se pudo asignar el lugar');
             $stmt->close();

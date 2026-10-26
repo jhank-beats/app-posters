@@ -11,12 +11,12 @@ switch ($method) {
         obtenerCriterios();
         break;
     case 'POST':
-        require_role([3, 4]);
-        guardarCriterio();
+        $auth = require_role([3, 4]);
+        guardarCriterio($auth);
         break;
     case 'DELETE':
-        require_role([3, 4]);
-        eliminarCriterio();
+        $auth = require_role([3, 4]);
+        eliminarCriterio($auth);
         break;
 }
 
@@ -24,13 +24,26 @@ function obtenerCriterios()
 {
     global $conexion;
     try {
+        $curr = auth_current();
+        $id_evento_admin = $curr ? auth_id_evento_admin($conexion, $curr) : null;
+
         // Opcionalmente se filtra por ronda; siempre se devuelve id_ronda para
         // que la interfaz pueda agrupar los criterios por ronda.
         $id_ronda = isset($_GET['id_ronda']) ? intval($_GET['id_ronda']) : 0;
         if ($id_ronda > 0) {
-            $sql = "SELECT * FROM criterios_evaluacion WHERE activo = 1 AND id_ronda = ? ORDER BY id ASC";
+            $sql = "SELECT c.* FROM criterios_evaluacion c WHERE c.activo = 1 AND c.id_ronda = ? ORDER BY c.id ASC";
             $stmt = $conexion->prepare($sql);
             $stmt->bind_param("i", $id_ronda);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } elseif ($id_evento_admin !== null) {
+            $sql = "SELECT c.*
+                    FROM criterios_evaluacion c
+                    INNER JOIN rondas r ON r.id_ronda = c.id_ronda
+                    WHERE c.activo = 1 AND r.id_evento = ?
+                    ORDER BY c.id_ronda ASC, c.id ASC";
+            $stmt = $conexion->prepare($sql);
+            $stmt->bind_param("i", $id_evento_admin);
             $stmt->execute();
             $result = $stmt->get_result();
         } else {
@@ -42,6 +55,7 @@ function obtenerCriterios()
             $row['id_ronda'] = intval($row['id_ronda']);
             $criterios[] = $row;
         }
+        if (isset($stmt) && $stmt) $stmt->close();
         echo json_encode(['success' => true, 'data' => $criterios]);
     } catch (Exception $e) {
         http_response_code(500);
@@ -49,13 +63,13 @@ function obtenerCriterios()
     }
 }
 
-function guardarCriterio()
+function guardarCriterio($auth)
 {
     global $conexion;
     try {
         $data = json_decode(file_get_contents('php://input'), true);
         $id = isset($data['id']) ? intval($data['id']) : null;
-        $nombre = trim($data['nombre']);
+        $nombre = trim($data['nombre'] ?? '');
         $descripcion = trim($data['descripcion'] ?? '');
         // Cada criterio pertenece a una ronda EXPLÍCITA. Sin el fallback a la
         // ronda 1 (que creaba criterios en la ronda equivocada en silencio).
@@ -71,19 +85,38 @@ function guardarCriterio()
             return;
         }
 
-        // La ronda debe existir.
-        $stmt = $conexion->prepare("SELECT id_ronda FROM rondas WHERE id_ronda = ?");
+        // La ronda debe existir (y pertenecer al evento del Admin si es rol 3).
+        $stmt = $conexion->prepare("SELECT id_ronda, id_evento FROM rondas WHERE id_ronda = ?");
         $stmt->bind_param("i", $id_ronda);
         $stmt->execute();
-        if (!$stmt->get_result()->fetch_assoc()) {
-            $stmt->close();
+        $rondaRow = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if (!$rondaRow) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'La ronda indicada no existe']);
             return;
         }
-        $stmt->close();
+
+        $id_evento_admin = auth_id_evento_admin($conexion, $auth);
+        if ($id_evento_admin !== null && intval($rondaRow['id_evento']) !== $id_evento_admin) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Solo puedes gestionar criterios de las rondas de tu evento asignado.']);
+            return;
+        }
 
         if ($id) {
+            if ($id_evento_admin !== null) {
+                $stmtChk = $conexion->prepare("SELECT r.id_evento FROM criterios_evaluacion c INNER JOIN rondas r ON r.id_ronda = c.id_ronda WHERE c.id = ? LIMIT 1");
+                $stmtChk->bind_param("i", $id);
+                $stmtChk->execute();
+                $rowChk = $stmtChk->get_result()->fetch_assoc();
+                $stmtChk->close();
+                if (!$rowChk || intval($rowChk['id_evento']) !== $id_evento_admin) {
+                    http_response_code(403);
+                    echo json_encode(['success' => false, 'message' => 'No tienes permiso para modificar este criterio.']);
+                    return;
+                }
+            }
             $stmt = $conexion->prepare("UPDATE criterios_evaluacion SET nombre = ?, descripcion = ?, id_ronda = ? WHERE id = ?");
             $stmt->bind_param("ssii", $nombre, $descripcion, $id_ronda, $id);
         } else {
@@ -92,7 +125,8 @@ function guardarCriterio()
         }
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Criterio guardado correctamente']);
+            $idResult = $id ? $id : intval($conexion->insert_id);
+            echo json_encode(['success' => true, 'id' => $idResult, 'message' => 'Criterio guardado correctamente']);
         } else {
             throw new Exception($stmt->error);
         }
@@ -102,12 +136,26 @@ function guardarCriterio()
     }
 }
 
-function eliminarCriterio()
+function eliminarCriterio($auth)
 {
     global $conexion;
     try {
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         if ($id > 0) {
+            $id_evento_admin = auth_id_evento_admin($conexion, $auth);
+            if ($id_evento_admin !== null) {
+                $stmtChk = $conexion->prepare("SELECT r.id_evento FROM criterios_evaluacion c INNER JOIN rondas r ON r.id_ronda = c.id_ronda WHERE c.id = ? LIMIT 1");
+                $stmtChk->bind_param("i", $id);
+                $stmtChk->execute();
+                $rowChk = $stmtChk->get_result()->fetch_assoc();
+                $stmtChk->close();
+                if (!$rowChk || intval($rowChk['id_evento']) !== $id_evento_admin) {
+                    http_response_code(403);
+                    echo json_encode(['success' => false, 'message' => 'Solo puedes eliminar criterios de tu evento asignado.']);
+                    return;
+                }
+            }
+
             // No se puede eliminar un criterio que ya tiene evaluaciones
             // guardadas (las notas históricas lo referencian).
             $stmt = $conexion->prepare("SELECT COUNT(*) AS total FROM evaluaciones_detalles WHERE id_criterio = ?");

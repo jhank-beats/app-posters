@@ -9,10 +9,18 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
     const [solicitudesRegistro, setSolicitudesRegistro] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filtro, setFiltro] = useState("");
+    const [filtroCarrera, setFiltroCarrera] = useState("todas");
     const [mostrarModal, setMostrarModal] = useState(false);
     const [nombreCategoria, setNombreCategoria] = useState("");
+    const [carreraCategoria, setCarreraCategoria] = useState(() => {
+        const c = (localStorage.getItem("carreraUsuario") || "").toLowerCase();
+        return c.includes("civil") ? "civil" : "sistemas";
+    });
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
     const [error, setError] = useState("");
+
+    const rolActual = parseInt(localStorage.getItem("id_rol") || "0", 10);
+    const esSuperAdmin = rolActual === 4;
 
     useEffect(() => {
         cargarCategorias();
@@ -33,6 +41,7 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
     const ModificarCategorias = (categoria) => {
         setCategoriaSeleccionada(categoria.id_categorias);
         setNombreCategoria(categoria.nombre_categorias);
+        setCarreraCategoria(categoria.carrera || "sistemas");
         setError("");
         setMostrarModal(true);
     };
@@ -79,7 +88,8 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
                 },
                 body: JSON.stringify({
                     id_categorias: categoriaSeleccionada,
-                    nombre_categorias: nombreCategoria
+                    nombre_categorias: nombreCategoria,
+                    carrera: carreraCategoria
                 })
             });
 
@@ -100,9 +110,13 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
         }
     };
 
-    const categoriasFiltradas = solicitudesRegistro.filter(cat =>
-        cat.nombre_categorias.toLowerCase().includes(filtro.toLowerCase())
-    );
+    const categoriasFiltradas = solicitudesRegistro.filter(cat => {
+        const coincideTexto = cat.nombre_categorias.toLowerCase().includes(filtro.toLowerCase());
+        const coincideCarrera = filtroCarrera === "todas" || (cat.carrera || "sistemas") === filtroCarrera;
+        return coincideTexto && coincideCarrera;
+    });
+
+    const categoriasMostradas = limite ? categoriasFiltradas.slice(0, limite) : categoriasFiltradas;
 
     return (
         <section className={limite ? "preview-pendientes" : "todos-pendientes"}>
@@ -118,6 +132,7 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
                     <thead>
                         <tr>
                             <th>Categoría</th>
+                            <th>Carrera</th>
                             <th>Fecha Registro</th>
                             <th>Modificar</th>
                             <th>Eliminar</th>
@@ -126,16 +141,21 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan="4" style={{ textAlign: "center" }}>Cargando...</td>
+                                <td colSpan="5" style={{ textAlign: "center" }}>Cargando...</td>
                             </tr>
-                        ) : categoriasFiltradas.length === 0 ? (
+                        ) : categoriasMostradas.length === 0 ? (
                             <tr>
-                                <td colSpan="4" style={{ textAlign: "center" }}>No hay categorías registradas</td>
+                                <td colSpan="5" style={{ textAlign: "center" }}>No hay categorías registradas</td>
                             </tr>
                         ) : (
-                            categoriasFiltradas.map((categoria) => (
+                            categoriasMostradas.map((categoria) => (
                                 <tr key={categoria.id_categorias}>
-                                    <td>{categoria.nombre_categorias}</td>
+                                    <td><strong>{categoria.nombre_categorias}</strong></td>
+                                    <td>
+                                        <span className={`badge-rol ${(categoria.carrera || 'sistemas') === 'civil' ? 'rol-3' : 'rol-2'}`}>
+                                            {(categoria.carrera || 'sistemas') === 'civil' ? '🏗️ Ing. Civil' : '💻 Ing. Sistemas'}
+                                        </span>
+                                    </td>
                                     <td>{categoria.fecha_registro_categorias}</td>
 
                                     <td>
@@ -170,6 +190,9 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
                     onClick={() => {
                         setCategoriaSeleccionada(null);
                         setNombreCategoria("");
+                        if (esSuperAdmin && filtroCarrera !== "todas") {
+                            setCarreraCategoria(filtroCarrera);
+                        }
                         setError("");
                         setMostrarModal(true);
                     }}
@@ -191,6 +214,17 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
                         <p>{categoriaSeleccionada ? "Modifica el nombre de la categoría" : "Crea una nueva categoría para los pósters"}</p>
 
                         <form className="contenedor-formulario" onSubmit={guardarCategoria}>
+                            {esSuperAdmin && (
+                                <select
+                                    value={carreraCategoria}
+                                    onChange={(e) => setCarreraCategoria(e.target.value)}
+                                    style={{ marginBottom: '10px', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%' }}
+                                    aria-label="Carrera de la categoría"
+                                >
+                                    <option value="sistemas">💻 Ingeniería de Sistemas</option>
+                                    <option value="civil">🏗️ Ingeniería Civil</option>
+                                </select>
+                            )}
                             <input
                                 type="text"
                                 placeholder="🏷️ Nombre de la categoría"
@@ -216,6 +250,18 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
                     onChange={(e) => setFiltro(e.target.value)}
                     className="input-filtro"
                 />
+                {esSuperAdmin && (
+                    <select
+                        value={filtroCarrera}
+                        onChange={(e) => setFiltroCarrera(e.target.value)}
+                        className="input-filtro"
+                        aria-label="Filtrar categorías por carrera"
+                    >
+                        <option value="todas">Todas las carreras</option>
+                        <option value="sistemas">💻 Ingeniería de Sistemas</option>
+                        <option value="civil">🏗️ Ingeniería Civil</option>
+                    </select>
+                )}
                 {limite && verMas && categoriasFiltradas.length > limite && (
                     <a href="#" className="ver-mas" onClick={(e) => {
                         e.preventDefault();

@@ -34,6 +34,7 @@ const HeaderAdmin = ({ abrirCuenta }) => {
                         <button onClick={() => setMenuAbierto(false)} className='boton-cerrar' aria-label="Cerrar menú">X</button>
                         <Link className='menu-enlace' to="inicio" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Inicio</Link>
                         <Link className='menu-enlace' to="pendientes" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Pendientes</Link>
+                        <Link className='menu-enlace' to="criterios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Criterios</Link>
                         <Link className='menu-enlace' to="posters" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Posters</Link>
                         <Link className='menu-enlace' to="espacios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Espacios</Link>
                         <Link className='menu-enlace' to="usuarios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Usuarios</Link>

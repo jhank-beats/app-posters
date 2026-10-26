@@ -178,6 +178,12 @@ const HomePageSuperAdmin = () => {
                             <h3>Espacios Físicos</h3>
                             <p>Definir salones, estantes y capacidad de ubicación</p>
                         </div>
+                        <div className="tarjeta" onClick={() => irASeccion('categorias')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('categorias')}>
+                            <div className="icono">📊</div>
+                            <h3>Modificar Categorías</h3>
+                            <p>Cambiar, agregar o eliminar categorías por carrera</p>
+                        </div>
                         <div className="tarjeta" onClick={() => irASeccion('eventos')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('eventos')}>
                             <div className="icono">🗓️</div>

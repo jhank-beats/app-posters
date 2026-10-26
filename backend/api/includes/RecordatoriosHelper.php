@@ -21,6 +21,7 @@ function rec_asegurar_tablas($conexion)
     $conexion->query("
         CREATE TABLE IF NOT EXISTS `recordatorios_config` (
           `id_config` INT(11) NOT NULL AUTO_INCREMENT,
+          `carrera` VARCHAR(20) NOT NULL DEFAULT 'sistemas',
           `hora` VARCHAR(5) NOT NULL,
           `accion` VARCHAR(40) NOT NULL DEFAULT 'recordatorio',
           `asunto` VARCHAR(180) NOT NULL DEFAULT 'Recordatorio de evaluación de pósters',
@@ -28,14 +29,21 @@ function rec_asegurar_tablas($conexion)
           `activo` TINYINT(1) NOT NULL DEFAULT 1,
           `actualizado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           PRIMARY KEY (`id_config`),
-          KEY `idx_hora_activo` (`hora`, `activo`)
+          KEY `idx_hora_activo` (`hora`, `activo`),
+          KEY `idx_carrera` (`carrera`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ");
+
+    $colCfg = $conexion->query("SHOW COLUMNS FROM `recordatorios_config` LIKE 'carrera'");
+    if ($colCfg && $colCfg->num_rows === 0) {
+        $conexion->query("ALTER TABLE `recordatorios_config` ADD COLUMN `carrera` VARCHAR(20) NOT NULL DEFAULT 'sistemas' AFTER `id_config`, ADD KEY `idx_carrera` (`carrera`)");
+    }
 
     $conexion->query("
         CREATE TABLE IF NOT EXISTS `recordatorios_log` (
           `id_log` INT(11) NOT NULL AUTO_INCREMENT,
           `id_config` INT(11) DEFAULT NULL,
+          `carrera` VARCHAR(20) NOT NULL DEFAULT 'sistemas',
           `fecha` DATE NOT NULL,
           `hora_programada` VARCHAR(5) DEFAULT NULL,
           `accion` VARCHAR(40) NOT NULL,
@@ -45,9 +53,15 @@ function rec_asegurar_tablas($conexion)
           `ejecutado_por` VARCHAR(100) DEFAULT NULL,
           `ejecutado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (`id_log`),
-          KEY `idx_fecha_accion` (`fecha`, `accion`, `id_config`)
+          KEY `idx_fecha_accion` (`fecha`, `accion`, `id_config`),
+          KEY `idx_carrera_log` (`carrera`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ");
+
+    $colLog = $conexion->query("SHOW COLUMNS FROM `recordatorios_log` LIKE 'carrera'");
+    if ($colLog && $colLog->num_rows === 0) {
+        $conexion->query("ALTER TABLE `recordatorios_log` ADD COLUMN `carrera` VARCHAR(20) NOT NULL DEFAULT 'sistemas' AFTER `id_config`, ADD KEY `idx_carrera_log` (`carrera`)");
+    }
 
     $conexion->query("
         CREATE TABLE IF NOT EXISTS `recordatorios_notificaciones` (
@@ -69,6 +83,34 @@ function rec_asegurar_tablas($conexion)
 }
 
 /**
+ * Normaliza el alcance de carrera para recordatorios ('sistemas' o 'civil').
+ */
+function rec_normalizar_carrera_scope($carreraRaw)
+{
+    $c = mb_strtolower(trim((string)$carreraRaw), 'UTF-8');
+    return (strpos($c, 'civil') !== false) ? 'civil' : 'sistemas';
+}
+
+/**
+ * Determina a qué carrera pertenecen los recordatorios según el actor autenticado:
+ * - Admin de Civil (rol 3 con carrera civil) -> 'civil'
+ * - Super Admin (rol 4) y Admin de Sistemas (rol 3 con carrera sistemas) -> 'sistemas'
+ */
+function rec_resolver_carrera_actor($conexion, $auth = null)
+{
+    if ($auth === null && function_exists('auth_current')) {
+        $auth = auth_current();
+    }
+    if ($auth && intval($auth['rol'] ?? 0) === 3 && function_exists('auth_carrera_admin')) {
+        $cAdmin = auth_carrera_admin($conexion, $auth);
+        if ($cAdmin === 'civil') {
+            return 'civil';
+        }
+    }
+    return 'sistemas';
+}
+
+/**
  * Normaliza una cadena de hora al formato HH:MM (24 horas).
  */
 function rec_normalizar_hora($horaRaw)
@@ -86,42 +128,25 @@ function rec_normalizar_hora($horaRaw)
 
 /**
  * Consulta todos los evaluadores que tienen pósters pendientes por calificar
- * en rondas abiertas del evento activo (o de todos los eventos activos).
- *
- * Devuelve:
- * [
- *   'hay_pendientes' => bool,
- *   'total_evaluadores_pendientes' => int,
- *   'total_asignaciones_pendientes' => int,
- *   'total_posters_pendientes' => int,
- *   'evaluadores' => [
- *     id_evaluador => [
- *       'id_evaluador' => int,
- *       'nombre' => string,
- *       'correo' => string,
- *       'posters' => [
- *         [
- *           'id_poster' => int,
- *           'titulo' => string,
- *           'nombre_espacio' => string|null,
- *           'numero_espacio' => int|null,
- *           'etiqueta_espacio' => string, // ej. "Piso 1 #3" o "Sin ubicar todavía"
- *           'id_ronda' => int,
- *           'numero_ronda' => int,
- *           'nombre_ronda' => string,
- *         ]
- *       ]
- *     ]
- *   ]
- * ]
+ * en rondas abiertas del evento activo filtrado por carrera ('sistemas' o 'civil').
  */
-function rec_obtener_pendientes_evaluadores($conexion, $id_evento_filtro = null)
+function rec_obtener_pendientes_evaluadores($conexion, $id_evento_filtro = null, $carrera_filtro = 'sistemas')
 {
     rec_asegurar_tablas($conexion);
 
-    $filtroEvSql = ($id_evento_filtro !== null && intval($id_evento_filtro) > 0)
-        ? " AND r.id_evento = " . intval($id_evento_filtro)
-        : " AND ev.activo = 1";
+    $carreraScope = rec_normalizar_carrera_scope($carrera_filtro);
+
+    if ($id_evento_filtro !== null && intval($id_evento_filtro) > 0) {
+        $filtroEvSql = " AND r.id_evento = " . intval($id_evento_filtro);
+    } elseif ($carreraScope === 'civil') {
+        $filtroEvSql = " AND ev.activo = 1 AND ev.carrera = 'civil'";
+    } else {
+        $filtroEvSql = " AND ev.activo = 1 AND (ev.carrera = 'sistemas' OR ev.carrera = 'ambas' OR ev.carrera IS NULL)";
+    }
+
+    $filtroEvalCarreraSql = ($carreraScope === 'civil')
+        ? " AND LOWER(COALESCE(u.carrera, '')) LIKE '%civil%'"
+        : " AND LOWER(COALESCE(u.carrera, '')) NOT LIKE '%civil%'";
 
     $sql = "SELECT a.id_evaluador,
                    CONCAT(u.nombres, ' ', u.apellidos) AS nombre_evaluador,
@@ -156,6 +181,7 @@ function rec_obtener_pendientes_evaluadores($conexion, $id_evento_filtro = null)
             LEFT JOIN espacios_fisicos e ON e.id_espacio = p.id_espacio
             WHERE r.estado = 'abierta'
               {$filtroEvSql}
+              {$filtroEvalCarreraSql}
               AND p.activo = 1
               AND u.activo = 1 AND u.desactivado = 0
               AND p.id_usuario <> a.id_evaluador
@@ -295,18 +321,19 @@ function rec_ejecutar_recordatorio($conexion, $opciones = [])
     $ejecutadoPor = !empty($opciones['ejecutado_por']) ? $opciones['ejecutado_por'] : 'sistema';
     $enviarSincrono = !empty($opciones['sincrono']);
     $id_evento_filtro = isset($opciones['id_evento']) && intval($opciones['id_evento']) > 0 ? intval($opciones['id_evento']) : null;
+    $carreraScope = rec_normalizar_carrera_scope($opciones['carrera'] ?? 'sistemas');
 
-    // 1. Verificar primero si faltan pósters por calificar
-    $estadoPendientes = rec_obtener_pendientes_evaluadores($conexion, $id_evento_filtro);
+    // 1. Verificar primero si faltan pósters por calificar en esa carrera/evento
+    $estadoPendientes = rec_obtener_pendientes_evaluadores($conexion, $id_evento_filtro, $carreraScope);
 
     if (!$estadoPendientes['hay_pendientes'] || empty($estadoPendientes['evaluadores'])) {
         $detalle = 'Verificación realizada: no faltan pósters por calificar. No se envió ningún recordatorio.';
         $stmtLog = $conexion->prepare(
-            "INSERT INTO recordatorios_log (id_config, fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
-             VALUES (?, CURDATE(), ?, 'recordatorio', 0, ?, ?)"
+            "INSERT INTO recordatorios_log (id_config, carrera, fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
+             VALUES (?, ?, CURDATE(), ?, 'recordatorio', 0, ?, ?)"
         );
         if ($stmtLog) {
-            $stmtLog->bind_param("isss", $id_config, $hora, $detalle, $ejecutadoPor);
+            $stmtLog->bind_param("issss", $id_config, $carreraScope, $hora, $detalle, $ejecutadoPor);
             $stmtLog->execute();
             $stmtLog->close();
         }
@@ -372,11 +399,11 @@ function rec_ejecutar_recordatorio($conexion, $opciones = [])
 
     $detalleLog = "Recordatorio enviado a {$enviados} evaluador(es) con {$estadoPendientes['total_posters_pendientes']} póster(s) pendiente(s).";
     $stmtLog = $conexion->prepare(
-        "INSERT INTO recordatorios_log (id_config, fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
-         VALUES (?, CURDATE(), ?, 'recordatorio', ?, ?, ?)"
+        "INSERT INTO recordatorios_log (id_config, carrera, fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
+         VALUES (?, ?, CURDATE(), ?, 'recordatorio', ?, ?, ?)"
     );
     if ($stmtLog) {
-        $stmtLog->bind_param("isiss", $id_config, $hora, $enviados, $detalleLog, $ejecutadoPor);
+        $stmtLog->bind_param("ississ", $id_config, $carreraScope, $hora, $enviados, $detalleLog, $ejecutadoPor);
         $stmtLog->execute();
         $stmtLog->close();
     }
@@ -395,13 +422,19 @@ function rec_ejecutar_recordatorio($conexion, $opciones = [])
 /**
  * Acción Fase 5: Asignar aleatoriamente evaluadores a pósters que aún no tienen ningún evaluador en Ronda 1.
  */
-function rec_ejecutar_asignar_huerfanos($conexion, $ejecutadoPor = 'sistema', $enviarSincrono = false, $id_evento_filtro = null)
+function rec_ejecutar_asignar_huerfanos($conexion, $ejecutadoPor = 'sistema', $enviarSincrono = false, $id_evento_filtro = null, $carrera_filtro = 'sistemas')
 {
     rec_asegurar_tablas($conexion);
 
-    $filtroEvSql = ($id_evento_filtro !== null && intval($id_evento_filtro) > 0)
-        ? " AND (p.id_evento = " . intval($id_evento_filtro) . " OR EXISTS (SELECT 1 FROM poster_eventos pe WHERE pe.id_poster = p.id AND pe.id_evento = " . intval($id_evento_filtro) . "))"
-        : " AND ev.activo = 1";
+    $carreraScope = rec_normalizar_carrera_scope($carrera_filtro);
+
+    if ($id_evento_filtro !== null && intval($id_evento_filtro) > 0) {
+        $filtroEvSql = " AND (p.id_evento = " . intval($id_evento_filtro) . " OR EXISTS (SELECT 1 FROM poster_eventos pe WHERE pe.id_poster = p.id AND pe.id_evento = " . intval($id_evento_filtro) . "))";
+    } elseif ($carreraScope === 'civil') {
+        $filtroEvSql = " AND ev.activo = 1 AND ev.carrera = 'civil'";
+    } else {
+        $filtroEvSql = " AND ev.activo = 1 AND (ev.carrera = 'sistemas' OR ev.carrera = 'ambas' OR ev.carrera IS NULL)";
+    }
 
     $sql = "SELECT p.id, p.id_usuario, p.id_evento, p.categoria, p.id_espacio, p.titulo
             FROM cargar_posters p
@@ -456,11 +489,11 @@ function rec_ejecutar_asignar_huerfanos($conexion, $ejecutadoPor = 'sistema', $e
 
     $hora = date('H:i');
     $stmtLog = $conexion->prepare(
-        "INSERT INTO recordatorios_log (fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
-         VALUES (CURDATE(), ?, 'asignar', ?, ?, ?)"
+        "INSERT INTO recordatorios_log (carrera, fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
+         VALUES (?, CURDATE(), ?, 'asignar', ?, ?, ?)"
     );
     if ($stmtLog) {
-        $stmtLog->bind_param("siss", $hora, $asignados, $detalle, $ejecutadoPor);
+        $stmtLog->bind_param("ssiss", $carreraScope, $hora, $asignados, $detalle, $ejecutadoPor);
         $stmtLog->execute();
         $stmtLog->close();
     }
@@ -477,13 +510,23 @@ function rec_ejecutar_asignar_huerfanos($conexion, $ejecutadoPor = 'sistema', $e
  * Acción Fase 5: Reasignar pósters sin calificar en rondas abiertas a evaluadores libres
  * (que ya terminaron sus pósters asignados), excluyendo al autor y a quien ya calificó ese póster.
  */
-function rec_ejecutar_reasignar_pendientes($conexion, $ejecutadoPor = 'sistema', $enviarSincrono = false, $id_evento_filtro = null)
+function rec_ejecutar_reasignar_pendientes($conexion, $ejecutadoPor = 'sistema', $enviarSincrono = false, $id_evento_filtro = null, $carrera_filtro = 'sistemas')
 {
     rec_asegurar_tablas($conexion);
 
-    $filtroEvSql = ($id_evento_filtro !== null && intval($id_evento_filtro) > 0)
-        ? " AND r.id_evento = " . intval($id_evento_filtro)
-        : " AND ev.activo = 1";
+    $carreraScope = rec_normalizar_carrera_scope($carrera_filtro);
+
+    if ($id_evento_filtro !== null && intval($id_evento_filtro) > 0) {
+        $filtroEvSql = " AND r.id_evento = " . intval($id_evento_filtro);
+    } elseif ($carreraScope === 'civil') {
+        $filtroEvSql = " AND ev.activo = 1 AND ev.carrera = 'civil'";
+    } else {
+        $filtroEvSql = " AND ev.activo = 1 AND (ev.carrera = 'sistemas' OR ev.carrera = 'ambas' OR ev.carrera IS NULL)";
+    }
+
+    $filtroEvalCarreraSql = ($carreraScope === 'civil')
+        ? " AND LOWER(COALESCE(u.carrera, '')) LIKE '%civil%'"
+        : " AND LOWER(COALESCE(u.carrera, '')) NOT LIKE '%civil%'";
 
     $sqlPend = "SELECT a.id_asignacion, a.id_poster, a.id_evaluador AS id_eval_anterior, a.id_ronda,
                        p.titulo, p.id_usuario AS id_autor, p.id_espacio
@@ -504,11 +547,11 @@ function rec_ejecutar_reasignar_pendientes($conexion, $ejecutadoPor = 'sistema',
         $detalle = "No hay pósters sin calificar que requieran reasignación.";
         $hora = date('H:i');
         $stmtLog = $conexion->prepare(
-            "INSERT INTO recordatorios_log (fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
-             VALUES (CURDATE(), ?, 'reasignar', 0, ?, ?)"
+            "INSERT INTO recordatorios_log (carrera, fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
+             VALUES (?, CURDATE(), ?, 'reasignar', 0, ?, ?)"
         );
         if ($stmtLog) {
-            $stmtLog->bind_param("sss", $hora, $detalle, $ejecutadoPor);
+            $stmtLog->bind_param("ssss", $carreraScope, $hora, $detalle, $ejecutadoPor);
             $stmtLog->execute();
             $stmtLog->close();
         }
@@ -529,7 +572,7 @@ function rec_ejecutar_reasignar_pendientes($conexion, $ejecutadoPor = 'sistema',
         $idAutor = intval($fila['id_autor']);
         $idAsignacion = intval($fila['id_asignacion']);
 
-        // Buscar un evaluador activo que NO sea el autor, que NO esté ya asignado a este póster en esta ronda,
+        // Buscar un evaluador activo de la misma carrera que NO sea el autor, que NO esté ya asignado a este póster en esta ronda,
         // y priorizar a los evaluadores que ya terminaron sus pendientes en la ronda actual (pendientes_ronda = 0).
         $sqlLibre = "SELECT u.id, u.correo, CONCAT(u.nombres, ' ', u.apellidos) AS nombre_eval,
                             (SELECT COUNT(*)
@@ -546,6 +589,7 @@ function rec_ejecutar_reasignar_pendientes($conexion, $ejecutadoPor = 'sistema',
                             ) AS pendientes_ronda
                      FROM usuario u
                      WHERE u.id_rol = 2 AND u.activo = 1 AND u.desactivado = 0
+                       {$filtroEvalCarreraSql}
                        AND u.id <> ?
                        AND NOT EXISTS (
                            SELECT 1 FROM asignaciones_evaluadores ax
@@ -605,11 +649,11 @@ function rec_ejecutar_reasignar_pendientes($conexion, $ejecutadoPor = 'sistema',
 
     $hora = date('H:i');
     $stmtLog = $conexion->prepare(
-        "INSERT INTO recordatorios_log (fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
-         VALUES (CURDATE(), ?, 'reasignar', ?, ?, ?)"
+        "INSERT INTO recordatorios_log (carrera, fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
+         VALUES (?, CURDATE(), ?, 'reasignar', ?, ?, ?)"
     );
     if ($stmtLog) {
-        $stmtLog->bind_param("siss", $hora, $reasignados, $detalle, $ejecutadoPor);
+        $stmtLog->bind_param("ssiss", $carreraScope, $hora, $reasignados, $detalle, $ejecutadoPor);
         $stmtLog->execute();
         $stmtLog->close();
     }
@@ -625,9 +669,11 @@ function rec_ejecutar_reasignar_pendientes($conexion, $ejecutadoPor = 'sistema',
 /**
  * Acción Fase 5: Generar informe consolidado de estado (pósters totales, calificados, pendientes, evaluadores).
  */
-function rec_generar_informe($conexion, $registrarLog = false, $ejecutadoPor = 'sistema', $id_evento_filtro = null)
+function rec_generar_informe($conexion, $registrarLog = false, $ejecutadoPor = 'sistema', $id_evento_filtro = null, $carrera_filtro = 'sistemas')
 {
     rec_asegurar_tablas($conexion);
+
+    $carreraScope = rec_normalizar_carrera_scope($carrera_filtro);
 
     if ($id_evento_filtro !== null && intval($id_evento_filtro) > 0) {
         $idEvInt = intval($id_evento_filtro);
@@ -637,21 +683,31 @@ function rec_generar_informe($conexion, $registrarLog = false, $ejecutadoPor = '
             WHERE p.activo = 1
               AND (p.id_evento = {$idEvInt} OR EXISTS (SELECT 1 FROM poster_eventos pe WHERE pe.id_poster = p.id AND pe.id_evento = {$idEvInt}))
         ");
+    } elseif ($carreraScope === 'civil') {
+        $resTot = $conexion->query("
+            SELECT COUNT(*) AS total_posters
+            FROM cargar_posters p
+            JOIN eventos ev ON ev.id_evento = p.id_evento
+            WHERE p.activo = 1 AND ev.activo = 1 AND ev.carrera = 'civil'
+        ");
     } else {
         $resTot = $conexion->query("
             SELECT COUNT(*) AS total_posters
             FROM cargar_posters p
             JOIN eventos ev ON ev.id_evento = p.id_evento
-            WHERE p.activo = 1 AND ev.activo = 1
+            WHERE p.activo = 1 AND ev.activo = 1 AND (ev.carrera = 'sistemas' OR ev.carrera = 'ambas' OR ev.carrera IS NULL)
         ");
     }
     $totalPosters = $resTot ? intval($resTot->fetch_assoc()['total_posters']) : 0;
 
-    $pendientesInfo = rec_obtener_pendientes_evaluadores($conexion, $id_evento_filtro);
+    $pendientesInfo = rec_obtener_pendientes_evaluadores($conexion, $id_evento_filtro, $carreraScope);
     $postersPendientes = $pendientesInfo['total_posters_pendientes'];
     $postersCalificados = max(0, $totalPosters - $postersPendientes);
 
-    $resEvTot = $conexion->query("SELECT COUNT(*) AS total_evals FROM usuario WHERE id_rol = 2 AND activo = 1 AND desactivado = 0");
+    $condEvalCarrera = ($carreraScope === 'civil')
+        ? "AND LOWER(COALESCE(carrera, '')) LIKE '%civil%'"
+        : "AND LOWER(COALESCE(carrera, '')) NOT LIKE '%civil%'";
+    $resEvTot = $conexion->query("SELECT COUNT(*) AS total_evals FROM usuario WHERE id_rol = 2 AND activo = 1 AND desactivado = 0 {$condEvalCarrera}");
     $totalEvaluadores = $resEvTot ? intval($resEvTot->fetch_assoc()['total_evals']) : 0;
     $evalsConPendientes = $pendientesInfo['total_evaluadores_pendientes'];
     $evalsAlDia = max(0, $totalEvaluadores - $evalsConPendientes);
@@ -661,11 +717,11 @@ function rec_generar_informe($conexion, $registrarLog = false, $ejecutadoPor = '
     if ($registrarLog) {
         $hora = date('H:i');
         $stmtLog = $conexion->prepare(
-            "INSERT INTO recordatorios_log (fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
-             VALUES (CURDATE(), ?, 'informe', ?, ?, ?)"
+            "INSERT INTO recordatorios_log (carrera, fecha, hora_programada, accion, enviados, detalle, ejecutado_por)
+             VALUES (?, CURDATE(), ?, 'informe', ?, ?, ?)"
         );
         if ($stmtLog) {
-            $stmtLog->bind_param("siss", $hora, $postersPendientes, $detalle, $ejecutadoPor);
+            $stmtLog->bind_param("ssiss", $carreraScope, $hora, $postersPendientes, $detalle, $ejecutadoPor);
             $stmtLog->execute();
             $stmtLog->close();
         }
@@ -681,22 +737,30 @@ function rec_generar_informe($conexion, $registrarLog = false, $ejecutadoPor = '
         'evaluadores_con_pendientes' => $evalsConPendientes,
         'detalle' => $detalle,
         'evaluadores_detalle' => $pendientesInfo['evaluadores'],
+        'carrera' => $carreraScope,
     ];
 }
 
 /**
  * Verifica si hay horarios activos en `recordatorios_config` cuya hora ya llegó hoy
  * y aún no se han ejecutado en la fecha actual (`recordatorios_log`).
- * Si corresponde, los ejecuta automáticamente.
+ * Si corresponde, los ejecuta automáticamente respetando la carrera de cada horario.
  */
-function rec_verificar_y_disparar_programados($conexion, $enviarSincrono = false)
+function rec_verificar_y_disparar_programados($conexion, $enviarSincrono = false, $carrera_filtro = null)
 {
     rec_asegurar_tablas($conexion);
 
     $horaActual = date('H:i');
+    $condCarrera = "";
+    if ($carrera_filtro !== null && trim((string)$carrera_filtro) !== '') {
+        $cNorm = rec_normalizar_carrera_scope($carrera_filtro);
+        $condCarrera = " AND c.carrera = '" . $conexion->real_escape_string($cNorm) . "'";
+    }
+
     $sql = "SELECT c.*
             FROM recordatorios_config c
             WHERE c.activo = 1
+              {$condCarrera}
               AND c.hora <= ?
               AND NOT EXISTS (
                   SELECT 1 FROM recordatorios_log l
@@ -720,17 +784,17 @@ function rec_verificar_y_disparar_programados($conexion, $enviarSincrono = false
     foreach ($pendientesDisparo as $cfg) {
         $accion = $cfg['accion'] ?: 'recordatorio';
         $idCfg = intval($cfg['id_config']);
+        $carreraCfg = rec_normalizar_carrera_scope($cfg['carrera'] ?? 'sistemas');
         if ($accion === 'asignar') {
-            $r = rec_ejecutar_asignar_huerfanos($conexion, 'horario:' . $cfg['hora'], $enviarSincrono);
-            // Marcar id_config en el último log insertado
+            $r = rec_ejecutar_asignar_huerfanos($conexion, 'horario:' . $cfg['hora'], $enviarSincrono, null, $carreraCfg);
             $conexion->query("UPDATE recordatorios_log SET id_config = {$idCfg} WHERE id_log = LAST_INSERT_ID()");
             $resultados[] = $r;
         } elseif ($accion === 'reasignar') {
-            $r = rec_ejecutar_reasignar_pendientes($conexion, 'horario:' . $cfg['hora'], $enviarSincrono);
+            $r = rec_ejecutar_reasignar_pendientes($conexion, 'horario:' . $cfg['hora'], $enviarSincrono, null, $carreraCfg);
             $conexion->query("UPDATE recordatorios_log SET id_config = {$idCfg} WHERE id_log = LAST_INSERT_ID()");
             $resultados[] = $r;
         } elseif ($accion === 'informe') {
-            $r = rec_generar_informe($conexion, true, 'horario:' . $cfg['hora']);
+            $r = rec_generar_informe($conexion, true, 'horario:' . $cfg['hora'], null, $carreraCfg);
             $conexion->query("UPDATE recordatorios_log SET id_config = {$idCfg} WHERE id_log = LAST_INSERT_ID()");
             $resultados[] = $r;
         } else {
@@ -741,6 +805,7 @@ function rec_verificar_y_disparar_programados($conexion, $enviarSincrono = false
                 'mensaje_personalizado' => $cfg['mensaje_personalizado'],
                 'ejecutado_por' => 'horario:' . $cfg['hora'],
                 'sincrono' => $enviarSincrono,
+                'carrera' => $carreraCfg,
             ]);
         }
     }

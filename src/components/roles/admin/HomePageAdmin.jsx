@@ -7,8 +7,10 @@ import Usuarios from '../generales/Usuarios.jsx';
 import Categorias from '../generales/Categorias.jsx';
 import Cuenta from '../generales/Cuenta.jsx';
 import GestionEspaciosModal from '../generales/GestionEspaciosModal.jsx';
+import GestionCriterios from '../super_admin/GestionCriterios.jsx';
 import GestionRondas from '../generales/GestionRondas.jsx';
 import GestionRecordatorios from '../generales/GestionRecordatorios.jsx';
+import ListadoUbicaciones from '../generales/ListadoUbicaciones.jsx';
 import Footer from "../../generales/Footer.jsx";
 import VolverArriba from "../../generales/VolverArriba.jsx";
 import { tituloRonda } from '../generales/rondasUtils.js';
@@ -28,6 +30,13 @@ const HomePageAdmin = () => {
     // Estados para la Gestión de Espacios Físicos
     const [mostrarGestionEspacios, setMostrarGestionEspacios] = useState(false);
     const [espaciosResumen, setEspaciosResumen] = useState([]);
+
+    // Estado para el Listado Completo por Ubicaciones
+    const [mostrarListadoUbicaciones, setMostrarListadoUbicaciones] = useState(false);
+
+    // Estados para Criterios de Evaluación
+    const [mostrarCriterios, setMostrarCriterios] = useState(false);
+    const [criteriosResumen, setCriteriosResumen] = useState([]);
 
     // Estados para Rondas y Premios (admin y super admin hacen lo mismo)
     const [mostrarRondas, setMostrarRondas] = useState(false);
@@ -50,6 +59,18 @@ const HomePageAdmin = () => {
             }
         } catch (error) {
             console.error("Error al cargar espacios físicos:", error);
+        }
+    };
+
+    const cargarCriteriosResumen = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/Criterios.php`);
+            const data = await res.json();
+            if (data.success) {
+                setCriteriosResumen(data.data || []);
+            }
+        } catch (error) {
+            console.error("Error al cargar criterios de evaluación:", error);
         }
     };
 
@@ -77,6 +98,7 @@ const HomePageAdmin = () => {
         if (idRol) setIdRolActual(parseInt(idRol));
 
         cargarEspaciosResumen();
+        cargarCriteriosResumen();
         cargarRondasResumen();
     }, []);
 
@@ -145,6 +167,12 @@ const HomePageAdmin = () => {
                             <h3>Espacios Físicos</h3>
                             <p>Definir salones, estantes y capacidad de ubicación</p>
                         </div>
+                        <div className="tarjeta" onClick={() => irASeccion('criterios')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('criterios')}>
+                            <div className="icono">⚙️</div>
+                            <h3>Criterios de Evaluación</h3>
+                            <p>Crear, modificar o eliminar los criterios de evaluación de tu evento</p>
+                        </div>
                         <div className="tarjeta" onClick={() => irASeccion('categorias')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('categorias')}>
                             <div className="icono">📊</div>
@@ -184,6 +212,60 @@ const HomePageAdmin = () => {
                     <div className="modal">
                         <SolicitudesUsuarios cerrarTabla={() => setMostrarSolicitudes(false)} />
                     </div>
+                </div>
+            )}
+
+            {/* Criterios de Evaluación Dinámicos */}
+            <section id="criterios">
+                <span className="seccion-eyebrow">Parametrización</span>
+                <h2>Criterios de Evaluación Dinámicos</h2>
+                <div className="contenedor-tabla">
+                  <HintScrollTabla />
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Criterio</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {criteriosResumen.length === 0 ? (
+                                <tr>
+                                    <td colSpan="3" style={{ textAlign: 'center' }}>
+                                        No se encontraron criterios de evaluación registrados.
+                                    </td>
+                                </tr>
+                            ) : (
+                                criteriosResumen.slice(0, limite).map((crit) => (
+                                    <tr key={crit.id}>
+                                        <td><strong>{crit.nombre}</strong></td>
+                                        <td>{crit.descripcion || 'Sin descripción'}</td>
+                                        <td>
+                                            <span className="badge-rol rol-2">ACTIVO</span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                    <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                        <button className="boton-primario" onClick={() => setMostrarCriterios(true)}>
+                            Administrar / Crear Criterios
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Modal Gestión de Criterios */}
+            {mostrarCriterios && (
+                <div className="modal">
+                    <GestionCriterios
+                        cerrarTabla={() => {
+                            setMostrarCriterios(false);
+                            cargarCriteriosResumen();
+                        }}
+                    />
                 </div>
             )}
 
@@ -261,9 +343,12 @@ const HomePageAdmin = () => {
                             )}
                         </tbody>
                     </table>
-                    <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                    <div style={{ textAlign: 'center', marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
                         <button className="boton-primario" onClick={() => setMostrarGestionEspacios(true)}>
-                            Administrar / Crear Espacios Físicos
+                            Administrar Espacios y Capacidad
+                        </button>
+                        <button className="boton-primario" style={{ background: '#005f73' }} onClick={() => setMostrarListadoUbicaciones(true)}>
+                            📍 Ver Listado Completo por Ubicaciones
                         </button>
                     </div>
                 </div>
@@ -277,6 +362,13 @@ const HomePageAdmin = () => {
                         cargarEspaciosResumen();
                     }}
                 />
+            )}
+
+            {/* Modal Listado Completo por Ubicaciones */}
+            {mostrarListadoUbicaciones && (
+                <div className="modal">
+                    <ListadoUbicaciones cerrarTabla={() => setMostrarListadoUbicaciones(false)} />
+                </div>
             )}
 
             {/* Usuarios */}

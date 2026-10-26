@@ -50,10 +50,13 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
   const [mensajeDuplicados, setMensajeDuplicados] = useState('')
 
   useEffect(() => {
-    cargarCategorias()
     cargarProfesores()
     cargarEventosActivos()
   }, [])
+
+  useEffect(() => {
+    cargarCategorias(carreraParticipacion)
+  }, [carreraParticipacion])
 
   const cargarEventosActivos = async () => {
     try {
@@ -67,12 +70,16 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
     }
   }
 
-  const cargarCategorias = async () => {
+  const cargarCategorias = async (carrera = carreraParticipacion) => {
     try {
-      const res = await fetch(`${API_BASE}/Categorias.php`)
+      const paramCarrera = carrera === 'civil' ? 'civil' : (carrera === 'ambas' ? 'todas' : 'sistemas')
+      const res = await fetch(`${API_BASE}/Categorias.php?carrera=${encodeURIComponent(paramCarrera)}`)
       const datos = await res.json()
       if (datos.success && Array.isArray(datos.data) && datos.data.length > 0) {
         setCategoriasDisponibles(datos.data)
+        setCategoria((prev) =>
+          datos.data.some((c) => c.nombre_categorias === prev) ? prev : ''
+        )
       }
     } catch (err) {
       console.error('Error al cargar categorías:', err)

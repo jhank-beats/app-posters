@@ -91,6 +91,8 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
 
     const eventoSel = eventos.find(e => e.id_evento === idEvento) || null;
     const rondas = eventoSel ? eventoSel.rondas || [] : [];
+    const esEventoCivil = (eventoSel?.carrera || '').toLowerCase().includes('civil') ||
+        (eventoSel?.nombre_evento || '').toLowerCase().includes('civil');
 
     useEffect(() => {
         // Estado inicial de configuración y podio por ronda
@@ -575,17 +577,19 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                 </header>
 
                 <div className="ronda-config">
-                    <label className="campo-ronda">
-                        <span>Cupos para la siguiente ronda</span>
-                        <input
-                            type="number" min="0" className="input-filtro"
-                            value={cfg.cupos}
-                            onChange={(e) => setConfig(prev => ({
-                                ...prev,
-                                [ronda.id_ronda]: { ...prev[ronda.id_ronda], cupos: e.target.value }
-                            }))}
-                        />
-                    </label>
+                    {!esEventoCivil && (
+                        <label className="campo-ronda">
+                            <span>Cupos para la siguiente ronda</span>
+                            <input
+                                type="number" min="0" className="input-filtro"
+                                value={cfg.cupos}
+                                onChange={(e) => setConfig(prev => ({
+                                    ...prev,
+                                    [ronda.id_ronda]: { ...prev[ronda.id_ronda], cupos: e.target.value }
+                                }))}
+                            />
+                        </label>
+                    )}
                     <label className="campo-ronda">
                         <span>Premios</span>
                         <input
@@ -632,17 +636,19 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                     </button>
                     <button className="boton-secundario" onClick={() => setMostrarCriterios(true)}>Cambiar criterios</button>
                     {abierta ? (
-                        <button className="boton-primario" onClick={() => cambiarEstadoRonda(ronda)}>
-                            Cerrar ronda y pasar a la siguiente
-                        </button>
+                        !esEventoCivil && (
+                            <button className="boton-primario" onClick={() => cambiarEstadoRonda(ronda)}>
+                                Cerrar ronda y pasar a la siguiente
+                            </button>
+                        )
                     ) : (
                         <button className="boton-secundario" onClick={() => cambiarEstadoRonda(ronda)}>
                             Abrir ronda
                         </button>
                     )}
                     {abierta && (
-                        <button className="boton-secundario" onClick={() => cerrarSinPasar(ronda)} title="Solo para la última ronda">
-                            Cerrar sin pasar (final)
+                        <button className={esEventoCivil ? "boton-primario" : "boton-secundario"} onClick={() => cerrarSinPasar(ronda)} title="Solo para la última ronda">
+                            {esEventoCivil ? 'Cerrar ronda (ronda única)' : 'Cerrar sin pasar (final)'}
                         </button>
                     )}
                     {!abierta && (
@@ -669,34 +675,36 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
 
                 {detalle && abiertoRanking && (
                     <div className="ronda-ranking">
-                        <div className="barra-corte">
-                            <label className="campo-ronda">
-                                <span>Cupos</span>
-                                <input
-                                    type="number" min="0" className="input-filtro"
-                                    value={cfg.cupos}
-                                    onChange={(e) => setConfig(prev => ({
-                                        ...prev,
-                                        [ronda.id_ronda]: { ...prev[ronda.id_ronda], cupos: e.target.value }
-                                    }))}
-                                />
-                            </label>
-                            {abierta && (
-                                <button className="boton-primario" onClick={() => abrirModalCierre(ronda)}>
-                                    Cerrar ronda y pasar a la siguiente
-                                </button>
-                            )}
-                            {!abierta && conSeleccion && (
-                                <button className="boton-secundario" onClick={() => rehacerSeleccion(ronda)}>
-                                    Rehacer selección
-                                </button>
-                            )}
-                            {!abierta && !conSeleccion && (
-                                <span className="subtexto-celda">
-                                    Esta ronda no tiene corte: se cerró sin pasar pósters.
-                                </span>
-                            )}
-                        </div>
+                        {!esEventoCivil && (
+                            <div className="barra-corte">
+                                <label className="campo-ronda">
+                                    <span>Cupos</span>
+                                    <input
+                                        type="number" min="0" className="input-filtro"
+                                        value={cfg.cupos}
+                                        onChange={(e) => setConfig(prev => ({
+                                            ...prev,
+                                            [ronda.id_ronda]: { ...prev[ronda.id_ronda], cupos: e.target.value }
+                                        }))}
+                                    />
+                                </label>
+                                {abierta && (
+                                    <button className="boton-primario" onClick={() => abrirModalCierre(ronda)}>
+                                        Cerrar ronda y pasar a la siguiente
+                                    </button>
+                                )}
+                                {!abierta && conSeleccion && (
+                                    <button className="boton-secundario" onClick={() => rehacerSeleccion(ronda)}>
+                                        Rehacer selección
+                                    </button>
+                                )}
+                                {!abierta && !conSeleccion && (
+                                    <span className="subtexto-celda">
+                                        Esta ronda no tiene corte: se cerró sin pasar pósters.
+                                    </span>
+                                )}
+                            </div>
+                        )}
 
                         <div className="contenedor-tabla">
                           <HintScrollTabla />
@@ -750,7 +758,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                         </div>
 
                         {/* Podio de la ronda */}
-                        {(ronda.numero > 1 || conGanadores) && (
+                        {(ronda.numero > 1 || esEventoCivil || conGanadores) && (
                             <div className="podio-seccion">
                                 <h4>🏆 Podio de la {ronda.nombre} — {pod.premios} premio(s)</h4>
                                 <div className="barra-corte">
@@ -893,9 +901,15 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                         </option>
                     ))}
                 </select>
-                <button className="boton-primario" style={{ minHeight: '40px' }} onClick={() => setFormRonda({ nombre: '', cupos: '', premios: 3 })}>
-                    + Crear ronda
-                </button>
+                {(!esEventoCivil || rondas.length === 0) ? (
+                    <button className="boton-primario" style={{ minHeight: '40px' }} onClick={() => setFormRonda({ nombre: '', cupos: '', premios: 3 })}>
+                        + Crear ronda
+                    </button>
+                ) : (
+                    <span className="badge-evento" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
+                        🏗️ Ingeniería Civil · Modalidad de 1 única ronda
+                    </span>
+                )}
             </div>
 
             {cargando && <p style={{ textAlign: 'center', padding: '1.5rem' }}>Cargando rondas…</p>}

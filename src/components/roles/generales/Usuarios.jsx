@@ -231,7 +231,7 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
             {!limite && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
                     <h2 style={{ margin: 0 }}>Gestión de Usuarios</h2>
-                    {rolSesionActual === 4 && (
+                    {[3, 4, 5].includes(rolSesionActual) && (
                         <button
                             type="button"
                             className="boton-primario"
@@ -381,6 +381,17 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                         <option key={r.value} value={String(r.value)}>{r.label}</option>
                     ))}
                 </select>
+
+                {limite && [3, 4, 5].includes(rolSesionActual) && (
+                    <button
+                        type="button"
+                        className="boton-primario"
+                        onClick={() => setImportarAbierto(true)}
+                        title="Cargar usuarios desde un archivo CSV"
+                    >
+                        📥 Importar CSV
+                    </button>
+                )}
 
                 {limite && (
                     <a

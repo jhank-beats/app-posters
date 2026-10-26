@@ -42,6 +42,9 @@ const GestionCriterios = ({ cerrarTabla }) => {
                     });
                 });
                 setRondas(lista);
+                if (lista.length > 0 && !lista.some(r => r.id_ronda === idRonda)) {
+                    setIdRonda(lista[0].id_ronda);
+                }
             }
         } catch (err) {
             console.error("Error al cargar rondas:", err);
