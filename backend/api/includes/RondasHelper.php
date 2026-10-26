@@ -834,7 +834,7 @@ function rh_reasignar_aleatorio_ronda($conexion, $id_ronda_anterior, $id_ronda_s
                 LIMIT ?";
         $stmt = $conexion->prepare($sql);
         $stmt->bind_param(
-            "iiiiiiiiisi",
+            "iiiiiiiisi",
             $id_ronda_siguiente,
             $id_autor,
             $id_poster,

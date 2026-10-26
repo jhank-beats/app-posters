@@ -975,7 +975,7 @@ function cerrarYPasar($auth, $datos)
 
         $conexion->commit();
         $evaluadoresNuevos = $reasig['avisados'];
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         $conexion->rollback();
         rh_log('cerrar_y_pasar: ' . $e->getMessage());
         rh_error(500, 'No fue posible cerrar la ronda. No se guardó ningún cambio.', 'error_servidor');
