@@ -231,6 +231,8 @@ try {
     // 6. Asignación aleatoria automática de evaluador(es) para la Ronda 1 de cada evento participante
     $evaluadoresAsignadosTotal = [];
     $notificacionesAsignacionTotal = [];
+    $sinEvaluadorTotal = false;
+    $mensajeSinEvaluadorTotal = null;
     foreach ($idsEventosParticipantes as $idEvPart) {
         $resEvAsig = ph_asignar_evaluadores_al_subir(
             $conexion,
@@ -253,10 +255,18 @@ try {
                 $notificacionesAsignacionTotal[] = $notifEv;
             }
         }
+        if (!empty($resEvAsig['sin_evaluadores_disponibles'])) {
+            $sinEvaluadorTotal = true;
+            if (empty($mensajeSinEvaluadorTotal) && !empty($resEvAsig['mensaje_sin_evaluador'])) {
+                $mensajeSinEvaluadorTotal = $resEvAsig['mensaje_sin_evaluador'];
+            }
+        }
     }
     $resultadoAsignacion = [
         'evaluadores' => $evaluadoresAsignadosTotal,
         'notificaciones' => $notificacionesAsignacionTotal,
+        'sin_evaluadores_disponibles' => empty($evaluadoresAsignadosTotal) && $sinEvaluadorTotal,
+        'mensaje_sin_evaluador' => $mensajeSinEvaluadorTotal,
     ];
 
     $conexion->commit();

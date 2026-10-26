@@ -50,7 +50,7 @@ const HomePageUsuario = () => {
                         Estás en la página de inicio del sistema de gestión de pósters de la UCC.
                     </p>
                     <button 
-                        className="btn-cargar-posters"
+                        className="btn-cargar-posters boton-primario"
                         onClick={() => setMostrarCargarPosters(true)}
                     >
                         Cargar Póster

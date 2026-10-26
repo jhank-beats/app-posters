@@ -131,7 +131,7 @@ const HomePageEvaluador = () => {
                         </p>
                     )}
                     <button
-                        className="btn-cargar-posters"
+                        className="btn-cargar-posters boton-primario"
                         onClick={() => setMostrarCargarPosters(true)}
                     >
                         Publicar Póster

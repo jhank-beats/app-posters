@@ -114,6 +114,7 @@ function obtenerEvaluadoresYAsignaciones($conexion)
                 LEFT JOIN asignaciones_evaluadores ae
                     ON u.id = ae.id_evaluador AND ae.id_poster = ? AND ae.id_ronda = ?
                 WHERE r.nombre_rol = 'Evaluador'
+                  AND u.activo = 1 AND u.desactivado = 0
                   AND u.id <> COALESCE((SELECT id_usuario FROM cargar_posters WHERE id = ?), 0)
                   AND NOT EXISTS (
                       SELECT 1 FROM poster_profesores pp
@@ -252,6 +253,30 @@ function guardarAsignacion($conexion)
                 'message' => 'No se puede asignar a un profesor del póster como evaluador (conflicto de intereses).'
             ]);
             return;
+        }
+
+        // Verificar que los evaluadores seleccionados estén activos y no eliminados
+        if (!empty($evaluadores_ids)) {
+            $inMarcas = implode(',', array_fill(0, count($evaluadores_ids), '?'));
+            $stmtVal = $conexion->prepare("SELECT id FROM usuario WHERE id IN ({$inMarcas}) AND activo = 1 AND desactivado = 0");
+            if ($stmtVal) {
+                $stmtVal->bind_param(str_repeat('i', count($evaluadores_ids)), ...$evaluadores_ids);
+                $stmtVal->execute();
+                $resVal = $stmtVal->get_result();
+                $activosEncontrados = [];
+                while ($rv = $resVal->fetch_assoc()) {
+                    $activosEncontrados[] = intval($rv['id']);
+                }
+                $stmtVal->close();
+                if (count($activosEncontrados) !== count($evaluadores_ids)) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Uno o más evaluadores seleccionados han sido desactivados o eliminados.'
+                    ]);
+                    return;
+                }
+            }
         }
 
         // Ronda a la que aplican las asignaciones (por defecto la ronda 1 del

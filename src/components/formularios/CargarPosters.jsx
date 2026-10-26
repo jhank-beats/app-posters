@@ -202,9 +202,11 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
         let detalleEval = ''
         if (evalAsignados.length > 0) {
           detalleEval = `\n🎯 Evaluador asignado automáticamente: ${evalAsignados.map((ev) => ev.nombre).join(', ')}`
-        } else if (sinEval) {
+        } else {
           detalleEval =
-            '\n⚠️ No se registró evaluador porque no hay disponibles (los disponibles son los mismos que subieron el póster o sus profesores asignados). Toca asignación manual.'
+            data.poster?.mensaje_sin_evaluador
+              ? `\n⚠️ ${data.poster.mensaje_sin_evaluador}`
+              : '\n⚠️ No se registró evaluador porque no hay disponibles (los disponibles son los mismos que subieron el póster o sus profesores asignados). Toca asignación manual.'
         }
         alert('✅ ' + (data.message || 'Póster registrado exitosamente') + detalleEval)
 

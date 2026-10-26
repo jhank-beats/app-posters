@@ -102,13 +102,4 @@ button:focus-visible {
   p {
     color: #5f5e5e;
   }
-  a {
-    color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
 }

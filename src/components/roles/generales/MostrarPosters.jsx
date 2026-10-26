@@ -145,23 +145,17 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
     const rondaVista = useMemo(() => {
         if (idRonda) return rondas.find(r => String(r.id_ronda) === String(idRonda)) || null;
         if (rondas.length === 0) return null;
-        let candidatas = rondas;
-        const idsEventos = new Set(posters.map(p => p.id_evento).filter(Boolean));
-        if (idsEventos.size > 0) {
-            const delEvento = rondas.filter(r => idsEventos.has(r.id_evento));
-            if (delEvento.length > 0) candidatas = delEvento;
-        }
-        const abiertas = candidatas.filter(r => r.estado === 'abierta');
-        const conjunto = abiertas.length > 0 ? abiertas : candidatas;
-        return conjunto.reduce((a, b) => (Number(b.numero) > Number(a.numero) ? b : a));
-    }, [idRonda, rondas, posters]);
+        const abiertas = rondas.filter(r => r.estado === 'abierta');
+        const candidatas = abiertas.length > 0 ? abiertas : rondas;
+        return candidatas.reduce((a, b) => (Number(b.numero) > Number(a.numero) ? b : a), candidatas[0]);
+    }, [idRonda, rondas]);
 
     const rondaTrabajoId = idRonda || (rondaVista ? String(rondaVista.id_ronda) : '');
 
     useEffect(() => {
         cargarCriteriosYPosters();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [soloMisPosters, soloAsignados, idEvaluador, recargarClave, idRonda, orden, soloSeleccionados, rondasListas, rondaTrabajoId, notaMinima, soloEvaluados]);
+    }, [soloMisPosters, soloAsignados, idEvaluador, recargarClave, idRonda, orden, soloSeleccionados, rondasListas, notaMinima, soloEvaluados]);
 
     const cargarRondas = async () => {
         try {
@@ -214,11 +208,11 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             if (notaMinima !== '') params.push(`nota_minima=${encodeURIComponent(notaMinima)}`);
             if (soloEvaluados) params.push('solo_evaluados=1');
 
-            const rondaFiltro = soloMisPosters ? idRonda : rondaTrabajoId;
+            // Solo enviar id_ronda si el usuario seleccionó una ronda explícitamente.
+            // Si idRonda está vacío ("Todas las rondas"), NO se pasa id_ronda a TablaPosters.php
+            // para que Super Admin y Admin puedan ver los pósters de todos los eventos y rondas.
+            const rondaFiltro = idRonda;
             if (rondaFiltro) {
-                // Unificar listado y guardado en la misma ronda (fix bug Fase 1):
-                // en vista evaluador/admin siempre se envía la ronda de trabajo;
-                // en "Mis pósters publicados" solo cuando el autor filtra por ronda.
                 params.push(`id_ronda=${rondaFiltro}`);
                 if (soloSeleccionados) params.push('solo_seleccionados=1');
             }
@@ -882,7 +876,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                     Solo pendientes de calificar
                 </label>
 
-                {limite && verMas && postersFiltrados.length > limite && (
+                {limite && verMas && (postersFiltrados.length > 0 || posters.length > 0) && (
                     <a href="#" className="ver-mas" onClick={(e) => {
                         e.preventDefault();
                         verMas();
