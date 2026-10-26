@@ -26,26 +26,54 @@ function obtenerSolicitudes()
 {
     global $conexion;
 
+    $auth = $GLOBALS['auth'];
+    $rolActual = (int)($auth['rol'] ?? 0);
     $limite = isset($_GET['limite']) ? (int) $_GET['limite'] : null;
+
+    $condiciones = ["u.activo = 0", "u.desactivado = 0"];
+    $params = [];
+    $types = "";
+
+    // Si es Administrador de evento (rol 3), solo ve solicitudes de su carrera/evento
+    if ($rolActual === 3) {
+        $cAdmin = auth_carrera_admin($conexion, $auth);
+        $idEventoAdmin = auth_id_evento_admin($conexion, $auth);
+
+        if ($cAdmin === 'civil') {
+            $condiciones[] = "(u.id_evento = ? OR LOWER(COALESCE(u.carrera, '')) LIKE '%civil%')";
+            $params[] = $idEventoAdmin ? $idEventoAdmin : 3;
+            $types .= "i";
+        } elseif ($cAdmin === 'sistema') {
+            $condiciones[] = "(u.id_evento = ? OR LOWER(COALESCE(u.carrera, '')) LIKE '%sistema%' OR LOWER(COALESCE(u.carrera, '')) LIKE '%software%')";
+            $params[] = $idEventoAdmin ? $idEventoAdmin : 1;
+            $types .= "i";
+        }
+    }
 
     $sql = "SELECT u.id, u.nombres, u.apellidos, u.correo, u.carrera,
                    u.id_evento, ev.nombre_evento, ev.codigo_evento,
                    u.activo, u.fecha_registro, u.desactivado
             FROM usuario u
             LEFT JOIN eventos ev ON ev.id_evento = u.id_evento
-            WHERE u.activo = 0 AND u.desactivado = 0
+            WHERE " . implode(" AND ", $condiciones) . "
             ORDER BY u.fecha_registro DESC";
 
     if ($limite) {
-        $sql .= " LIMIT $limite";
+        $sql .= " LIMIT " . intval($limite);
     }
 
-    $resultado = $conexion->query($sql);
+    $stmt = $conexion->prepare($sql);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $resultado = $stmt->get_result();
     $solicitudes = [];
 
     while ($row = $resultado->fetch_assoc()) {
         $solicitudes[] = $row;
     }
+    $stmt->close();
 
     echo json_encode([
         'success' => true,

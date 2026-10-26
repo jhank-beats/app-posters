@@ -149,6 +149,47 @@ function auth_id_evento_admin($conexion, $auth = null) {
     return 1;
 }
 
+/**
+ * Devuelve 'civil', 'sistema', o null si es Super Admin (rol 4) o sin carrera definida.
+ */
+function auth_carrera_admin($conexion, $auth = null) {
+    if ($auth === null) $auth = auth_current();
+    if (!$auth || (int)($auth['rol'] ?? 0) !== 3) {
+        return null;
+    }
+    $idEv = auth_id_evento_admin($conexion, $auth);
+    if ($idEv !== null && $idEv > 0) {
+        $stmtEv = $conexion->prepare("SELECT carrera FROM eventos WHERE id_evento = ? LIMIT 1");
+        if ($stmtEv) {
+            $stmtEv->bind_param("i", $idEv);
+            $stmtEv->execute();
+            $rowEv = $stmtEv->get_result()->fetch_assoc();
+            $stmtEv->close();
+            if ($rowEv && !empty($rowEv['carrera'])) {
+                $cLower = mb_strtolower($rowEv['carrera'], 'UTF-8');
+                if (strpos($cLower, 'civil') !== false) return 'civil';
+                if (strpos($cLower, 'sistema') !== false) return 'sistema';
+            }
+        }
+    }
+    $userId = (int)($auth['id'] ?? 0);
+    if ($userId > 0) {
+        $stmtUsr = $conexion->prepare("SELECT carrera FROM usuario WHERE id = ? LIMIT 1");
+        if ($stmtUsr) {
+            $stmtUsr->bind_param("i", $userId);
+            $stmtUsr->execute();
+            $rowUsr = $stmtUsr->get_result()->fetch_assoc();
+            $stmtUsr->close();
+            if ($rowUsr && !empty($rowUsr['carrera'])) {
+                $cLower = mb_strtolower($rowUsr['carrera'], 'UTF-8');
+                if (strpos($cLower, 'civil') !== false) return 'civil';
+                if (strpos($cLower, 'sistema') !== false) return 'sistema';
+            }
+        }
+    }
+    return 'sistema';
+}
+
 function require_role($roles = null) {
     global $conexion;
     $auth = auth_current();

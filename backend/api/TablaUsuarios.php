@@ -68,14 +68,31 @@ function obtenerUsuarios()
                 AND u.activo = 1
                 AND u.id != ?";
 
+    $params = [$adminId];
+    $types = "i";
+
+    // Si es Administrador de evento (rol 3), solo ve usuarios y evaluadores de su carrera/evento
     if ($rolActual === 3) {
+        $cAdmin = auth_carrera_admin($conexion, $GLOBALS['auth']);
+        $idEventoAdmin = auth_id_evento_admin($conexion, $GLOBALS['auth']);
+
         $sqlBase .= " AND u.id_rol IN (1, 2)";
+
+        if ($cAdmin === 'civil') {
+            $sqlBase .= " AND (u.id_evento = ? OR LOWER(COALESCE(u.carrera, '')) LIKE '%civil%')";
+            $params[] = $idEventoAdmin ? $idEventoAdmin : 3;
+            $types .= "i";
+        } elseif ($cAdmin === 'sistema') {
+            $sqlBase .= " AND (u.id_evento = ? OR LOWER(COALESCE(u.carrera, '')) LIKE '%sistema%' OR LOWER(COALESCE(u.carrera, '')) LIKE '%software%')";
+            $params[] = $idEventoAdmin ? $idEventoAdmin : 1;
+            $types .= "i";
+        }
     }
 
     $sqlBase .= " ORDER BY u.nombres ASC";
 
     $stmt = $conexion->prepare($sqlBase);
-    $stmt->bind_param('i', $adminId);
+    $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $resultado = $stmt->get_result();
 
@@ -148,9 +165,28 @@ function actualizarUsuario()
     $check_stmt->close();
 
     // Validar permisos
-    if ($rolActual === 3 && !in_array($rolObjetivo, [1, 2])) {
-        echo json_encode(['success' => false, 'message' => 'No está permitido modificar este usuario']);
-        return;
+    if ($rolActual === 3) {
+        if (!in_array($rolObjetivo, [1, 2])) {
+            echo json_encode(['success' => false, 'message' => 'No está permitido modificar este usuario']);
+            return;
+        }
+        $cAdmin = auth_carrera_admin($conexion, $GLOBALS['auth']);
+        $cObj = mb_strtolower(trim((string)($usuarioObjetivo['carrera'] ?? '')), 'UTF-8');
+        $idEvObj = intval($usuarioObjetivo['id_evento'] ?? 0);
+        $idEvAdmin = auth_id_evento_admin($conexion, $GLOBALS['auth']);
+
+        $mismoEvento = ($idEvAdmin !== null && $idEvObj === $idEvAdmin);
+        $mismaCarrera = false;
+        if ($cAdmin === 'civil') {
+            $mismaCarrera = (strpos($cObj, 'civil') !== false);
+        } elseif ($cAdmin === 'sistema') {
+            $mismaCarrera = (strpos($cObj, 'sistema') !== false || strpos($cObj, 'software') !== false);
+        }
+
+        if (!$mismoEvento && !$mismaCarrera) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permisos para modificar usuarios de otra carrera']);
+            return;
+        }
     }
     if ($rolActual === 4 && $rolObjetivo === 4) {
         echo json_encode(['success' => false, 'message' => 'No puedes modificar a otro Super Admin']);
@@ -283,7 +319,7 @@ function eliminarUsuario()
     $data = json_decode(file_get_contents('php://input'), true);
     $id = intval($data['id'] ?? 0);
 
-    $check_sql = "SELECT id_rol FROM usuario WHERE id = ?";
+    $check_sql = "SELECT id_rol, carrera, id_evento FROM usuario WHERE id = ?";
     $check_stmt = $conexion->prepare($check_sql);
     $check_stmt->bind_param('i', $id);
     $check_stmt->execute();
@@ -299,6 +335,28 @@ function eliminarUsuario()
     if (in_array((int)$usuario['id_rol'], [3, 4], true)) {
         echo json_encode(['success' => false, 'message' => 'No está permitido eliminar un administrador']);
         return;
+    }
+
+    // Si quien elimina es rol 3 (Admin de evento), no puede eliminar usuarios de otra carrera
+    $rolActual = (int)($GLOBALS['auth']['rol'] ?? 0);
+    if ($rolActual === 3) {
+        $cAdmin = auth_carrera_admin($conexion, $GLOBALS['auth']);
+        $cObj = mb_strtolower(trim((string)($usuario['carrera'] ?? '')), 'UTF-8');
+        $idEvObj = intval($usuario['id_evento'] ?? 0);
+        $idEvAdmin = auth_id_evento_admin($conexion, $GLOBALS['auth']);
+
+        $mismoEvento = ($idEvAdmin !== null && $idEvObj === $idEvAdmin);
+        $mismaCarrera = false;
+        if ($cAdmin === 'civil') {
+            $mismaCarrera = (strpos($cObj, 'civil') !== false);
+        } elseif ($cAdmin === 'sistema') {
+            $mismaCarrera = (strpos($cObj, 'sistema') !== false || strpos($cObj, 'software') !== false);
+        }
+
+        if (!$mismoEvento && !$mismaCarrera) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permisos para eliminar usuarios de otra carrera']);
+            return;
+        }
     }
 
     $check_stmt->close();

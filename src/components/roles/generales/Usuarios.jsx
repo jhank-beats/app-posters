@@ -377,10 +377,9 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                     onChange={(e) => setFiltroRol(e.target.value)}
                 >
                     <option value="todos">Todos los roles</option>
-                    <option value="1">Usuario</option>
-                    <option value="2">Evaluador</option>
-                    <option value="3">Administrador (por evento)</option>
-                    <option value="4">Super Admin</option>
+                    {obtenerOpcionesRolesDisponibles().map((r) => (
+                        <option key={r.value} value={String(r.value)}>{r.label}</option>
+                    ))}
                 </select>
 
                 {limite && (

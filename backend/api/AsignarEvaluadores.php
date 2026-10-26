@@ -121,6 +121,34 @@ function obtenerEvaluadoresYAsignaciones($conexion)
                       WHERE pp.id_poster = ? AND pp.id_usuario = u.id
                   )";
 
+        // Si es Admin de evento (rol 3), solo puede ver y asignar evaluadores de su propia carrera/evento
+        $auth = auth_current();
+        $rolActual = (int)($auth['rol'] ?? 0);
+        if ($rolActual === 3) {
+            $cAdmin = auth_carrera_admin($conexion, $auth);
+            $idEvAdmin = auth_id_evento_admin($conexion, $auth);
+
+            if ($id_poster > 0 && $idEvAdmin !== null) {
+                $stmtCheckP = $conexion->prepare("SELECT 1 FROM cargar_posters p WHERE p.id = ? AND (p.id_evento = ? OR EXISTS (SELECT 1 FROM poster_eventos pe WHERE pe.id_poster = p.id AND pe.id_evento = ?))");
+                if ($stmtCheckP) {
+                    $stmtCheckP->bind_param("iii", $id_poster, $idEvAdmin, $idEvAdmin);
+                    $stmtCheckP->execute();
+                    $hasPoster = $stmtCheckP->get_result()->fetch_assoc();
+                    $stmtCheckP->close();
+                    if (!$hasPoster) {
+                        echo json_encode(['success' => false, 'message' => 'No tienes permisos para ver las asignaciones de un póster de otro evento.']);
+                        return;
+                    }
+                }
+            }
+
+            if ($cAdmin === 'civil') {
+                $sql .= " AND (u.id_evento = 3 OR LOWER(COALESCE(u.carrera, '')) LIKE '%civil%')";
+            } elseif ($cAdmin === 'sistema') {
+                $sql .= " AND (u.id_evento = 1 OR LOWER(COALESCE(u.carrera, '')) LIKE '%sistema%' OR LOWER(COALESCE(u.carrera, '')) LIKE '%software%')";
+            }
+        }
+
         if (!empty($carrera)) {
             $sql .= " AND u.carrera LIKE ?";
         }
@@ -216,6 +244,27 @@ function guardarAsignacion($conexion)
             http_response_code(404);
             echo json_encode(['success' => false, 'message' => 'El póster indicado no existe']);
             return;
+        }
+
+        // Si es Admin de evento (rol 3), verificar que el póster pertenezca a su evento
+        $auth = auth_current();
+        $rolActual = (int)($auth['rol'] ?? 0);
+        if ($rolActual === 3) {
+            $idEvAdmin = auth_id_evento_admin($conexion, $auth);
+            if ($idEvAdmin !== null) {
+                $stmtCheckP = $conexion->prepare("SELECT 1 FROM cargar_posters p WHERE p.id = ? AND (p.id_evento = ? OR EXISTS (SELECT 1 FROM poster_eventos pe WHERE pe.id_poster = p.id AND pe.id_evento = ?))");
+                if ($stmtCheckP) {
+                    $stmtCheckP->bind_param("iii", $id_poster, $idEvAdmin, $idEvAdmin);
+                    $stmtCheckP->execute();
+                    $hasPoster = $stmtCheckP->get_result()->fetch_assoc();
+                    $stmtCheckP->close();
+                    if (!$hasPoster) {
+                        http_response_code(403);
+                        echo json_encode(['success' => false, 'message' => 'No tienes permisos para asignar evaluadores a un póster de otro evento.']);
+                        return;
+                    }
+                }
+            }
         }
 
         $id_autor_poster = intval($rowP['id_usuario'] ?? 0);
