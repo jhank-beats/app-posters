@@ -51,17 +51,22 @@ src/assets/imgPosters/*
 desktop.ini
 Thumbs.db
 
-# Informes de auditoría locales (contienen hallazgos de secretos)
+# Informes y capturas locales temporales
 auditora-app.md
 auditoria-app-posters-consolidado.pdf
 .mimocode/
+qa-*.png
+docs/guia-flujo/img/
+docs/guia-flujo/img-civil/
+docs/guia-registro/img/
+docs/guia-registro/slides/
+docs/guia-registro/*.png
 
 # Docs locales / internos que no se publican al repo del servidor
 docs/LOCAL.md
 docs/SMOKE.md
 docs/SOLICITUD-TI-DOMINIO-SMTP.md
 REQUERIMIENTOS-DESPLIEGUE.md
-SEGURIDAD-CAMBIOS.txt
 PENDIENTES-DESPLIEGUE.md
 mejoras aplicativo
 nombres_separados.csv
