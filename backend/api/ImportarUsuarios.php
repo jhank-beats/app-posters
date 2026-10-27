@@ -182,6 +182,7 @@ $omitidos = 0;
 $errores = [];
 $correosVistos = [];
 $loteCorreos = [];
+$usuariosCreados = [];
 
 foreach ($lineas as $i => $linea) {
     $numFila = $i + 2; // +2: encabezado es la 1 y array_shift ya la quitó
@@ -297,6 +298,14 @@ foreach ($lineas as $i => $linea) {
         $creados++;
         $stmtIns->close();
 
+        $usuariosCreados[] = [
+            'nombre' => trim($nombres . ' ' . $apellidos),
+            'correo' => $correo,
+            'rol' => imp_etiqueta_rol($rol),
+            'carrera' => $carrera,
+            'password' => $passUsuario,
+        ];
+
         $mailInfo = imp_construir_correo_bienvenida(trim($nombres . ' ' . $apellidos), $correo, $passUsuario, $rol, $carrera);
         $loteCorreos[] = [
             'correo' => $correo,
@@ -318,7 +327,7 @@ $respuesta = [
     'omitidos' => $omitidos,
     'correos_enviados' => count($loteCorreos),
     'errores' => $errores,
-    'password_temporal' => $creados > 0 ? $passTempGlobal : null,
+    'usuarios_creados' => $usuariosCreados,
 ];
 
 responderJsonYNotificarLote($respuesta, $loteCorreos);
