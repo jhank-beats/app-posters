@@ -118,7 +118,7 @@ function correo_disparar_drenaje_cola()
 
 // Encola el correo en la tabla cola_correos (drenada por cron + disparo en vivo).
 // Si SMTP no está configurado, no encola (evita filas que nunca se envían).
-function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml)
+function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml, $dispararDrenaje = true)
 {
     global $conexion;
 
@@ -141,8 +141,9 @@ function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml)
                 $stmt->bind_param("sss", $destinatario, $asunto, $html);
                 if ($stmt->execute()) {
                     $stmt->close();
-                    // Intentar enviar de inmediato; el cron es respaldo de reintentos.
-                    correo_disparar_drenaje_cola();
+                    if ($dispararDrenaje) {
+                        correo_disparar_drenaje_cola();
+                    }
                     return true;
                 }
                 $stmt->close();
@@ -189,15 +190,23 @@ function responderJsonYNotificarLote($response, $loteCorreos = [])
     }
     echo json_encode($response);
 
-    if (is_array($loteCorreos)) {
+    if (is_array($loteCorreos) && count($loteCorreos) > 0) {
+        $encolados = 0;
         foreach ($loteCorreos as $item) {
             if (!is_array($item)) continue;
             $dest = $item['correo'] ?? $item['destinatario'] ?? null;
             $asunto = $item['asunto'] ?? null;
             $cuerpo = $item['cuerpo'] ?? $item['mensaje'] ?? null;
             if ($dest && $asunto && $cuerpo) {
-                encolarCorreoFondo($dest, $asunto, $cuerpo);
+                // Encolar sin disparar exec en cada iteración para evitar procesos concurrentes
+                if (encolarCorreoFondo($dest, $asunto, $cuerpo, false)) {
+                    $encolados++;
+                }
             }
+        }
+        // Disparar el drenaje de cola exactamente una vez para todo el lote
+        if ($encolados > 0) {
+            correo_disparar_drenaje_cola();
         }
     }
 }

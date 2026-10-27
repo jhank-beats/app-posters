@@ -1,0 +1,90 @@
+================================================================================
+GUÍA PASO A PASO: DESPLIEGUE Y ACTUALIZACIÓN DE CAMBIOS EN EL SERVIDOR (UBUNTU)
+Proyecto: Sistema de Gestión de Pósters UCC (http://172.42.0.130:5173/)
+================================================================================
+
+Este documento describe el procedimiento estándar para aplicar y poner en 
+producción cualquier actualización del repositorio GitHub en el servidor Ubuntu.
+
+--------------------------------------------------------------------------------
+REQUISITO PREVIO (EN TU COMPUTADOR LOCAL / DE DESARROLLO)
+--------------------------------------------------------------------------------
+Antes de ir al servidor, asegúrate de compilar la carpeta 'dist' localmente y 
+subirla a GitHub (ya que el servidor no tiene Node.js/npm instalado para compilar):
+
+1. En tu máquina local, compila el frontend:
+   npm run build
+
+2. Sube los cambios y la carpeta dist a GitHub:
+   git add .
+   git commit -m "feat: descripción de tus cambios"
+   git push origin main
+
+
+================================================================================
+PASOS A EJECUTAR EN EL SERVIDOR (VÍA SSH)
+================================================================================
+
+PASO 1: CONECTARSE POR SSH AL SERVIDOR
+--------------------------------------------------------------------------------
+Abre tu terminal y conéctate:
+   ssh juan@172.42.0.130
+
+Ingresa la contraseña cuando te la solicite:
+   123.456.789
+
+
+PASO 2: INGRESAR A LA CARPETA DEL PROYECTO
+--------------------------------------------------------------------------------
+Una vez dentro del servidor, dirígete a la ruta donde está alojado el proyecto:
+   cd /home/user/app-posters
+
+Verifica que estés en el directorio correcto:
+   pwd
+   (Debe mostrar: /home/user/app-posters)
+
+
+PASO 3: DESCARGAR LOS CAMBIOS DE GITHUB
+--------------------------------------------------------------------------------
+Para evitar problemas de permisos de usuario entre 'juan' y 'user', ejecuta 
+el git pull incluyendo el parámetro safe.directory en el mismo comando:
+
+   git -c safe.directory=/home/user/app-posters pull origin main
+
+* Nota: Si te llega a advertir sobre cambios locales no guardados, descártalos con:
+   git -c safe.directory=/home/user/app-posters stash
+   git -c safe.directory=/home/user/app-posters pull origin main
+
+
+PASO 4: REINICIAR EL SERVIDOR PHP (LIMPIAR CACHÉ / OPCACHE)
+--------------------------------------------------------------------------------
+Como el servidor corre con un proceso PHP interno sirviendo la carpeta 'dist' 
+y la API backend, debes reiniciar el proceso para que tome de inmediato los 
+nuevos archivos compilados y los scripts de PHP:
+
+1. Finaliza el proceso actual de PHP:
+   pkill -f "posters-front.php" || true
+
+2. Verifica si el proceso se reinicia automáticamente (vía supervisor/bucle):
+   ps aux | grep posters-front.php | grep -v grep
+
+   - Si ya aparece un nuevo número de proceso corriendo, significa que se 
+     reinició de forma automática con éxito.
+   - Si no aparece ningún proceso, levántalo manualmente en segundo plano:
+     /home/user/.local/bin/posters-front.php &
+
+
+PASO 5: VERIFICACIÓN EN EL NAVEGADOR
+--------------------------------------------------------------------------------
+1. Abre tu navegador e ingresa a:
+   http://172.42.0.130:5173/
+
+2. Presiona 'Ctrl + F5' (o 'Ctrl + Shift + R') en tu teclado para forzar al 
+   navegador a borrar la caché anterior y cargar la versión más reciente.
+
+3. Para verificar el último commit activo en el servidor por consola, puedes usar:
+   git -c safe.directory=/home/user/app-posters log -1 --oneline
+
+================================================================================
+Fin de la guía.
+================================================================================
