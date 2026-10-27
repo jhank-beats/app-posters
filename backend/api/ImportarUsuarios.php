@@ -233,15 +233,26 @@ foreach ($lineas as $i => $linea) {
     }
     $correosVistos[$correo] = true;
 
-    $stmt = $conexion->prepare("SELECT id FROM usuario WHERE correo = ? LIMIT 1");
+    $stmt = $conexion->prepare("SELECT id, id_rol, desactivado FROM usuario WHERE correo = ? LIMIT 1");
     $stmt->bind_param("s", $correo);
     $stmt->execute();
     $existe = $stmt->get_result()->fetch_assoc();
     $stmt->close();
+
+    $usuarioIdExistente = null;
     if ($existe) {
-        $omitidos++;
-        $errores[] = ['fila' => $numFila, 'motivo' => 'El correo ya existe en la plataforma.'];
-        continue;
+        $estaDesactivado = intval($existe['desactivado'] ?? 0) === 1;
+        $rolExistente = intval($existe['id_rol'] ?? 0);
+
+        // Si el usuario existe y está activo, o es un admin (rol 3 o 4), no se sobrescribe
+        if (!$estaDesactivado || in_array($rolExistente, [3, 4], true)) {
+            $omitidos++;
+            $errores[] = ['fila' => $numFila, 'motivo' => 'El correo ya existe y está activo en la plataforma.'];
+            continue;
+        }
+
+        // Si estaba desactivado (eliminado lógicamente), lo reactivamos y actualizamos sus datos
+        $usuarioIdExistente = intval($existe['id']);
     }
 
     // Generar contraseña aleatoria y hash para el usuario importado
@@ -252,7 +263,23 @@ foreach ($lineas as $i => $linea) {
     // Importados: activos de inmediato (el admin/superadmin ya los validó).
     $activo = 1;
     $desactivado = 0;
-    if ($idEvento > 0) {
+
+    if ($usuarioIdExistente !== null) {
+        // Reactivación de usuario previamente eliminado
+        if ($idEvento > 0) {
+            $stmtIns = $conexion->prepare(
+                "UPDATE usuario SET nombres = ?, apellidos = ?, `contraseña` = ?, carrera = ?, id_rol = ?, activo = ?, id_evento = ?, desactivado = ?
+                 WHERE id = ?"
+            );
+            $stmtIns->bind_param("ssssiiiii", $nombres, $apellidos, $hashUsuario, $carrera, $rol, $activo, $idEvento, $desactivado, $usuarioIdExistente);
+        } else {
+            $stmtIns = $conexion->prepare(
+                "UPDATE usuario SET nombres = ?, apellidos = ?, `contraseña` = ?, carrera = ?, id_rol = ?, activo = ?, desactivado = ?
+                 WHERE id = ?"
+            );
+            $stmtIns->bind_param("ssssiiii", $nombres, $apellidos, $hashUsuario, $carrera, $rol, $activo, $desactivado, $usuarioIdExistente);
+        }
+    } elseif ($idEvento > 0) {
         $stmtIns = $conexion->prepare(
             "INSERT INTO usuario (nombres, apellidos, correo, `contraseña`, carrera, id_rol, activo, id_evento, desactivado)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
