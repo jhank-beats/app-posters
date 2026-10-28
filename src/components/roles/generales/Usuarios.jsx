@@ -228,21 +228,71 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
     return (
         <section id="usuarios" className={limite ? "preview-usuarios" : "todos-usuarios"}>
             {cerrarTabla && <button className="cerrar-tabla" onClick={cerrarTabla}>X</button>}
-            {!limite && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h2 style={{ margin: 0 }}>Gestión de Usuarios</h2>
-                    {[3, 4, 5].includes(rolSesionActual) && (
+            {/* Encabezado con título centrado */}
+            <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
+                <h2 style={{ margin: 0, textAlign: 'center', width: '100%', fontSize: '1.6rem', color: '#132740', fontWeight: 700 }}>
+                    Gestión de Usuarios
+                </h2>
+                {!limite && [3, 4, 5].includes(rolSesionActual) && (
+                    <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>
                         <button
                             type="button"
                             className="boton-primario"
                             onClick={() => setImportarAbierto(true)}
                             title="Cargar usuarios desde un archivo CSV"
+                            style={{ margin: 0 }}
                         >
                             📥 Importar CSV
                         </button>
-                    )}
-                </div>
-            )}
+                    </div>
+                )}
+            </div>
+
+            {/* Filtros arriba de la tabla y debajo del título */}
+            <div className="filtros" style={{ marginTop: '0.5rem', marginBottom: '1.25rem', padding: 0 }}>
+                <input
+                    type="text"
+                    placeholder="Buscar por nombre, correo, carrera o evento..."
+                    value={filtroGeneral}
+                    onChange={(e) => setFiltroGeneral(e.target.value)}
+                    style={{ flex: '1 1 280px', minWidth: '220px' }}
+                />
+
+                <select
+                    value={filtroRol}
+                    onChange={(e) => setFiltroRol(e.target.value)}
+                    style={{ flex: '0 1 200px', minWidth: '160px' }}
+                >
+                    <option value="todos">Todos los roles</option>
+                    {obtenerOpcionesRolesDisponibles().map((r) => (
+                        <option key={r.value} value={String(r.value)}>{r.label}</option>
+                    ))}
+                </select>
+
+                {limite && [3, 4, 5].includes(rolSesionActual) && (
+                    <button
+                        type="button"
+                        className="boton-primario"
+                        onClick={() => setImportarAbierto(true)}
+                        title="Cargar usuarios desde un archivo CSV"
+                    >
+                        📥 Importar CSV
+                    </button>
+                )}
+
+                {limite && (
+                    <a
+                        href="#"
+                        className="ver-mas"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (verMas) verMas();
+                        }}
+                    >
+                        Ver más...
+                    </a>
+                )}
+            </div>
 
             <div className="contenedor-tabla">
               <HintScrollTabla />
@@ -362,49 +412,6 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
                         )}
                     </tbody>
                 </table>
-            </div>
-
-            <div className="filtros">
-                <input
-                    type="text"
-                    placeholder="Buscar por nombre, correo, carrera o evento..."
-                    value={filtroGeneral}
-                    onChange={(e) => setFiltroGeneral(e.target.value)}
-                />
-
-                <select
-                    value={filtroRol}
-                    onChange={(e) => setFiltroRol(e.target.value)}
-                >
-                    <option value="todos">Todos los roles</option>
-                    {obtenerOpcionesRolesDisponibles().map((r) => (
-                        <option key={r.value} value={String(r.value)}>{r.label}</option>
-                    ))}
-                </select>
-
-                {limite && [3, 4, 5].includes(rolSesionActual) && (
-                    <button
-                        type="button"
-                        className="boton-primario"
-                        onClick={() => setImportarAbierto(true)}
-                        title="Cargar usuarios desde un archivo CSV"
-                    >
-                        📥 Importar CSV
-                    </button>
-                )}
-
-                {limite && (
-                    <a
-                        href="#"
-                        className="ver-mas"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            if (verMas) verMas();
-                        }}
-                    >
-                        Ver más...
-                    </a>
-                )}
             </div>
 
             {/* Modal de edición de información de usuario */}
