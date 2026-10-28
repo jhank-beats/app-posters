@@ -671,9 +671,14 @@ function ph_asignar_evaluadores_al_subir($conexion, $id_poster, $id_evento, $id_
         return $v > 0 && $v !== $id_autor;
     })));
 
-    $patronCarrera = '%' . ($carreraClave !== '' ? $carreraClave : 'sistema') . '%';
+    $esCivil = ($carreraClave === 'civil');
     // Excluir SIEMPRE autor y profesores del póster (conflicto de intereses).
-    // Sin respaldo: si no queda nadie, no se asigna y se pide asignación manual.
+    // FILTRO ESTRICTO DE CARRERA: Civil solo con evaluadores de Civil, Sistemas solo con evaluadores de Sistemas.
+    // Sin respaldo cruzado entre carreras: si no queda nadie de esa carrera, no se asigna y se pide asignación manual.
+    $condicionCarreraSql = $esCivil
+        ? "AND (u.id_evento = 3 OR LOWER(COALESCE(u.carrera, '')) LIKE '%civil%')"
+        : "AND (u.id_evento = 1 OR LOWER(COALESCE(u.carrera, '')) LIKE '%sistema%' OR LOWER(COALESCE(u.carrera, '')) LIKE '%software%')";
+
     $sqlCand = "SELECT u.id, u.correo, u.carrera,
                        CONCAT(u.nombres, ' ', u.apellidos) AS nombre_evaluador,
                        (SELECT COUNT(*) FROM asignaciones_evaluadores ae
@@ -683,12 +688,12 @@ function ph_asignar_evaluadores_al_subir($conexion, $id_poster, $id_evento, $id_
                 WHERE (u.id_rol = 2 OR LOWER(r.nombre_rol) = 'evaluador')
                   AND u.activo = 1 AND u.desactivado = 0
                   AND u.id <> ?
+                  {$condicionCarreraSql}
                   AND NOT EXISTS (
                       SELECT 1 FROM poster_profesores pp
                       WHERE pp.id_poster = ? AND pp.id_usuario = u.id
                   )
                 ORDER BY
-                  CASE WHEN LOWER(COALESCE(u.carrera, '')) LIKE ? THEN 0 ELSE 1 END ASC,
                   carga_ronda ASC,
                   RAND()";
 
@@ -696,7 +701,7 @@ function ph_asignar_evaluadores_al_subir($conexion, $id_poster, $id_evento, $id_
     if (!$stmtCand) {
         return ['id_ronda' => $id_ronda, 'evaluadores' => [], 'notificaciones' => [], 'sin_evaluadores_disponibles' => true];
     }
-    $stmtCand->bind_param("iiis", $id_ronda, $id_autor, $id_poster, $patronCarrera);
+    $stmtCand->bind_param("iii", $id_ronda, $id_autor, $id_poster);
     $stmtCand->execute();
     $resCand = $stmtCand->get_result();
 

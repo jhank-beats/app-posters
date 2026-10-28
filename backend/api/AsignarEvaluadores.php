@@ -121,6 +121,31 @@ function obtenerEvaluadoresYAsignaciones($conexion)
                       WHERE pp.id_poster = ? AND pp.id_usuario = u.id
                   )";
 
+        // Determinar la carrera del evento al que pertenece el póster (para que solo se asignen evaluadores de esa carrera)
+        $carreraPosterNorm = '';
+        if ($id_poster > 0) {
+            $stmtCarP = $conexion->prepare(
+                "SELECT COALESCE(ev.carrera, u.carrera, '') AS carrera_ref
+                 FROM cargar_posters p
+                 LEFT JOIN eventos ev ON ev.id_evento = p.id_evento
+                 LEFT JOIN usuario u ON u.id = p.id_usuario
+                 WHERE p.id = ? LIMIT 1"
+            );
+            if ($stmtCarP) {
+                $stmtCarP->bind_param("i", $id_poster);
+                $stmtCarP->execute();
+                if ($filaCarP = $stmtCarP->get_result()->fetch_assoc()) {
+                    $cLow = mb_strtolower(trim((string)($filaCarP['carrera_ref'] ?? '')), 'UTF-8');
+                    if (strpos($cLow, 'civil') !== false) {
+                        $carreraPosterNorm = 'civil';
+                    } elseif (strpos($cLow, 'sistema') !== false || strpos($cLow, 'software') !== false) {
+                        $carreraPosterNorm = 'sistema';
+                    }
+                }
+                $stmtCarP->close();
+            }
+        }
+
         // Si es Admin de evento (rol 3), solo puede ver y asignar evaluadores de su propia carrera/evento
         $auth = auth_current();
         $rolActual = (int)($auth['rol'] ?? 0);
@@ -141,12 +166,16 @@ function obtenerEvaluadoresYAsignaciones($conexion)
                     }
                 }
             }
-
-            if ($cAdmin === 'civil') {
-                $sql .= " AND (u.id_evento = 3 OR LOWER(COALESCE(u.carrera, '')) LIKE '%civil%')";
-            } elseif ($cAdmin === 'sistema') {
-                $sql .= " AND (u.id_evento = 1 OR LOWER(COALESCE(u.carrera, '')) LIKE '%sistema%' OR LOWER(COALESCE(u.carrera, '')) LIKE '%software%')";
+            if ($cAdmin === 'civil' || $cAdmin === 'sistema') {
+                $carreraPosterNorm = $cAdmin;
             }
+        }
+
+        // Aplicar filtro estricto de carrera a los evaluadores listados (tanto para Admin como para SuperAdmin)
+        if ($carreraPosterNorm === 'civil') {
+            $sql .= " AND (u.id_evento = 3 OR LOWER(COALESCE(u.carrera, '')) LIKE '%civil%')";
+        } elseif ($carreraPosterNorm === 'sistema') {
+            $sql .= " AND (u.id_evento = 1 OR LOWER(COALESCE(u.carrera, '')) LIKE '%sistema%' OR LOWER(COALESCE(u.carrera, '')) LIKE '%software%')";
         }
 
         if (!empty($carrera)) {
@@ -304,16 +333,63 @@ function guardarAsignacion($conexion)
             return;
         }
 
-        // Verificar que los evaluadores seleccionados estén activos y no eliminados
+        // Verificar que los evaluadores seleccionados estén activos, no eliminados y pertenezcan a la misma carrera del póster
         if (!empty($evaluadores_ids)) {
+            $carreraPosterVal = '';
+            $stmtCarVal = $conexion->prepare(
+                "SELECT COALESCE(ev.carrera, u.carrera, '') AS carrera_ref
+                 FROM cargar_posters p
+                 LEFT JOIN eventos ev ON ev.id_evento = p.id_evento
+                 LEFT JOIN usuario u ON u.id = p.id_usuario
+                 WHERE p.id = ? LIMIT 1"
+            );
+            if ($stmtCarVal) {
+                $stmtCarVal->bind_param("i", $id_poster);
+                $stmtCarVal->execute();
+                if ($filaCarVal = $stmtCarVal->get_result()->fetch_assoc()) {
+                    $cLowVal = mb_strtolower(trim((string)($filaCarVal['carrera_ref'] ?? '')), 'UTF-8');
+                    if (strpos($cLowVal, 'civil') !== false) {
+                        $carreraPosterVal = 'civil';
+                    } elseif (strpos($cLowVal, 'sistema') !== false || strpos($cLowVal, 'software') !== false) {
+                        $carreraPosterVal = 'sistema';
+                    }
+                }
+                $stmtCarVal->close();
+            }
+
             $inMarcas = implode(',', array_fill(0, count($evaluadores_ids), '?'));
-            $stmtVal = $conexion->prepare("SELECT id FROM usuario WHERE id IN ({$inMarcas}) AND activo = 1 AND desactivado = 0");
+            $stmtVal = $conexion->prepare("SELECT id, carrera, id_evento FROM usuario WHERE id IN ({$inMarcas}) AND activo = 1 AND desactivado = 0");
             if ($stmtVal) {
                 $stmtVal->bind_param(str_repeat('i', count($evaluadores_ids)), ...$evaluadores_ids);
                 $stmtVal->execute();
                 $resVal = $stmtVal->get_result();
                 $activosEncontrados = [];
                 while ($rv = $resVal->fetch_assoc()) {
+                    $idEvEval = intval($rv['id_evento'] ?? 0);
+                    $cEvalLow = mb_strtolower(trim((string)($rv['carrera'] ?? '')), 'UTF-8');
+
+                    if ($carreraPosterVal === 'civil') {
+                        if ($idEvEval !== 3 && strpos($cEvalLow, 'civil') === false) {
+                            $stmtVal->close();
+                            http_response_code(400);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'No se puede asignar un evaluador de otra carrera a un póster de Ingeniería Civil.'
+                            ]);
+                            return;
+                        }
+                    } elseif ($carreraPosterVal === 'sistema') {
+                        if ($idEvEval !== 1 && strpos($cEvalLow, 'sistema') === false && strpos($cEvalLow, 'software') === false) {
+                            $stmtVal->close();
+                            http_response_code(400);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'No se puede asignar un evaluador de otra carrera a un póster de Ingeniería de Sistemas.'
+                            ]);
+                            return;
+                        }
+                    }
+
                     $activosEncontrados[] = intval($rv['id']);
                 }
                 $stmtVal->close();

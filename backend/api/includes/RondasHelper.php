@@ -758,7 +758,10 @@ function rh_reasignar_aleatorio_ronda($conexion, $id_ronda_anterior, $id_ronda_s
         $idEventoDestino = intval($filaNum['id_evento']);
         $carreraEvDestino = mb_strtolower(trim((string)$filaNum['carrera']), 'UTF-8');
     }
-    $patronCarreraDestino = strpos($carreraEvDestino, 'civil') !== false ? '%civil%' : '%sistema%';
+    $esCivilDestino = strpos($carreraEvDestino, 'civil') !== false;
+    $condicionCarreraRondaSql = $esCivilDestino
+        ? "AND (u.id_evento = 3 OR LOWER(COALESCE(u.carrera, '')) LIKE '%civil%')"
+        : "AND (u.id_evento = 1 OR LOWER(COALESCE(u.carrera, '')) LIKE '%sistema%' OR LOWER(COALESCE(u.carrera, '')) LIKE '%software%')";
 
     if ($nEvaluadores !== null && $nEvaluadores !== '') {
         $nPorPoster = max(1, min(5, intval($nEvaluadores)));
@@ -808,12 +811,13 @@ function rh_reasignar_aleatorio_ronda($conexion, $id_ronda_anterior, $id_ronda_s
 
         // Candidatos: evaluadores activos que no son el autor, no están ya asignados en esta ronda
         // y no calificaron el póster en una ronda anterior de este mismo evento.
-        // Se priorizan los evaluadores de la misma carrera/evento y menor carga en la ronda.
+        // FILTRO ESTRICTO DE CARRERA: solo evaluadores de la carrera/evento destino.
         $sql = "SELECT u.id, u.correo, CONCAT(u.nombres, ' ', u.apellidos) AS nombre,
                        (SELECT COUNT(*) FROM asignaciones_evaluadores ae2
                          WHERE ae2.id_evaluador = u.id AND ae2.id_ronda = ?) AS carga_ronda
                 FROM usuario u
                 WHERE u.id_rol = 2 AND u.activo = 1 AND u.desactivado = 0 AND u.id <> ?
+                  {$condicionCarreraRondaSql}
                   AND NOT EXISTS (
                       SELECT 1 FROM asignaciones_evaluadores ae_ya
                       WHERE ae_ya.id_poster = ? AND ae_ya.id_ronda = ? AND ae_ya.id_evaluador = u.id
@@ -828,13 +832,12 @@ function rh_reasignar_aleatorio_ronda($conexion, $id_ronda_anterior, $id_ronda_s
                       WHERE pp.id_poster = ? AND pp.id_usuario = u.id
                   )
                 ORDER BY
-                  CASE WHEN u.id_evento = ? OR LOWER(COALESCE(u.carrera, '')) LIKE ? THEN 0 ELSE 1 END ASC,
                   carga_ronda ASC,
                   RAND()
                 LIMIT ?";
         $stmt = $conexion->prepare($sql);
         $stmt->bind_param(
-            "iiiiiiiisi",
+            "iiiiiiii",
             $id_ronda_siguiente,
             $id_autor,
             $id_poster,
@@ -842,8 +845,6 @@ function rh_reasignar_aleatorio_ronda($conexion, $id_ronda_anterior, $id_ronda_s
             $id_poster,
             $idEventoDestino,
             $id_poster,
-            $idEventoDestino,
-            $patronCarreraDestino,
             $faltan
         );
         $stmt->execute();
