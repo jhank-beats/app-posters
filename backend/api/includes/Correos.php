@@ -57,6 +57,12 @@ function correo_asegurar_plantilla($asunto, $mensajeHtml)
 
 function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
 {
+    // INTERRUPTOR DE SEGURIDAD: Deshabilitar temporalmente todos los envíos de correo
+    if (correo_env('DISABLE_EMAILS', 'true') === 'true' || correo_env('CORREOS_HABILITADOS', 'false') === 'false') {
+        error_log("correo: ENVÍO DESHABILITADO POR CONFIGURACIÓN (destinatario: {$destinatario}, asunto: {$asunto})");
+        return true; // Retorna true para que la cola o el flujo no consideren que falló ni hagan reintentos
+    }
+
     error_log('correo: iniciando envío');
 
     try {
@@ -105,6 +111,11 @@ function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
 // Dispara el drenaje de cola en segundo plano (no depende solo del cron).
 function correo_disparar_drenaje_cola()
 {
+    // Si los correos están deshabilitados, no disparar drenaje
+    if (correo_env('DISABLE_EMAILS', 'true') === 'true' || correo_env('CORREOS_HABILITADOS', 'false') === 'false') {
+        return false;
+    }
+
     if (!function_exists('exec') || strpos((string)ini_get('disable_functions'), 'exec') !== false) {
         return false;
     }
@@ -121,6 +132,12 @@ function correo_disparar_drenaje_cola()
 function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml, $dispararDrenaje = true)
 {
     global $conexion;
+
+    // Si los correos están deshabilitados, ni siquiera encolar
+    if (correo_env('DISABLE_EMAILS', 'true') === 'true' || correo_env('CORREOS_HABILITADOS', 'false') === 'false') {
+        error_log("encolarCorreoFondo: correos deshabilitados temporalmente, omitiendo {$destinatario}");
+        return true;
+    }
 
     $smtpUser = correo_env('SMTP_USER', '');
     $smtpPass = correo_env('SMTP_PASS', '');

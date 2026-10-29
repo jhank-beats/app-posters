@@ -20,6 +20,14 @@ require_once __DIR__ . '/../api/includes/Auth.php';
 require_once __DIR__ . '/../api/includes/Correos.php';
 require_once __DIR__ . '/../Conexion.php';
 
+// Si los correos están deshabilitados, salir de inmediato sin drenar
+if (correo_env('DISABLE_EMAILS', 'true') === 'true' || correo_env('CORREOS_HABILITADOS', 'false') === 'false') {
+    flock($lockFp, LOCK_UN);
+    fclose($lockFp);
+    echo "[" . date('c') . "] cola_correos: envío de correos deshabilitado temporalmente.\n";
+    exit(0);
+}
+
 const LOTE = 25;
 const MAX_INTENTOS = 5;
 

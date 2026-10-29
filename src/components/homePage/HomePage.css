@@ -1502,14 +1502,23 @@
   margin-bottom: 0.6rem;
 }
 
-.footer-columna ul li a {
+.footer-columna ul li a,
+.footer-btn-link {
   text-decoration: none;
   color: #dfe5ee;
   font-size: 0.92rem;
   transition: color 0.2s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
-.footer-columna ul li a:hover {
+.footer-columna ul li a:hover,
+.footer-btn-link:hover {
   color: #80ba27;
 }
 
