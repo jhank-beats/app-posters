@@ -2,6 +2,9 @@
 // backend/api/includes/Env.php — carga backend/.env (o raíz) una sola vez.
 // Orden de precedencia: getenv / $_SERVER / $_ENV / archivo .env.
 
+// Configurar zona horaria oficial de Colombia (UTC-5)
+date_default_timezone_set('America/Bogota');
+
 function app_env_archivo()
 {
     static $cache = null;

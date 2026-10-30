@@ -19,6 +19,8 @@ if ($db === null || $user === null || $pass === null) {
 try {
     $conexion = new mysqli($host, $user, $pass, $db);
     $conexion->set_charset("utf8mb4");
+    // Forzar zona horaria de Colombia (UTC-5) en la sesión de base de datos
+    $conexion->query("SET time_zone = '-05:00'");
 } catch (Throwable $e) {
     error_log('DB connect failed: ' . $e->getMessage());
     if (!headers_sent()) {
