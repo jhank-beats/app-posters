@@ -176,7 +176,7 @@ switch ($method) {
                 if ($id_espacio !== null && $id_espacio_anterior !== $id_espacio) {
                     rh_asegurar_tabla_cambios_espacio($conexion);
                     $stmtLog = $conexion->prepare(
-                        "INSERT INTO cambios_espacio_log (id_poster, id_espacio_anterior, espacio_anterior, id_espacio_nuevo, espacio_nuevo, numero_nuevo)
+                        "INSERT INTO cambios_espacio_log (id_poster, id_espacio_anterior, nombre_espacio_anterior, id_espacio_nuevo, nombre_espacio_nuevo, numero_nuevo)
                          VALUES (?, ?, ?, ?, ?, ?)"
                     );
                     if ($stmtLog) {
@@ -381,14 +381,6 @@ function editar_espacio($conexion, $auth, $data)
         $ocupacion = intval($tmp[0] ?? 0);
         $stmtOc->close();
     }
-    if ($capacidad < $ocupacion) {
-        echo json_encode([
-            "status" => "error",
-            "message" => "La capacidad ({$capacidad}) no puede ser menor que la ocupación actual ({$ocupacion} pósters).",
-        ]);
-        return;
-    }
-
     $idEvento = intval($row['id_evento']);
     if ((int)$auth['rol'] === 4 && isset($data->id_evento) && intval($data->id_evento) > 0) {
         $idEvento = intval($data->id_evento);
@@ -397,6 +389,159 @@ function editar_espacio($conexion, $auth, $data)
     $ubicacion = $data->ubicacion_detallada ?? null;
     if ($ubicacion !== null) {
         $ubicacion = trim((string)$ubicacion);
+    }
+
+    if ($capacidad < $ocupacion) {
+        $excedentesCount = $ocupacion - $capacidad;
+
+        // Buscar espacios destino del MISMO evento (misma carrera obligatoriamente) con cupo disponible
+        $sqlLibres = "SELECT e.id_espacio, e.nombre_espacio, e.capacidad, COUNT(p.id) AS ocupados, 
+                             (e.capacidad - COUNT(p.id)) AS cupos_libres, ev.nombre_evento, ev.carrera
+                      FROM espacios_fisicos e
+                      JOIN eventos ev ON ev.id_evento = e.id_evento
+                      LEFT JOIN cargar_posters p ON e.id_espacio = p.id_espacio AND p.activo = 1
+                      WHERE e.id_evento = ? AND e.id_espacio != ?
+                      GROUP BY e.id_espacio
+                      HAVING cupos_libres > 0
+                      ORDER BY e.id_espacio ASC";
+        $stmtLib = $conexion->prepare($sqlLibres);
+        $stmtLib->bind_param("ii", $idEvento, $idEsp);
+        $stmtLib->execute();
+        $resLib = $stmtLib->get_result();
+        $espaciosDestino = [];
+        $totalLibres = 0;
+        $carreraEvento = '';
+        while ($dest = $resLib->fetch_assoc()) {
+            $dest['cupos_libres'] = intval($dest['cupos_libres']);
+            $totalLibres += $dest['cupos_libres'];
+            $carreraEvento = $dest['carrera'] ?? '';
+            $espaciosDestino[] = $dest;
+        }
+        $stmtLib->close();
+
+        $carreraEtiqueta = function_exists('ph_etiqueta_carrera') ? ph_etiqueta_carrera($carreraEvento) : $carreraEvento;
+
+        if ($totalLibres < $excedentesCount) {
+            echo json_encode([
+                "status" => "error",
+                "requiere_ampliar" => true,
+                "excedentes" => $excedentesCount,
+                "cupos_disponibles" => $totalLibres,
+                "carrera" => $carreraEvento,
+                "message" => "La capacidad ({$capacidad}) es menor que la ocupación actual ({$ocupacion} pósters). Hay {$excedentesCount} póster(es) excedente(s), pero los demás espacios de {$carreraEtiqueta} solo tienen {$totalLibres} cupo(s) disponible(s). Aumenta primero la capacidad del otro espacio de la misma carrera (ej. Piso 4) para poder transferirlos.",
+            ]);
+            return;
+        }
+
+        // Si hay cupos suficientes pero no se ha confirmado la reasignación automática
+        if (empty($data->reasignar_excedentes)) {
+            $nombresDestinos = implode(', ', array_map(function($d) {
+                return $d['nombre_espacio'] . " ({$d['cupos_libres']} cupos libres)";
+            }, $espaciosDestino));
+
+            echo json_encode([
+                "status" => "confirmar_reasignacion",
+                "requiere_confirmacion" => true,
+                "excedentes" => $excedentesCount,
+                "capacidad" => $capacidad,
+                "ocupacion" => $ocupacion,
+                "destinos" => $nombresDestinos,
+                "carrera" => $carreraEvento,
+                "message" => "La capacidad indicada ({$capacidad}) es menor que la ocupación actual ({$ocupacion} pósters). Hay {$excedentesCount} póster(es) excedente(s). ¿Deseas reducir la capacidad a {$capacidad} y transferir automáticamente los {$excedentesCount} pósters a los otros espacios de la misma carrera ({$carreraEtiqueta}): {$nombresDestinos}?",
+            ]);
+            return;
+        }
+
+        // Ejecutar la reasignación automática de los pósters excedentes
+        try {
+            $conexion->begin_transaction();
+
+            $stmtP = $conexion->prepare("SELECT id, id_usuario, titulo FROM cargar_posters WHERE id_espacio = ? AND activo = 1 ORDER BY id ASC");
+            $stmtP->bind_param("i", $idEsp);
+            $stmtP->execute();
+            $resP = $stmtP->get_result();
+            $todosPosters = [];
+            while ($pRow = $resP->fetch_assoc()) {
+                $todosPosters[] = $pRow;
+            }
+            $stmtP->close();
+
+            $postersExcedentes = array_slice($todosPosters, $capacidad);
+
+            rh_asegurar_tabla_cambios_espacio($conexion);
+            $stmtUpdPoster = $conexion->prepare("UPDATE cargar_posters SET id_espacio = ? WHERE id = ?");
+            $stmtLog = $conexion->prepare(
+                "INSERT INTO cambios_espacio_log (id_poster, id_espacio_anterior, nombre_espacio_anterior, id_espacio_nuevo, nombre_espacio_nuevo, numero_nuevo)
+                 VALUES (?, ?, ?, ?, ?, NULL)"
+            );
+
+            $idxDest = 0;
+            $reasignadosResumen = [];
+            foreach ($postersExcedentes as $pEx) {
+                while ($idxDest < count($espaciosDestino) && $espaciosDestino[$idxDest]['cupos_libres'] <= 0) {
+                    $idxDest++;
+                }
+                if ($idxDest >= count($espaciosDestino)) {
+                    throw new Exception("Capacidad insuficiente en espacios destino durante la reasignación.");
+                }
+
+                $destEsp = &$espaciosDestino[$idxDest];
+                $idNuevoEsp = intval($destEsp['id_espacio']);
+                $nombreNuevoEsp = $destEsp['nombre_espacio'];
+                $idPoster = intval($pEx['id']);
+
+                $stmtUpdPoster->bind_param("ii", $idNuevoEsp, $idPoster);
+                if (!$stmtUpdPoster->execute()) {
+                    throw new Exception("Error al actualizar espacio de póster {$idPoster}");
+                }
+
+                if ($stmtLog) {
+                    $stmtLog->bind_param("iisis", $idPoster, $idEsp, $row['nombre_espacio'], $idNuevoEsp, $nombreNuevoEsp);
+                    $stmtLog->execute();
+                }
+
+                $destEsp['cupos_libres']--;
+                $reasignadosResumen[$nombreNuevoEsp] = ($reasignadosResumen[$nombreNuevoEsp] ?? 0) + 1;
+            }
+            $stmtUpdPoster->close();
+            if ($stmtLog) $stmtLog->close();
+
+            if ($ubicacion !== null) {
+                $stmtUpd = $conexion->prepare("UPDATE espacios_fisicos SET nombre_espacio = ?, capacidad = ?, id_evento = ?, ubicacion_detallada = ? WHERE id_espacio = ?");
+                $stmtUpd->bind_param("siisi", $nombre, $capacidad, $idEvento, $ubicacion, $idEsp);
+            } else {
+                $stmtUpd = $conexion->prepare("UPDATE espacios_fisicos SET nombre_espacio = ?, capacidad = ?, id_evento = ? WHERE id_espacio = ?");
+                $stmtUpd->bind_param("siii", $nombre, $capacidad, $idEvento, $idEsp);
+            }
+            if (!$stmtUpd->execute()) {
+                $stmtUpd->close();
+                throw new Exception("No se pudo actualizar el espacio original.");
+            }
+            $stmtUpd->close();
+
+            $conexion->commit();
+
+            $partes = [];
+            foreach ($reasignadosResumen as $nEsp => $cant) {
+                $partes[] = "{$cant} a '{$nEsp}'";
+            }
+            $txtResumen = implode(', ', $partes);
+
+            echo json_encode([
+                "status" => "success",
+                "message" => "Capacidad actualizada a {$capacidad}. Se transfirieron automáticamente " . count($postersExcedentes) . " póster(es) excedente(s): {$txtResumen}.",
+                "reasignados" => count($postersExcedentes),
+            ]);
+            return;
+        } catch (Throwable $e) {
+            $conexion->rollback();
+            error_log('Error reasignando excedentes: ' . $e->getMessage());
+            echo json_encode(["status" => "error", "message" => "Error al reasignar excedentes: " . $e->getMessage()]);
+            return;
+        }
+    }
+
+    if ($ubicacion !== null) {
         $stmtUpd = $conexion->prepare("UPDATE espacios_fisicos SET nombre_espacio = ?, capacidad = ?, id_evento = ?, ubicacion_detallada = ? WHERE id_espacio = ?");
         $stmtUpd->bind_param("siisi", $nombre, $capacidad, $idEvento, $ubicacion, $idEsp);
     } else {

@@ -3,6 +3,7 @@
 // window.print(). No usa jsPDF (prohibido por la especificación).
 
 import { API_BASE } from '../../../config.js';
+import { categoriaLegible } from '../../../categorias.js';
 const escaparHtml = (valor) => String(valor ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -51,7 +52,7 @@ export const imprimirResumenRonda = (resumen, { autoPrint = true } = {}) => {
         <tr class="${p.pasa ? 'pasa' : ''}">
             <td>${i + 1}</td>
             <td><strong>${escaparHtml(p.titulo)}</strong><br/><small>${escaparHtml(p.autores || '')}</small></td>
-            <td>${escaparHtml(p.categoria || '—')}</td>
+            <td>${escaparHtml(categoriaLegible(p.categoria) || '—')}</td>
             <td>${p.promedio ?? '—'}</td>
             <td>${p.n_evaluaciones ?? 0}</td>
             <td>${p.pasa ? '✅ Pasa' : '—'}</td>

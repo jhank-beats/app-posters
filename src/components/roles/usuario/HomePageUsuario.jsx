@@ -69,8 +69,8 @@ const HomePageUsuario = () => {
                         <div className="tarjeta" onClick={() => irASeccion('posters')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('posters')}>
                             <div className="icono">📂</div>
-                            <h3>Visualizar tus Posters</h3>
-                            <p>Ver tus posters publicados</p>
+                            <h3>Tus Posters Publicados</h3>
+                            <p>Visualizar y editar tus pósters</p>
                         </div>
                         <div className="tarjeta" onClick={() => setMostrarCargarPosters(true)} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && setMostrarCargarPosters(true)}>
@@ -108,12 +108,16 @@ const HomePageUsuario = () => {
             {/* Mis Posters publicados */}
             <section id="posters" className="posters-publicados">
                 <h2>Mis Posters Publicados</h2>
+                <p style={{ textAlign: 'center', color: '#5f5e5e', maxWidth: '760px', margin: '0 auto 1.25rem', fontSize: '0.95rem' }}>
+                    Consulta el estado de tus pósters en cada ronda, notas recibidas y edita su información cuando sea necesario.
+                </p>
                 {!mostrarPosters && (
                     <MostrarPosters
                         limite={limite}
                         verMas={() => setMostrarPosters(true)}
                         soloMisPosters={true}
                         recargarClave={claveRecargaPosters}
+                        onPosterUpdated={() => setClaveRecargaPosters(k => k + 1)}
                     />
                 )}
             </section>
@@ -124,6 +128,7 @@ const HomePageUsuario = () => {
                         cerrarTabla={() => setMostrarPosters(false)} 
                         soloMisPosters={true}
                         recargarClave={claveRecargaPosters}
+                        onPosterUpdated={() => setClaveRecargaPosters(k => k + 1)}
                     />
                 </div>
             )}

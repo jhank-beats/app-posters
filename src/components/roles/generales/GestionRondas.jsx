@@ -7,6 +7,7 @@ import { descargarResumenRondaPDF } from './ResumenRondaPDF.jsx';
 import { descargarInformeRondaPDF } from './InformeCalificacionesPDF.jsx';
 import { invalidarRondasResumen } from '../../../api/rondasResumen.js';
 import { API_BASE } from '../../../config.js';
+import { categoriaLegible } from '../../../categorias.js';
 import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
 // GestionRondas — panel de admin / super admin para configurar rondas, cortar
@@ -211,6 +212,8 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
             (data.data.sugeridos || []).forEach(id => { seleccion[id] = false; });
             setCierreFinal(prev => ({
                 ...prev,
+                cupos: data.data.cupos || prev.cupos,
+                cuposPorCat: data.data.cupos_por_categoria || 3,
                 seleccion,
                 cargando: false,
                 rehaciendo: false,
@@ -219,6 +222,49 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
             }));
         } catch {
             setCierreFinal(null);
+            lanzar('error', 'Error de conexión con el servidor.');
+        }
+    };
+
+    const recalcularCorte = async (cuposValor) => {
+        if (!cierreFinal?.ronda) return;
+        const esCat = !!cierreFinal.preview?.corte_por_categoria;
+        const paramBody = {
+            accion: 'previsualizar_corte',
+            id_ronda: cierreFinal.ronda.id_ronda
+        };
+        if (esCat) {
+            paramBody.cupos_por_categoria = Math.max(1, parseInt(cuposValor, 10) || 3);
+        } else {
+            paramBody.cupos = Math.max(0, parseInt(cuposValor, 10) || 0);
+        }
+
+        setCierreFinal(prev => ({ ...prev, cargando: true }));
+        try {
+            const res = await fetch(`${API_BASE}/Rondas.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(paramBody)
+            });
+            const data = await res.json();
+            if (data.success) {
+                const seleccion = {};
+                (data.data.sugeridos || []).forEach(id => { seleccion[id] = false; });
+                setCierreFinal(prev => ({
+                    ...prev,
+                    cupos: data.data.cupos,
+                    cuposPorCat: esCat ? paramBody.cupos_por_categoria : prev.cuposPorCat,
+                    seleccion,
+                    cargando: false,
+                    preview: data.data,
+                    pendientes: data.data.pendientes || []
+                }));
+            } else {
+                setCierreFinal(prev => ({ ...prev, cargando: false }));
+                lanzar('error', data.message || 'Error al recalcular corte.');
+            }
+        } catch {
+            setCierreFinal(prev => ({ ...prev, cargando: false }));
             lanzar('error', 'Error de conexión con el servidor.');
         }
     };
@@ -678,7 +724,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                         {!esEventoCivil && (
                             <div className="barra-corte">
                                 <label className="campo-ronda">
-                                    <span>Cupos</span>
+                                    <span>{ronda.numero === 1 ? 'Cupos totales (3 por cat.)' : 'Cupos'}</span>
                                     <input
                                         type="number" min="0" className="input-filtro"
                                         value={cfg.cupos}
@@ -706,6 +752,24 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                             </div>
                         )}
 
+                        {!esEventoCivil && ronda.numero === 1 && (
+                            <div style={{
+                                background: '#eef7fa',
+                                border: '1px solid #bce1ec',
+                                borderRadius: '8px',
+                                padding: '8px 12px',
+                                margin: '8px 0 12px',
+                                fontSize: '13px',
+                                color: '#132740',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                flexWrap: 'wrap'
+                            }}>
+                                <span>🎯 <strong>Regla de clasificación Ronda 1 → Ronda 2:</strong> Pasan los <strong>3 primeros pósters por promedio de cada categoría</strong> (9 pósters en total para 3 categorías).</span>
+                            </div>
+                        )}
+
                         <div className="contenedor-tabla">
                           <HintScrollTabla />
                             <table>
@@ -713,6 +777,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                     <tr>
                                         <th>#</th>
                                         <th>Póster</th>
+                                        <th>Categoría</th>
                                         <th>Promedio</th>
                                         <th>Evaluaciones</th>
                                         <th>Estado</th>
@@ -722,7 +787,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                 </thead>
                                 <tbody>
                                     {ranking.length === 0 && (
-                                        <tr><td colSpan={7} style={{ textAlign: 'center' }}>No hay pósters en esta ronda.</td></tr>
+                                        <tr><td colSpan={8} style={{ textAlign: 'center' }}>No hay pósters en esta ronda.</td></tr>
                                     )}
                                     {ranking.map((fila, indice) => (
                                         <tr key={fila.id_poster}>
@@ -730,6 +795,16 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                             <td>
                                                 <strong style={{ color: '#132740' }}>{fila.titulo}</strong>
                                                 <div className="subtexto-celda">{fila.autores}{fila.nombre_autor ? ` · ${fila.nombre_autor}` : ''}</div>
+                                            </td>
+                                            <td>
+                                                <span className="badge-rol rol-3" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                                                    {categoriaLegible(fila.categoria) || '—'}
+                                                </span>
+                                                {fila.posicion_categoria && (
+                                                    <div className="subtexto-celda" style={{ fontWeight: 600, color: fila.posicion_categoria <= 3 ? '#28a745' : '#5f5e5e' }}>
+                                                        #{fila.posicion_categoria} en categoría
+                                                    </div>
+                                                )}
                                             </td>
                                             <td>
                                                 <span className="promedio-ronda">{fila.promedio ?? '—'}</span>
@@ -744,7 +819,9 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                             <td>
                                                 {fila.seleccionado
                                                     ? <span className="badge-rol rol-2">Seleccionado</span>
-                                                    : <span className="subtexto-celda">—</span>}
+                                                    : (fila.en_corte_categoria && abierta
+                                                        ? <span className="badge-rol rol-4" title="Clasifica entre los 3 primeros de su categoría">En corte (Top 3 cat.)</span>
+                                                        : <span className="subtexto-celda">—</span>)}
                                             </td>
                                             <td>
                                                 {fila.lugar
@@ -964,15 +1041,48 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                 {!cierreFinal.cargando && (
                                     <>
                                         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '10px' }}>
-                                            <label className="campo-ronda" style={{ flex: '1 1 240px', maxWidth: '300px' }}>
-                                                <span>Cupos sugeridos</span>
-                                                <input
-                                                    type="number" min="0" className="input-filtro"
-                                                    value={cierreFinal.cupos}
-                                                    onChange={(e) => setCierreFinal(prev => ({ ...prev, cupos: e.target.value }))}
-                                                />
-                                            </label>
-                                            <label className="campo-ronda" style={{ flex: '1 1 240px', maxWidth: '300px' }}>
+                                            {cierreFinal.preview?.corte_por_categoria ? (
+                                                <>
+                                                    <label className="campo-ronda" style={{ flex: '1 1 180px', maxWidth: '220px' }}>
+                                                        <span>Cupos por categoría</span>
+                                                        <input
+                                                            type="number" min="1" max="20" className="input-filtro"
+                                                            value={cierreFinal.cuposPorCat ?? 3}
+                                                            onChange={(e) => setCierreFinal(prev => ({ ...prev, cuposPorCat: e.target.value }))}
+                                                        />
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        className="boton-secundario"
+                                                        style={{ minHeight: '38px', padding: '0 14px', marginBottom: '2px' }}
+                                                        onClick={() => recalcularCorte(cierreFinal.cuposPorCat ?? 3)}
+                                                        title="Recalcular los mejores por promedio de cada categoría con estos cupos"
+                                                    >
+                                                        🔄 Recalcular sugeridos
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <label className="campo-ronda" style={{ flex: '1 1 200px', maxWidth: '260px' }}>
+                                                        <span>Cupos sugeridos</span>
+                                                        <input
+                                                            type="number" min="0" className="input-filtro"
+                                                            value={cierreFinal.cupos}
+                                                            onChange={(e) => setCierreFinal(prev => ({ ...prev, cupos: e.target.value }))}
+                                                        />
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        className="boton-secundario"
+                                                        style={{ minHeight: '38px', padding: '0 14px', marginBottom: '2px' }}
+                                                        onClick={() => recalcularCorte(cierreFinal.cupos)}
+                                                        title="Recalcular sugeridos según los cupos"
+                                                    >
+                                                        🔄 Recalcular
+                                                    </button>
+                                                </>
+                                            )}
+                                            <label className="campo-ronda" style={{ flex: '1 1 220px', maxWidth: '280px' }}>
                                                 <span>Evaluadores por póster (siguiente)</span>
                                                 <input
                                                     type="number" min="1" max="5" className="input-filtro"
@@ -981,6 +1091,37 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                                 />
                                             </label>
                                         </div>
+
+                                        {cierreFinal.preview?.corte_por_categoria && (
+                                            <div style={{
+                                                background: '#eef7fa',
+                                                border: '1px solid #bce1ec',
+                                                borderRadius: '8px',
+                                                padding: '8px 12px',
+                                                marginBottom: '10px',
+                                                fontSize: '13px',
+                                                color: '#132740'
+                                            }}>
+                                                🎯 <strong>Corte por categoría:</strong> Se sugieren automáticamente los <strong>3 primeros pósters por promedio</strong> de cada categoría (hasta 9 pósters en 3 categorías).
+                                            </div>
+                                        )}
+
+                                        {cierreFinal.preview?.resumen_categorias && Object.keys(cierreFinal.preview.resumen_categorias).length > 0 && (
+                                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                                                {Object.entries(cierreFinal.preview.resumen_categorias).map(([catKey, catInf]) => (
+                                                    <span
+                                                        key={catKey}
+                                                        className="badge-rol rol-3"
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', fontSize: '12px' }}
+                                                    >
+                                                        <strong>{categoriaLegible(catKey)}:</strong>
+                                                        <span>{catInf.clasificados} sugeridos (de {catInf.total})</span>
+                                                        {catInf.empate && <strong style={{ color: '#d9534f' }}>⚠️ Empate</strong>}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         <p className="subtexto-celda" style={{ marginBottom: '10px' }}>
                                             La nota que verá el autor es el <strong>promedio entre todos los evaluadores</strong> de cada póster.
                                         </p>
@@ -1013,6 +1154,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                                         <tr>
                                                             <th>Pasar</th>
                                                             <th>Póster</th>
+                                                            <th>Categoría</th>
                                                             <th>Promedio</th>
                                                             <th>Evaluaciones</th>
                                                         </tr>
@@ -1031,6 +1173,16 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                                                 <td>
                                                                     <strong style={{ color: '#132740' }}>{fila.titulo}</strong>
                                                                     <div className="subtexto-celda">{fila.autores}</div>
+                                                                </td>
+                                                                <td>
+                                                                    <span className="badge-rol rol-3" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                                                                        {categoriaLegible(fila.categoria) || '—'}
+                                                                    </span>
+                                                                    {fila.posicion_categoria && (
+                                                                        <div className="subtexto-celda" style={{ fontWeight: 600, color: fila.posicion_categoria <= 3 ? '#28a745' : '#5f5e5e' }}>
+                                                                            #{fila.posicion_categoria} en categoría
+                                                                        </div>
+                                                                    )}
                                                                 </td>
                                                                 <td><span className="promedio-ronda">{fila.promedio ?? '—'}</span></td>
                                                                 <td>{fila.n_evaluaciones}</td>

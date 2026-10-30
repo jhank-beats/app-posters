@@ -234,13 +234,44 @@ function getDetalleRonda($auth)
     $id_ronda_sel = idSeleccionDeRonda($ronda);
     $filas = rh_estadisticas_ronda($conexion, $ronda, $id_ronda_sel, intval($ronda['numero']) > 1);
 
+    $carrera = mb_strtolower((string)($ronda['carrera'] ?? ''), 'UTF-8');
+    $esCivil = strpos($carrera, 'civil') !== false;
+    $esSistemasRonda1 = (!$esCivil && intval($ronda['numero']) === 1);
+
     $cupos = $ronda['cupos_seleccion'] === null ? null : intval($ronda['cupos_seleccion']);
     $premios = intval($ronda['premios']);
     $empateCorte = ['empate' => false, 'motivo_empate' => ''];
-    if ($cupos !== null && $cupos > 0) {
+    $resumenCategorias = [];
+
+    if ($esSistemasRonda1) {
+        $cuposPorCat = 3;
+        $previa = rh_previsualizar_top_por_categoria($filas, $cuposPorCat);
+        $empateCorte = ['empate' => $previa['empate'], 'motivo_empate' => $previa['motivo_empate']];
+        $resumenCategorias = $previa['resumen_categorias'];
+
+        // Enriquecer $filas con posicion_categoria y en_corte_categoria para la UI
+        $mapaCat = [];
+        foreach ($previa['lista_completa'] as $item) {
+            $mapaCat[intval($item['id_poster'])] = $item;
+        }
+        foreach ($filas as &$f) {
+            $idP = intval($f['id_poster']);
+            if (isset($mapaCat[$idP])) {
+                $f['posicion_categoria'] = $mapaCat[$idP]['posicion_categoria'];
+                $f['en_corte_categoria'] = !empty($mapaCat[$idP]['en_corte']);
+                $f['empate_categoria'] = !empty($mapaCat[$idP]['empate']);
+            } else {
+                $f['posicion_categoria'] = null;
+                $f['en_corte_categoria'] = false;
+                $f['empate_categoria'] = false;
+            }
+        }
+        unset($f);
+    } elseif ($cupos !== null && $cupos > 0) {
         $previa = rh_previsualizar_top($filas, $cupos);
         $empateCorte = ['empate' => $previa['empate'], 'motivo_empate' => $previa['motivo_empate']];
     }
+
     $empatePodio = ['empate' => false, 'motivo_empate' => ''];
     if ($premios > 0) {
         $previaPodio = rh_previsualizar_top($filas, $premios);
@@ -274,6 +305,9 @@ function getDetalleRonda($auth)
                 'estado' => $ronda['estado'],
                 'fecha_inicio' => $ronda['fecha_inicio'],
                 'fecha_cierre' => $ronda['fecha_cierre'],
+                'carrera' => $ronda['carrera'] ?? 'sistemas',
+                'corte_por_categoria' => $esSistemasRonda1,
+                'cupos_por_categoria' => $esSistemasRonda1 ? 3 : null,
                 'cupos_seleccion' => $ronda['cupos_seleccion'] === null ? null : intval($ronda['cupos_seleccion']),
                 'premios' => intval($ronda['premios']),
                 'corte_confirmado' => intval($ronda['corte_confirmado'] ?? 0),
@@ -281,6 +315,7 @@ function getDetalleRonda($auth)
                 'codigo_evento' => $ronda['codigo_evento'],
                 'id_ronda_seleccion' => $id_ronda_sel,
             ],
+            'resumen_categorias' => $resumenCategorias,
             'ranking' => $filas,
             'empate_corte' => $empateCorte,
             'empate_podio' => $empatePodio,
@@ -619,6 +654,11 @@ function crearRonda($auth, $datos)
     }
     if ($numero > 127) rh_error(400, 'El evento ya tiene demasiadas rondas.', 'parametros_invalidos');
 
+    // Para Ronda 1 de Sistemas, por defecto clasifican 9 pósters (3 por categoría).
+    if ($cupos === null && $numero === 1 && !$esEventoCivil) {
+        $cupos = 9;
+    }
+
     $id_creador = intval($auth['id']);
     $sql = "INSERT INTO rondas (id_evento, numero, nombre, estado, fecha_inicio, cupos_seleccion, premios, creado_por)
             VALUES (?, ?, ?, 'abierta', NOW(), ?, ?, ?)";
@@ -830,6 +870,9 @@ function cerrarYPasar($auth, $datos)
     }
 
     $cupos = isset($datos['cupos']) ? intval($datos['cupos']) : intval($ronda['cupos_seleccion'] ?? 0);
+    if ($cupos <= 0) {
+        $cupos = count($seleccionados);
+    }
     if ($cupos < 0 || $cupos > 500) rh_error(400, 'Los cupos deben estar entre 0 y 500.', 'parametros_invalidos');
 
     $nombre_siguiente = trim((string)($datos['nombre_siguiente'] ?? ''));
@@ -1057,24 +1100,43 @@ function previsualizarCorte($auth, $datos)
     global $conexion;
     $ronda = rh_exigir_ronda($conexion, $datos['id_ronda'] ?? 0);
 
-    $cupos = isset($datos['cupos']) ? intval($datos['cupos']) : intval($ronda['cupos_seleccion'] ?? 0);
-    if ($cupos < 0 || $cupos > 500) rh_error(400, 'Los cupos deben estar entre 0 y 500.', 'parametros_invalidos');
+    $carrera = mb_strtolower((string)($ronda['carrera'] ?? ''), 'UTF-8');
+    $esCivil = strpos($carrera, 'civil') !== false;
+    $esSistemasRonda1 = (!$esCivil && intval($ronda['numero']) === 1);
 
     $filas = rh_estadisticas_ronda($conexion, $ronda, idSeleccionDeRonda($ronda), intval($ronda['numero']) > 1);
-    $previa = rh_previsualizar_top($filas, $cupos);
 
-    // Pósters sin calificar en esta ronda: se av ANTES de cerrar (mejora 2026-10).
+    if ($esSistemasRonda1) {
+        $cuposPorCat = isset($datos['cupos_por_categoria']) ? intval($datos['cupos_por_categoria']) : 3;
+        if ($cuposPorCat <= 0) $cuposPorCat = 3;
+        $previa = rh_previsualizar_top_por_categoria($filas, $cuposPorCat);
+    } else {
+        $cupos = isset($datos['cupos']) ? intval($datos['cupos']) : intval($ronda['cupos_seleccion'] ?? 0);
+        if ($cupos < 0 || $cupos > 500) rh_error(400, 'Los cupos deben estar entre 0 y 500.', 'parametros_invalidos');
+        $previa = rh_previsualizar_top($filas, $cupos);
+    }
+
+    // Pósters sin calificar en esta ronda: se avisa ANTES de cerrar (mejora 2026-10).
     $pendientes = rh_pendientes_de_ronda($conexion, $ronda);
 
     rh_exito([
         'data' => [
-            'ronda' => ['id_ronda' => intval($ronda['id_ronda']), 'numero' => intval($ronda['numero']), 'nombre' => $ronda['nombre']],
+            'ronda' => [
+                'id_ronda' => intval($ronda['id_ronda']),
+                'numero' => intval($ronda['numero']),
+                'nombre' => $ronda['nombre'],
+                'carrera' => $ronda['carrera'] ?? 'sistemas',
+                'corte_por_categoria' => $esSistemasRonda1,
+            ],
+            'corte_por_categoria' => $esSistemasRonda1,
+            'cupos_por_categoria' => $esSistemasRonda1 ? ($previa['cupos_por_categoria'] ?? 3) : null,
             'cupos' => $previa['cupos'],
             'total_con_nota' => $previa['total_con_nota'],
             'sugeridos' => $previa['sugeridos'],
             'empate' => $previa['empate'],
             'motivo_empate' => $previa['motivo_empate'],
             'lista' => $previa['lista'],
+            'resumen_categorias' => $previa['resumen_categorias'] ?? [],
             'pendientes' => $pendientes,
             'pendientes_total' => count($pendientes),
         ],

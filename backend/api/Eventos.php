@@ -133,10 +133,11 @@ switch ($method) {
 
                 // Crear Ronda 1 automáticamente para el nuevo evento con criterios base
                 $nombreRonda1 = 'Ronda 1 · Evaluación inicial';
-                $stmtR = $conexion->prepare("INSERT INTO rondas (id_evento, numero, nombre, estado, fecha_inicio, cupos_seleccion, premios, creado_por) VALUES (?, 1, ?, 'abierta', NOW(), 5, 3, ?)");
+                $cuposR1 = (strpos(mb_strtolower((string)$carrera, 'UTF-8'), 'civil') !== false) ? 5 : 9;
+                $stmtR = $conexion->prepare("INSERT INTO rondas (id_evento, numero, nombre, estado, fecha_inicio, cupos_seleccion, premios, creado_por) VALUES (?, 1, ?, 'abierta', NOW(), ?, 3, ?)");
                 if ($stmtR) {
                     $idCreador = intval($auth['id']);
-                    $stmtR->bind_param("isi", $idNuevoEv, $nombreRonda1, $idCreador);
+                    $stmtR->bind_param("isii", $idNuevoEv, $nombreRonda1, $cuposR1, $idCreador);
                     if ($stmtR->execute()) {
                         $idRondaNueva = intval($conexion->insert_id);
                         rh_copiar_criterios($conexion, 1, $idRondaNueva);
@@ -222,9 +223,10 @@ switch ($method) {
 
                 if (!$tieneRonda) {
                     $idCreador = intval($auth['id']);
-                    $stmtR1 = $conexion->prepare("INSERT INTO rondas (id_evento, numero, nombre, estado, fecha_inicio, cupos_seleccion, premios, creado_por) VALUES (?, 1, 'Ronda 1 · Evaluación inicial', 'abierta', NOW(), 5, 3, ?)");
+                    $cuposR1 = (strpos(mb_strtolower((string)$carreraEv, 'UTF-8'), 'civil') !== false) ? 5 : 9;
+                    $stmtR1 = $conexion->prepare("INSERT INTO rondas (id_evento, numero, nombre, estado, fecha_inicio, cupos_seleccion, premios, creado_por) VALUES (?, 1, 'Ronda 1 · Evaluación inicial', 'abierta', NOW(), ?, 3, ?)");
                     if ($stmtR1) {
-                        $stmtR1->bind_param("ii", $id_evento, $idCreador);
+                        $stmtR1->bind_param("iii", $id_evento, $cuposR1, $idCreador);
                         if ($stmtR1->execute()) {
                             $idRondaNueva = intval($conexion->insert_id);
                             rh_copiar_criterios($conexion, 1, $idRondaNueva);

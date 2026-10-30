@@ -5,6 +5,7 @@ import DetallesCalificacionModal from './DetallesCalificacionModal.jsx';
 import ModalEvaluacion from './ModalEvaluacion.jsx';
 import TarjetaPosterQR from './TarjetaPosterQR.jsx';
 import VistaPreviaPoster from './VistaPreviaPoster.jsx';
+import EditarPoster from './EditarPoster.jsx';
 import { imprimirCertificados } from './CertificadoPremio.jsx';
 import { obtenerRondasResumen } from '../../../api/rondasResumen.js';
 import { API_BASE, urlArchivo } from '../../../config.js';
@@ -66,12 +67,13 @@ const descargarDiploma = (poster, rondaEspecifica = null) => {
     });
 };
 
-const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = false, soloAsignados = false, idEvaluador = null, recargarClave = 0, idRondaInicial = '', onRondaChange = null }) => {
+const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = false, soloAsignados = false, idEvaluador = null, recargarClave = 0, idRondaInicial = '', onRondaChange = null, onPosterUpdated = null }) => {
     const [posters, setPosters] = useState([]);
     const [criterios, setCriterios] = useState([]);
     const [rondas, setRondas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [posterEnVista, setPosterEnVista] = useState(null);
+    const [posterAEditar, setPosterAEditar] = useState(null);
     const [filtro, setFiltro] = useState("");
 
     // Filtros de ronda (§6.2)
@@ -396,6 +398,16 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
     const mostrarRondasUsuario = soloMisPosters;
     const esVistaUsuario = soloMisPosters || (!esEvaluador && !esAdminOSuper && (idRol === 1 || nombreRol === 'usuario'));
 
+    const puedeEditarPoster = (poster) => {
+        if (!poster) return false;
+        if (soloMisPosters) return true;
+        if (idUsuarioActual && String(poster.id_usuario) === String(idUsuarioActual)) return true;
+        if (esAdminOSuper) return true;
+        return false;
+    };
+
+    const mostrarAcciones = esAdminOSuper || soloMisPosters;
+
     const contarColumnas = () => {
         let total = 8; // Título, Autores, Profesores/Materias, Evento, Categoría, Ubicación, Archivo, QR
         if (mostrarRondasUsuario) total += 1;
@@ -410,7 +422,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             if (!soloMisPosters) total += 1; // Usuario
         }
         if (esAdminOSuper || esEvaluador) total += 1; // Nota promedio
-        if (esAdminOSuper) total += 1; // Acciones
+        if (mostrarAcciones) total += 1; // Acciones
         return total;
     };
 
@@ -470,7 +482,7 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
 
                             {!esEvaluador && <th>Descripción</th>}
                             {!esEvaluador && !soloMisPosters && <th>Usuario</th>}
-                            {esAdminOSuper && <th>Acciones</th>}
+                            {mostrarAcciones && <th>Acciones</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -780,14 +792,29 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                                         {!esEvaluador && <td className="descripcion-celda">{poster.descripcion}</td>}
                                         {!esEvaluador && !soloMisPosters && <td>{poster.nombre_usuario || 'Sin usuario'}</td>}
 
-                                        {esAdminOSuper && (
+                                        {mostrarAcciones && (
                                             <td>
-                                                <button
-                                                    className="btn-accion-tabla btn-asignar"
-                                                    onClick={() => setPosterAAsignar(poster)}
-                                                >
-                                                    👥 Asignar Evaluador
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                                    {puedeEditarPoster(poster) && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn-accion-tabla btn-editar-poster"
+                                                            title="Editar los datos del póster publicado"
+                                                            onClick={() => setPosterAEditar(poster)}
+                                                        >
+                                                            ✏️ Editar
+                                                        </button>
+                                                    )}
+                                                    {esAdminOSuper && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn-accion-tabla btn-asignar"
+                                                            onClick={() => setPosterAAsignar(poster)}
+                                                        >
+                                                            👥 Asignar Evaluador
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         )}
                                     </tr>
@@ -887,7 +914,30 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             </div>
 
             {posterEnVista && (
-                <VistaPreviaPoster poster={posterEnVista} cerrarModal={() => setPosterEnVista(null)} />
+                <VistaPreviaPoster
+                    poster={posterEnVista}
+                    cerrarModal={() => setPosterEnVista(null)}
+                    puedeEditar={puedeEditarPoster(posterEnVista)}
+                    onEditar={() => {
+                        const p = posterEnVista;
+                        setPosterEnVista(null);
+                        setPosterAEditar(p);
+                    }}
+                />
+            )}
+
+            {posterAEditar && (
+                <div className="modal">
+                    <EditarPoster
+                        poster={posterAEditar}
+                        cerrarModal={() => setPosterAEditar(null)}
+                        alGuardarExitoso={() => {
+                            setPosterAEditar(null);
+                            cargarCriteriosYPosters();
+                            if (onPosterUpdated) onPosterUpdated();
+                        }}
+                    />
+                </div>
             )}
 
             {posterAAsignar && (

@@ -138,10 +138,40 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
                 setMensaje({ tipo: 'error', texto: 'Error de formato en el servidor' });
                 return;
             }
+            if (data.status === 'confirmar_reasignacion' || data.requiere_confirmacion) {
+                const confirmado = window.confirm(data.message);
+                if (confirmado) {
+                    const cuerpoReasignar = {
+                        accion: 'editar_espacio',
+                        id_espacio: editando.id_espacio,
+                        nombre_espacio: nombreEspacio.trim(),
+                        capacidad: parseInt(capacidad, 10),
+                        reasignar_excedentes: true,
+                    };
+                    if (esSuperAdmin && idEventoSeleccionado) {
+                        cuerpoReasignar.id_evento = parseInt(idEventoSeleccionado, 10);
+                    }
+                    const resReasig = await fetch(`${API_BASE}/Espacios.php`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify(cuerpoReasignar)
+                    });
+                    const dataReasig = await resReasig.json();
+                    if (dataReasig.status === 'success' || dataReasig.success) {
+                        setMensaje({ tipo: 'exito', texto: dataReasig.message });
+                        cerrarFormulario();
+                        cargarEspacios();
+                    } else {
+                        setMensaje({ tipo: 'error', texto: dataReasig.message || 'Error al reasignar excedentes' });
+                    }
+                }
+                return;
+            }
+
             if (data.status === 'success' || data.success) {
                 setMensaje({
                     tipo: 'exito',
-                    texto: editando ? 'Espacio actualizado exitosamente' : 'Espacio físico creado exitosamente'
+                    texto: editando ? (data.message || 'Espacio actualizado exitosamente') : 'Espacio físico creado exitosamente'
                 });
                 cerrarFormulario();
                 cargarEspacios();

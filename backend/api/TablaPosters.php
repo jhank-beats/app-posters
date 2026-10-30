@@ -22,7 +22,7 @@
 // exigen sesión y verifican la elegibilidad en el servidor.
 
 require_once __DIR__ . '/includes/Auth.php';
-cors_headers("GET, PUT, DELETE, OPTIONS");
+cors_headers("GET, POST, PUT, DELETE, OPTIONS");
 
 include '../Conexion.php';
 include_once __DIR__ . '/includes/Correos.php';
@@ -36,6 +36,7 @@ switch ($method) {
     case 'GET':
         traerPosters();
         break;
+    case 'POST':
     case 'PUT':
         require_login();
         modificarPoster();
@@ -525,7 +526,14 @@ function modificarPoster()
 {
     global $conexion;
 
-    $data = json_decode(file_get_contents('php://input'), true);
+    // Detectar si los datos vienen como JSON o FormData
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+    if (stripos($contentType, 'application/json') !== false) {
+        $data = json_decode(file_get_contents('php://input'), true);
+    } else {
+        $data = $_POST;
+    }
+
     if (!is_array($data)) {
         echo json_encode(["success" => false, "status" => "error", "message" => "Datos inválidos"]);
         return;
@@ -562,6 +570,29 @@ function modificarPoster()
         return;
     }
 
+    // Validación opcional de nuevo archivo adjunto (reemplazo de póster)
+    $nuevoHashArchivo = null;
+    $nuevaClaveArchivo = null;
+    if (isset($_FILES['archivo']) && $_FILES['archivo']['error'] === UPLOAD_ERR_OK) {
+        $rutaTemporal = $_FILES['archivo']['tmp_name'];
+        $nombreOriginal = basename((string)$_FILES['archivo']['name']);
+        $validacionArchivo = archivos_validar_subida($rutaTemporal, $nombreOriginal, 10485760);
+        if (!$validacionArchivo['ok']) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => $validacionArchivo['error']]);
+            return;
+        }
+        $extensionArchivo = $validacionArchivo['ext'];
+        $nuevoHashArchivo = is_file($rutaTemporal) ? hash_file('sha256', $rutaTemporal) : null;
+        $nuevaClaveArchivo = archivos_nueva_clave($extensionArchivo);
+        $dirSubidas = archivos_asegurar_dir();
+        $destino = $dirSubidas . '/' . $nuevaClaveArchivo;
+        if (!move_uploaded_file($rutaTemporal, $destino)) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'No se pudo guardar el archivo actualizado en el servidor.']);
+            return;
+        }
+        archivos_generar_miniatura($nuevaClaveArchivo);
+    }
+
     // Obtener el evento actual del póster para acotar el chequeo de duplicados
     $idEventoPoster = ph_evento_activo($conexion);
     $stmtEv = $conexion->prepare("SELECT id_evento FROM cargar_posters WHERE id = ? LIMIT 1");
@@ -585,6 +616,7 @@ function modificarPoster()
                 'descripcion' => $descripcion,
                 'autores' => $autores,
                 'palabrasClave' => $palabrasClave,
+                'hash_archivo' => $nuevoHashArchivo,
                 'id_evento' => $idEventoPoster,
                 'excluir_id' => $id,
                 'bloquear_filas' => true,
@@ -602,12 +634,22 @@ function modificarPoster()
             }
         }
 
-        $sql = "UPDATE cargar_posters SET titulo = ?, autores = ?, descripcion = ?, categoria = ?, palabrasClave = ? WHERE id = ?";
-        $sentencia = $conexion->prepare($sql);
-        if (!$sentencia) {
-            throw new Exception("No se pudo preparar la actualización del póster.");
+        if ($nuevaClaveArchivo !== null) {
+            $sql = "UPDATE cargar_posters SET titulo = ?, autores = ?, descripcion = ?, categoria = ?, palabrasClave = ?, ruta_imagen = ?, hash_archivo = ? WHERE id = ?";
+            $sentencia = $conexion->prepare($sql);
+            if (!$sentencia) {
+                throw new Exception("No se pudo preparar la actualización del póster con archivo.");
+            }
+            $sentencia->bind_param("sssssssi", $titulo, $autores, $descripcion, $categoria, $palabrasClave, $nuevaClaveArchivo, $nuevoHashArchivo, $id);
+        } else {
+            $sql = "UPDATE cargar_posters SET titulo = ?, autores = ?, descripcion = ?, categoria = ?, palabrasClave = ? WHERE id = ?";
+            $sentencia = $conexion->prepare($sql);
+            if (!$sentencia) {
+                throw new Exception("No se pudo preparar la actualización del póster.");
+            }
+            $sentencia->bind_param("sssssi", $titulo, $autores, $descripcion, $categoria, $palabrasClave, $id);
         }
-        $sentencia->bind_param("sssssi", $titulo, $autores, $descripcion, $categoria, $palabrasClave, $id);
+
         if (!$sentencia->execute()) {
             $err = $sentencia->error;
             $sentencia->close();
@@ -649,9 +691,9 @@ function modificarPoster()
 
         $conexion->commit();
 
-        // Notificar al autor que el admin modificó su póster (tras responder)
+        // Notificar al autor de la actualización (diferenciando si fue el autor o el admin)
         $destPos = null; $asuntoPos = null; $mensajePos = null;
-        $sqlAut = "SELECT u.correo, CONCAT(u.nombres, ' ', u.apellidos) AS nombre_autor FROM cargar_posters p JOIN usuario u ON p.id_usuario = u.id WHERE p.id = ?";
+        $sqlAut = "SELECT u.id AS id_usuario_autor, u.correo, CONCAT(u.nombres, ' ', u.apellidos) AS nombre_autor FROM cargar_posters p JOIN usuario u ON p.id_usuario = u.id WHERE p.id = ?";
         $stmtAut = $conexion->prepare($sqlAut);
         $stmtAut->bind_param("i", $id);
         $stmtAut->execute();
@@ -663,8 +705,17 @@ function modificarPoster()
             $categoriaE = rh_escapar($categoria);
             $palabrasE = rh_escapar($palabrasClave);
             $destPos = $rowAut['correo'];
-            $asuntoPos = "Tu póster ha sido modificado por el administrador";
-            $mensajePos = "<h2>Hola, " . rh_escapar($rowAut['nombre_autor']) . "!</h2><p>Tu póster <strong>'{$tituloE}'</strong> ha sido modificado por el administrador.</p><p>Datos actualizados:<br>Título: {$tituloE}<br>Autores: {$autoresE}<br>Descripción: {$descripcionE}<br>Categoría: {$categoriaE}<br>Palabras clave: {$palabrasE}</p>";
+
+            $authModificador = auth_current();
+            $esPropioAutor = $authModificador && (intval($authModificador['id']) === intval($rowAut['id_usuario_autor']));
+
+            if ($esPropioAutor) {
+                $asuntoPos = "Has actualizado tu póster exitosamente";
+                $mensajePos = "<h2>Hola, " . rh_escapar($rowAut['nombre_autor']) . "!</h2><p>Has actualizado los datos de tu póster <strong>'{$tituloE}'</strong> exitosamente en el sistema.</p><p>Datos actualizados:<br>Título: {$tituloE}<br>Autores: {$autoresE}<br>Descripción: {$descripcionE}<br>Categoría: {$categoriaE}<br>Palabras clave: {$palabrasE}</p>";
+            } else {
+                $asuntoPos = "Tu póster ha sido modificado por el administrador";
+                $mensajePos = "<h2>Hola, " . rh_escapar($rowAut['nombre_autor']) . "!</h2><p>Tu póster <strong>'{$tituloE}'</strong> ha sido modificado por el administrador.</p><p>Datos actualizados:<br>Título: {$tituloE}<br>Autores: {$autoresE}<br>Descripción: {$descripcionE}<br>Categoría: {$categoriaE}<br>Palabras clave: {$palabrasE}</p>";
+            }
         }
         $stmtAut->close();
         responderJsonYNotificar([

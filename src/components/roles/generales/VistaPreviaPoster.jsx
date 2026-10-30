@@ -5,7 +5,7 @@ import './roles.css';
 import { urlArchivo as resolverUrlArchivo } from '../../../config.js';
 import { categoriaLegible } from '../../../categorias.js';
 
-const VistaPreviaPoster = ({ poster, cerrarModal }) => {
+const VistaPreviaPoster = ({ poster, cerrarModal, puedeEditar = false, onEditar = null }) => {
     const urlArchivo = resolverUrlArchivo(poster?.imagen);
     const esPdf = (poster?.imagen || '').toLowerCase().endsWith('.pdf');
 
@@ -64,17 +64,30 @@ const VistaPreviaPoster = ({ poster, cerrarModal }) => {
                     <span className="formularios-eyebrow">Vista previa del póster</span>
                     <h2 className="vista-previa-titulo">{poster.titulo || 'Póster sin título'}</h2>
 
-                    <div className="vista-previa-badges">
-                        {poster.nombre_evento && (
-                            <span className="badge-evento">
-                                <span className="badge-evento-icono" aria-hidden="true">🎓</span>
-                                <span className="badge-evento-texto">
-                                    {poster.nombre_evento}
-                                    {poster.codigo_evento && <small>{poster.codigo_evento}</small>}
+                    <div className="vista-previa-badges" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                            {poster.nombre_evento && (
+                                <span className="badge-evento">
+                                    <span className="badge-evento-icono" aria-hidden="true">🎓</span>
+                                    <span className="badge-evento-texto">
+                                        {poster.nombre_evento}
+                                        {poster.codigo_evento && <small>{poster.codigo_evento}</small>}
+                                    </span>
                                 </span>
-                            </span>
+                            )}
+                            {poster.categoria && <span className="badge-categoria">{categoriaLegible(poster.categoria)}</span>}
+                        </div>
+                        {puedeEditar && onEditar && (
+                            <button
+                                type="button"
+                                className="boton-primario"
+                                onClick={onEditar}
+                                style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                                title="Editar la información de este póster"
+                            >
+                                ✏️ Editar póster
+                            </button>
                         )}
-                        {poster.categoria && <span className="badge-categoria">{categoriaLegible(poster.categoria)}</span>}
                     </div>
                 </header>
 

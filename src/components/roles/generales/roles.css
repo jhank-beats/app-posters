@@ -896,6 +896,20 @@ input:checked + .slider:before {
   transform: translateY(-2px);
 }
 
+.btn-accion-tabla.btn-editar-poster {
+  background-color: #0d6efd !important;
+  color: #ffffff !important;
+  border: 1.5px solid #0d6efd !important;
+  box-shadow: 0 3px 8px rgba(13, 110, 253, 0.25) !important;
+}
+
+.btn-accion-tabla.btn-editar-poster:hover {
+  background-color: #0b5ed7 !important;
+  border-color: #0a58ca !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(13, 110, 253, 0.4) !important;
+}
+
 /* Botón agregar (ahora cian) */
 .boton-agregar-mas {
   padding: 0.7rem 1.3rem;

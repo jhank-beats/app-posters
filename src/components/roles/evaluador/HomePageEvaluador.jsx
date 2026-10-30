@@ -163,7 +163,7 @@ const HomePageEvaluador = () => {
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('mis-posters')}>
                             <div className="icono">📂</div>
                             <h3>Mis Pósters Publicados</h3>
-                            <p>Ver el estado, rondas y notas de tus pósters</p>
+                            <p>Ver el estado, rondas y editar tus pósters</p>
                         </div>
                     </div>
                 </div>
@@ -259,7 +259,7 @@ const HomePageEvaluador = () => {
             <section id="mis-posters" className="posters-publicados">
                 <h2>Mis Pósters Publicados</h2>
                 <p style={{ textAlign: 'center', color: '#5f5e5e', maxWidth: '760px', margin: '0 auto 1rem', fontSize: '0.95rem' }}>
-                    Consulta el estado de los pósters que has publicado como autor (en espera, en evaluación, pasó de ronda, finalista o ganador). Por regla de transparencia, tus pósters son calificados por otros evaluadores.
+                    Consulta el estado y edita los pósters que has publicado como autor (en espera, en evaluación, pasó de ronda, finalista o ganador). Por regla de transparencia, tus pósters son calificados por otros evaluadores.
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
                     <button
@@ -277,6 +277,7 @@ const HomePageEvaluador = () => {
                         verMas={() => setMostrarMisPosters(true)}
                         soloMisPosters={true}
                         recargarClave={claveRecargaMisPosters}
+                        onPosterUpdated={() => setClaveRecargaMisPosters(k => k + 1)}
                     />
                 )}
             </section>
@@ -288,6 +289,7 @@ const HomePageEvaluador = () => {
                         cerrarTabla={() => setMostrarMisPosters(false)}
                         soloMisPosters={true}
                         recargarClave={claveRecargaMisPosters}
+                        onPosterUpdated={() => setClaveRecargaMisPosters(k => k + 1)}
                     />
                 </div>
             )}

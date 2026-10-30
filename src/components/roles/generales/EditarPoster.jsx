@@ -23,7 +23,7 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
         autores: poster?.autores || "",
         descripcion: poster?.descripcion || "",
         categoria: poster?.categoria || "",
-        palabrasClave: poster?.palabras_clave || ""
+        palabrasClave: poster?.palabras_clave || poster?.palabrasClave || ""
     });
 
     const [profesoresMaterias, setProfesoresMaterias] = useState(() => {
@@ -36,6 +36,7 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
         return [{ id_usuario: "", materia: "" }];
     });
 
+    const [nuevoArchivo, setNuevoArchivo] = useState(null);
     const [cargandoGuardar, setCargandoGuardar] = useState(false);
     const [error, setError] = useState("");
     const [duplicadosDetectados, setDuplicadosDetectados] = useState([]);
@@ -48,11 +49,12 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
 
     const cargarCategorias = async () => {
         try {
+            const evCarrera = (poster?.evento_carrera || "").toLowerCase();
             const evNombre = (poster?.nombre_evento || poster?.carrera || "").toLowerCase();
             const cUsr = (localStorage.getItem("carreraUsuario") || "").toLowerCase();
-            const carreraPoster = evNombre.includes("civil")
+            const carreraPoster = (evCarrera.includes("civil") || evNombre.includes("civil"))
                 ? "civil"
-                : evNombre.includes("sistema")
+                : (evCarrera.includes("sistema") || evNombre.includes("sistema"))
                 ? "sistemas"
                 : cUsr.includes("civil")
                 ? "civil"
@@ -136,22 +138,45 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
         setCargandoGuardar(true);
 
         try {
-            const respuesta = await fetch(`${API_BASE}/TablaPosters.php`, {
-                method: 'PUT',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id: poster.id,
-                    titulo: datosPoster.titulo.trim(),
-                    autores: datosPoster.autores.trim(),
-                    descripcion: datosPoster.descripcion.trim(),
-                    categoria: datosPoster.categoria,
-                    palabrasClave: datosPoster.palabrasClave.trim(),
-                    profesores: paresValidos.map(p => p.id_usuario),
-                    materias: paresValidos.map(p => p.materia),
-                    profesores_materias: paresValidos,
-                    forzar_guardado: forzarGuardado
-                })
-            });
+            let respuesta;
+            if (nuevoArchivo) {
+                const formData = new FormData();
+                formData.append('id', poster.id);
+                formData.append('titulo', datosPoster.titulo.trim());
+                formData.append('autores', datosPoster.autores.trim());
+                formData.append('descripcion', datosPoster.descripcion.trim());
+                formData.append('categoria', datosPoster.categoria);
+                formData.append('palabrasClave', datosPoster.palabrasClave.trim());
+                formData.append('archivo', nuevoArchivo);
+                formData.append('forzar_guardado', forzarGuardado ? 'true' : 'false');
+                paresValidos.forEach(p => {
+                    formData.append('profesores[]', String(p.id_usuario));
+                    formData.append('materias[]', p.materia);
+                });
+                formData.append('profesores_materias', JSON.stringify(paresValidos));
+
+                respuesta = await fetch(`${API_BASE}/TablaPosters.php`, {
+                    method: 'POST',
+                    body: formData
+                });
+            } else {
+                respuesta = await fetch(`${API_BASE}/TablaPosters.php`, {
+                    method: 'PUT',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: poster.id,
+                        titulo: datosPoster.titulo.trim(),
+                        autores: datosPoster.autores.trim(),
+                        descripcion: datosPoster.descripcion.trim(),
+                        categoria: datosPoster.categoria,
+                        palabrasClave: datosPoster.palabrasClave.trim(),
+                        profesores: paresValidos.map(p => p.id_usuario),
+                        materias: paresValidos.map(p => p.materia),
+                        profesores_materias: paresValidos,
+                        forzar_guardado: forzarGuardado
+                    })
+                });
+            }
 
             const data = await respuesta.json();
 
@@ -323,6 +348,23 @@ const EditarPoster = ({ poster, cerrarModal, alGuardarExitoso }) => {
                             onChange={handleInputChange}
                             placeholder="Ej: seguridad, visión artificial"
                         />
+                    </div>
+
+                    <div className="campo-formulario">
+                        <label className="etiqueta-campo">📎 Archivo del póster (opcional)</label>
+                        {poster?.imagen && (
+                            <p style={{ fontSize: '0.85rem', color: '#555', margin: '0 0 6px 0' }}>
+                                Archivo actual: <strong>{poster.imagen}</strong>
+                            </p>
+                        )}
+                        <input
+                            type="file"
+                            accept=".pdf, .png, .jpg, .jpeg"
+                            onChange={(e) => setNuevoArchivo(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+                        />
+                        <span className="ayuda-campo" style={{ display: 'block', marginTop: '4px', fontSize: '0.8rem', color: '#666' }}>
+                            Formatos permitidos: PDF, PNG, JPG (máx. 10 MB). Deja este campo vacío si no deseas cambiar el archivo actual.
+                        </span>
                     </div>
 
                     {duplicadosDetectados.length > 0 && (

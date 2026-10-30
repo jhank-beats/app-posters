@@ -617,7 +617,16 @@ const MostrarPostersAdmin = ({ cerrarTabla, onVerRanking = null }) => {
 
             {/* Vista previa con datos del póster arriba y el archivo (imagen / PDF) abajo */}
             {posterEnVista && (
-                <VistaPreviaPoster poster={posterEnVista} cerrarModal={() => setPosterEnVista(null)} />
+                <VistaPreviaPoster
+                    poster={posterEnVista}
+                    cerrarModal={() => setPosterEnVista(null)}
+                    puedeEditar={true}
+                    onEditar={() => {
+                        const p = posterEnVista;
+                        setPosterEnVista(null);
+                        setPosterAEditar(p);
+                    }}
+                />
             )}
 
             {/* Modal de Edición */}

@@ -54,7 +54,7 @@ function rh_ronda($conexion, $id_ronda)
 {
     $id_ronda = intval($id_ronda);
     if ($id_ronda <= 0) return null;
-    $sql = "SELECT r.*, ev.nombre_evento, ev.codigo_evento
+    $sql = "SELECT r.*, ev.nombre_evento, ev.codigo_evento, ev.carrera
             FROM rondas r
             JOIN eventos ev ON ev.id_evento = r.id_evento
             WHERE r.id_ronda = ?";
@@ -71,7 +71,7 @@ function rh_ronda_por_numero($conexion, $id_evento, $numero)
     $id_evento = intval($id_evento);
     $numero = intval($numero);
     if ($id_evento <= 0 || $numero <= 0) return null;
-    $sql = "SELECT r.*, ev.nombre_evento, ev.codigo_evento
+    $sql = "SELECT r.*, ev.nombre_evento, ev.codigo_evento, ev.carrera
             FROM rondas r
             JOIN eventos ev ON ev.id_evento = r.id_evento
             WHERE r.id_evento = ? AND r.numero = ?";
@@ -597,6 +597,140 @@ function rh_previsualizar_top($filas, $cupos, $requerirEvaluacion = true)
         'empate' => $empate,
         'motivo_empate' => $motivoEmpate,
         'lista' => $resultado,
+    ];
+}
+
+/**
+ * Detección de corte por categoría (ej. 3 mejores pósters por categoría en Sistemas).
+ * Agrupa los pósters evaluados por categoría, selecciona los N primeros por promedio
+ * en cada categoría (por defecto 3), detecta empates por categoría y devuelve la lista
+ * de sugeridos (hasta 9 pósters en 3 categorías).
+ */
+function rh_previsualizar_top_por_categoria($filas, $cuposPorCategoria = 3, $requerirEvaluacion = true)
+{
+    $cuposPorCategoria = max(1, intval($cuposPorCategoria));
+
+    $candidatos = [];
+    foreach ($filas as $fila) {
+        if ($requerirEvaluacion && intval($fila['n_evaluaciones']) === 0) continue;
+        if ($fila['promedio'] === null) continue;
+        $candidatos[] = $fila;
+    }
+
+    // Agrupar candidatos por categoría
+    $porCategoria = [];
+    foreach ($candidatos as $fila) {
+        $cat = trim((string)($fila['categoria'] ?? ''));
+        if ($cat === '') $cat = 'general';
+        if (!isset($porCategoria[$cat])) {
+            $porCategoria[$cat] = [];
+        }
+        $porCategoria[$cat][] = $fila;
+    }
+
+    // Ordenar cada categoría por promedio DESC, luego titulo ASC
+    foreach ($porCategoria as $cat => &$posters) {
+        usort($posters, function ($a, $b) {
+            $pA = floatval($a['promedio']);
+            $pB = floatval($b['promedio']);
+            if (abs($pA - $pB) > 0.0001) {
+                return ($pA < $pB) ? 1 : -1;
+            }
+            return strcmp(mb_strtolower((string)$a['titulo'], 'UTF-8'), mb_strtolower((string)$b['titulo'], 'UTF-8'));
+        });
+    }
+    unset($posters);
+
+    $sugeridos = [];
+    $listaResultado = [];
+    $listaCompleta = [];
+    $empatesPorCategoria = [];
+    $resumenCategorias = [];
+    $hayEmpateGlobal = false;
+
+    foreach ($porCategoria as $cat => $posters) {
+        $totalCat = count($posters);
+        $cuposCat = $cuposPorCategoria;
+        $notaCorteCat = ($totalCat >= $cuposCat && $cuposCat > 0)
+            ? floatval($posters[$cuposCat - 1]['promedio'])
+            : null;
+
+        $empateEnEstaCat = false;
+        $clasificadosCat = 0;
+
+        foreach ($posters as $indice => $p) {
+            $posicionCat = $indice + 1;
+            $enCorte = ($posicionCat <= $cuposCat);
+            $esEmpatado = false;
+
+            if ($notaCorteCat !== null && abs(floatval($p['promedio']) - $notaCorteCat) < 0.0001) {
+                $igualesEnCat = 0;
+                $primerIdx = -1;
+                $ultimoIdx = -1;
+                foreach ($posters as $idx => $otro) {
+                    if (abs(floatval($otro['promedio']) - $notaCorteCat) < 0.0001) {
+                        $igualesEnCat++;
+                        if ($primerIdx === -1) $primerIdx = $idx;
+                        $ultimoIdx = $idx;
+                    }
+                }
+                // Hay empate decisivo si la misma nota cruza la frontera del corte (alguno entra y alguno queda fuera)
+                if ($igualesEnCat > 1 && $primerIdx < $cuposCat && $ultimoIdx >= $cuposCat) {
+                    $esEmpatado = true;
+                    $empateEnEstaCat = true;
+                    $hayEmpateGlobal = true;
+                }
+            }
+
+            $pMod = $p;
+            $pMod['posicion_categoria'] = $posicionCat;
+            $pMod['en_corte'] = $enCorte;
+            $pMod['empate'] = $esEmpatado;
+
+            $listaCompleta[] = $pMod;
+
+            if ($enCorte) {
+                $sugeridos[] = intval($pMod['id_poster']);
+                $clasificadosCat++;
+            }
+
+            if ($enCorte || $esEmpatado) {
+                $listaResultado[] = $pMod;
+            }
+        }
+
+        if ($empateEnEstaCat) {
+            $empatesPorCategoria[] = $cat;
+        }
+
+        $resumenCategorias[$cat] = [
+            'categoria' => $cat,
+            'total' => $totalCat,
+            'cupos' => $cuposCat,
+            'clasificados' => $clasificadosCat,
+            'empate' => $empateEnEstaCat,
+        ];
+    }
+
+    $motivoEmpate = '';
+    if ($hayEmpateGlobal) {
+        $nombresCats = implode(', ', array_map(function ($c) {
+            return "'" . $c . "'";
+        }, $empatesPorCategoria));
+        $motivoEmpate = "Hay empate en la posición de corte de la(s) categoría(s): {$nombresCats}. Decide tú quién entra.";
+    }
+
+    return [
+        'corte_por_categoria' => true,
+        'cupos_por_categoria' => $cuposPorCategoria,
+        'cupos' => count($sugeridos),
+        'total_con_nota' => count($candidatos),
+        'sugeridos' => $sugeridos,
+        'empate' => $hayEmpateGlobal,
+        'motivo_empate' => $motivoEmpate,
+        'lista' => $listaResultado,
+        'lista_completa' => $listaCompleta,
+        'resumen_categorias' => $resumenCategorias,
     ];
 }
 
