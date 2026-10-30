@@ -962,9 +962,9 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
                     criterios={criterios}
                     evaluacionInicial={evaluacionesMap[posterAEvaluar.id]}
                     idEvaluador={idUsuarioActual}
-                    idRonda={rondaTrabajoId ? parseInt(rondaTrabajoId, 10) : null}
-                    nombreRonda={rondaSel ? `Ronda ${rondaSel.numero} · ${rondaSel.nombre}` : null}
-                    soloLectura={rondaCerrada}
+                    idRonda={posterAEvaluar.id_ronda ? parseInt(posterAEvaluar.id_ronda, 10) : (rondaTrabajoId ? parseInt(rondaTrabajoId, 10) : null)}
+                    nombreRonda={posterAEvaluar.nombre_ronda || (rondaSel ? `Ronda ${rondaSel.numero} · ${rondaSel.nombre}` : null)}
+                    soloLectura={posterAEvaluar.ronda_cerrada !== undefined ? posterAEvaluar.ronda_cerrada : rondaCerrada}
                     onClose={() => setPosterAEvaluar(null)}
                     onGuardado={() => cargarCriteriosYPosters()}
                 />

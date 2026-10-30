@@ -4,7 +4,9 @@ import './Evaluar.css';
 import { API_BASE } from '../../../config.js';
 
 
-const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuardado, idRonda = null, nombreRonda = null, soloLectura = false }) => {
+const ModalEvaluacion = ({ poster, criterios: criteriosProp, evaluacionInicial, onClose, onGuardado, idRonda = null, nombreRonda = null, soloLectura = false }) => {
+    const [criteriosLocales, setCriteriosLocales] = useState(criteriosProp || []);
+    const [cargandoCriterios, setCargandoCriterios] = useState(false);
     const [valores, setValores] = useState({});
     const [observaciones, setObservaciones] = useState('');
     const [cargando, setCargando] = useState(false);
@@ -15,9 +17,43 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
     const NOTA_MINIMA = 1;
     const NOTA_MAXIMA = 5;
 
+    // Determinar la ronda real del póster:
+    // Si viene idRonda en el póster (cuando se está en "Todas las rondas"), se usa esa ronda para que coincida con el evento del póster
+    const rondaFinalId = poster?.id_ronda ? poster.id_ronda : idRonda;
+    const nombreRondaFinal = poster?.nombre_ronda ? poster.nombre_ronda : nombreRonda;
+    const esSoloLecturaFinal = poster?.ronda_cerrada !== undefined ? poster.ronda_cerrada : soloLectura;
+
+    // Cargar los criterios específicos de la ronda de este póster si no coinciden o si viene de "Todas las rondas"
+    useEffect(() => {
+        let activo = true;
+        const cargarCriteriosEspecificos = async () => {
+            if (!rondaFinalId) return;
+            try {
+                setCargandoCriterios(true);
+                const res = await fetch(`${API_BASE}/Criterios.php?id_ronda=${rondaFinalId}`);
+                const data = await res.json();
+                if (activo && data && data.success && Array.isArray(data.data)) {
+                    setCriteriosLocales(data.data);
+                }
+            } catch (err) {
+                console.error("Error al cargar criterios de la ronda del póster:", err);
+            } finally {
+                if (activo) setCargandoCriterios(false);
+            }
+        };
+
+        if (rondaFinalId) {
+            cargarCriteriosEspecificos();
+        } else {
+            setCriteriosLocales(criteriosProp || []);
+        }
+
+        return () => { activo = false; };
+    }, [rondaFinalId, criteriosProp]);
+
     useEffect(() => {
         const inicial = {};
-        criterios.forEach(c => {
+        criteriosLocales.forEach(c => {
             const v = evaluacionInicial?.criterios?.[c.id];
             if (evaluacionInicial?.existente && v !== undefined && v !== null) {
                 inicial[c.id] = String(v);
@@ -28,7 +64,7 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
         setValores(inicial);
         setObservaciones(evaluacionInicial?.observaciones || '');
         setInvalidos([]);
-    }, [criterios, evaluacionInicial, poster]);
+    }, [criteriosLocales, evaluacionInicial, poster]);
 
     const handleValorChange = (idCriterio, valor) => {
         setValores(prev => ({ ...prev, [idCriterio]: valor }));
@@ -50,21 +86,21 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
     const handleGuardar = async (e) => {
         e.preventDefault();
 
-        if (soloLectura) {
+        if (esSoloLecturaFinal) {
             setMensaje({ tipo: 'error', texto: 'Esta ronda está cerrada: la evaluación solo se puede consultar.' });
             return;
         }
 
         // Evita guardar vacío si los criterios todavía se están cargando
-        if (!criterios || criterios.length === 0) {
-            setMensaje({ tipo: 'error', texto: 'No hay criterios de evaluación disponibles todavía. Espera unos segundos y vuelve a intentarlo.' });
+        if (!criteriosLocales || criteriosLocales.length === 0) {
+            setMensaje({ tipo: 'error', texto: 'No hay criterios de evaluación disponibles todavía para esta ronda. Espera unos segundos y vuelve a intentarlo.' });
             return;
         }
 
         // Validar nota mínima 1 y máxima 5 en cada criterio
         const fallas = [];
         const idsFallidos = [];
-        for (const c of criterios) {
+        for (const c of criteriosLocales) {
             const raw = valores[c.id];
             const v = parseFloat(raw);
             if (raw === '' || raw === null || raw === undefined || isNaN(v)) {
@@ -98,8 +134,8 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
                 body: JSON.stringify({
                     id_poster: poster.id,
                     // La identidad (id_evaluador) la toma el backend del token;
-                    // aquí solo se indica la ronda de la evaluación.
-                    id_ronda: idRonda || undefined,
+                    // se envía la ronda correspondiente al póster y su evento
+                    id_ronda: rondaFinalId || undefined,
                     criterios: valores,
                     observaciones
                 })
@@ -119,7 +155,7 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
             <div className="modal-contenido-evaluar" onClick={e => e.stopPropagation()} style={{ maxWidth: '640px' }}>
                 <header className="modal-header">
                     <h2>
-                        {soloLectura
+                        {esSoloLecturaFinal
                             ? '👁️ Evaluación (solo lectura)'
                             : evaluacionInicial?.existente ? '✏️ Editar Evaluación' : '⭐ Calificar Póster'}
                     </h2>
@@ -127,10 +163,10 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
                 </header>
 
                 <div className="info-poster-resumen">
-                    {nombreRonda && (
+                    {nombreRondaFinal && (
                         <p>
-                            <strong>Ronda:</strong> {nombreRonda}
-                            {soloLectura ? ' (cerrada)' : ''}
+                            <strong>Ronda:</strong> {nombreRondaFinal}
+                            {esSoloLecturaFinal ? ' (cerrada)' : ''}
                         </p>
                     )}
                     <p><strong>Póster:</strong> {poster.titulo}</p>
@@ -153,62 +189,68 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
                         se marcarán en rojo al intentar guardar.
                     </p>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
-                        {criterios.map(crit => (
-                            <div key={crit.id} className="criterio-card" style={{
-                                border: '1px solid rgba(19,39,64,0.08)',
-                                borderLeft: '4px solid #00acc9',
-                                borderRadius: '12px',
-                                padding: '1rem 1.1rem',
-                                background: '#ffffff',
-                                boxShadow: '0 2px 8px rgba(19,39,64,0.06)'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 700, color: '#132740', fontSize: '0.98rem' }}>{crit.nombre}</div>
-                                        {crit.descripcion && <div style={{ fontSize: '0.85rem', color: '#5f5e5e', marginTop: '0.3rem', lineHeight: 1.4 }}>{crit.descripcion}</div>}
+                    {cargandoCriterios ? (
+                        <div style={{ padding: '1.5rem', textAlign: 'center', color: '#5f5e5e' }}>
+                            Cargando criterios de evaluación...
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
+                            {criteriosLocales.map(crit => (
+                                <div key={crit.id} className="criterio-card" style={{
+                                    border: '1px solid rgba(19,39,64,0.08)',
+                                    borderLeft: '4px solid #00acc9',
+                                    borderRadius: '12px',
+                                    padding: '1rem 1.1rem',
+                                    background: '#ffffff',
+                                    boxShadow: '0 2px 8px rgba(19,39,64,0.06)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 700, color: '#132740', fontSize: '0.98rem' }}>{crit.nombre}</div>
+                                            {crit.descripcion && <div style={{ fontSize: '0.85rem', color: '#5f5e5e', marginTop: '0.3rem', lineHeight: 1.4 }}>{crit.descripcion}</div>}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                                            <input
+                                                type="number"
+                                                min="1" max="5" step="0.1"
+                                                value={valores[crit.id] ?? ''}
+                                                onChange={e => handleValorChange(crit.id, e.target.value)}
+                                                placeholder="—"
+                                                inputMode="decimal"
+                                                disabled={esSoloLecturaFinal}
+                                                aria-label={`Nota de ${crit.nombre} (mínimo 1, máximo 5)`}
+                                                style={{
+                                                    width: '78px',
+                                                    padding: '0.65rem 0.6rem',
+                                                    border: `2px solid ${invalidos.includes(crit.id) ? '#e53935' : '#d5ddd3'}`,
+                                                    outline: invalidos.includes(crit.id) ? '2px solid rgba(229,57,53,0.25)' : 'none',
+                                                    borderRadius: '10px',
+                                                    fontSize: '1rem',
+                                                    fontWeight: 700,
+                                                    textAlign: 'center',
+                                                    color: invalidos.includes(crit.id) ? '#c62828' : '#132740',
+                                                    background: invalidos.includes(crit.id) ? '#fff5f5' : '#ffffff'
+                                                }}
+                                            />
+                                            <span style={{ fontSize: '0.85rem', color: '#5f5e5e' }}>/ 5</span>
+                                        </div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-                                        <input
-                                            type="number"
-                                            min="1" max="5" step="0.1"
-                                            value={valores[crit.id] ?? ''}
-                                            onChange={e => handleValorChange(crit.id, e.target.value)}
-                                            placeholder="—"
-                                            inputMode="decimal"
-                                            disabled={soloLectura}
-                                            aria-label={`Nota de ${crit.nombre} (mínimo 1, máximo 5)`}
-                                            style={{
-                                                width: '78px',
-                                                padding: '0.65rem 0.6rem',
-                                                border: `2px solid ${invalidos.includes(crit.id) ? '#e53935' : '#d5ddd3'}`,
-                                                outline: invalidos.includes(crit.id) ? '2px solid rgba(229,57,53,0.25)' : 'none',
-                                                borderRadius: '10px',
-                                                fontSize: '1rem',
-                                                fontWeight: 700,
-                                                textAlign: 'center',
-                                                color: invalidos.includes(crit.id) ? '#c62828' : '#132740',
-                                                background: invalidos.includes(crit.id) ? '#fff5f5' : '#ffffff'
-                                            }}
-                                        />
-                                        <span style={{ fontSize: '0.85rem', color: '#5f5e5e' }}>/ 5</span>
-                                    </div>
+                                    {invalidos.includes(crit.id) && (
+                                        <div style={{ fontSize: '0.82rem', color: '#c62828', fontWeight: 700, marginTop: '0.55rem' }}>
+                                            ⚠️ Falta calificar este criterio. La nota mínima es 1.0
+                                        </div>
+                                    )}
                                 </div>
-                                {invalidos.includes(crit.id) && (
-                                    <div style={{ fontSize: '0.82rem', color: '#c62828', fontWeight: 700, marginTop: '0.55rem' }}>
-                                        ⚠️ Falta calificar este criterio. La nota mínima es 1.0
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
 
                     <div className="resumen-promedio">
-                        <span>Promedio actual ({criteriosCalificados}/{criterios.length} criterios)</span>
+                        <span>Promedio actual ({criteriosCalificados}/{criteriosLocales.length} criterios)</span>
                         <span className="nota-promedio">{calcularPromedio()} / 5.0</span>
                     </div>
 
-                    {soloLectura && (
+                    {esSoloLecturaFinal && (
                         <div className="alerta alerta-aviso" style={{ marginTop: '0.75rem' }}>
                             🔒 La ronda está cerrada: esta evaluación se muestra en solo lectura y ya no se puede modificar.
                         </div>
@@ -221,14 +263,14 @@ const ModalEvaluacion = ({ poster, criterios, evaluacionInicial, onClose, onGuar
                             value={observaciones}
                             onChange={e => setObservaciones(e.target.value)}
                             placeholder="Escribe feedback constructivo para los autores..."
-                            disabled={soloLectura}
+                            disabled={esSoloLecturaFinal}
                         />
                     </div>
 
                     <div className="modal-acciones">
-                        <button type="button" className="btn-cancelar" onClick={onClose}>{soloLectura ? 'Cerrar' : 'Cancelar'}</button>
-                        {!soloLectura && (
-                            <button type="submit" className="btn-guardar" disabled={cargando}>{cargando ? 'Guardando...' : evaluacionInicial?.existente ? 'Guardar Cambios' : 'Guardar Calificación'}</button>
+                        <button type="button" className="btn-cancelar" onClick={onClose}>{esSoloLecturaFinal ? 'Cerrar' : 'Cancelar'}</button>
+                        {!esSoloLecturaFinal && (
+                            <button type="submit" className="btn-guardar" disabled={cargando || cargandoCriterios}>{cargando ? 'Guardando...' : evaluacionInicial?.existente ? 'Guardar Cambios' : 'Guardar Calificación'}</button>
                         )}
                     </div>
                 </form>
