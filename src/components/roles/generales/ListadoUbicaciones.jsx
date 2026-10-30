@@ -5,9 +5,10 @@ import { API_BASE } from '../../../config.js';
 import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
 
-const ListadoUbicaciones = ({ cerrarTabla }) => {
+const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
     const [espaciosConPosters, setEspaciosConPosters] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [modoVista, setModoVista] = useState(modoInicial); // 'completo' o 'reducido'
     const listadoRef = useRef(null);
 
     useEffect(() => {
@@ -31,12 +32,25 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
                 });
                 const espacios = Array.from(espaciosMap.values());
                 const nombresEspacios = new Set(espacios.map(e => e.nombre_espacio));
+                const parsearNumeroUbicacion = (p) => {
+                    const val = p.ubicacion_detallada;
+                    if (val !== null && val !== undefined && val !== '') {
+                        const parsed = parseInt(val, 10);
+                        if (!isNaN(parsed)) return parsed;
+                    }
+                    return 999999;
+                };
+
                 const agrupados = espacios.map(espacio => {
-                    const postersDelEspacio = posters.filter(p => p.nombre_espacio === espacio.nombre_espacio);
+                    const postersDelEspacio = posters
+                        .filter(p => p.nombre_espacio === espacio.nombre_espacio)
+                        .sort((a, b) => parsearNumeroUbicacion(a) - parsearNumeroUbicacion(b));
                     return { ...espacio, postersAsignados: postersDelEspacio };
                 });
                 // Posters sin ubicación o con ubicación no existente
-                const sinUbicacion = posters.filter(p => !p.nombre_espacio || !nombresEspacios.has(p.nombre_espacio));
+                const sinUbicacion = posters
+                    .filter(p => !p.nombre_espacio || !nombresEspacios.has(p.nombre_espacio))
+                    .sort((a, b) => parsearNumeroUbicacion(a) - parsearNumeroUbicacion(b));
                 if (sinUbicacion.length > 0) {
                     agrupados.push({
                         id_espacio: 'sin-ubicacion',
@@ -56,28 +70,41 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
 
     const exportarExcel = () => {
         let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-        csvContent += "Espacio,Puesto / N°,Titulo del Poster,Evento,Autores,Categoria,Autor / Usuario\n";
-        espaciosConPosters.forEach(espacio => {
-            if (espacio.postersAsignados.length === 0) {
-                const fila = `"${espacio.nombre_espacio}","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar"\n`;
-                csvContent += fila;
-            } else {
-                espacio.postersAsignados.forEach((poster, index) => {
-                    const puesto = poster.ubicacion_detallada || (index + 1);
-                    const titulo = `"${(poster.titulo || "").replace(/"/g, '""')}"`;
-                    const evento = `"${(poster.nombre_evento || "Sin evento").replace(/"/g, '""')}"`;
-                    const autores = `"${(poster.autores || "").replace(/"/g, '""')}"`;
-                    const categoria = `"${(poster.categoria || "").replace(/"/g, '""')}"`;
-                    const usuario = `"${(poster.nombre_usuario || "Desconocido").replace(/"/g, '""')}"`;
-                    const fila = `"${espacio.nombre_espacio}","${puesto}",${titulo},${evento},${autores},${categoria},${usuario}\n`;
-                    csvContent += fila;
-                });
-            }
-        });
+        if (modoVista === 'reducido') {
+            csvContent += "Espacio,Puesto / N°,Titulo del Poster\n";
+            espaciosConPosters.forEach(espacio => {
+                if (espacio.postersAsignados.length === 0) {
+                    csvContent += `"${espacio.nombre_espacio}","Sin asignar","Sin asignar"\n`;
+                } else {
+                    espacio.postersAsignados.forEach((poster, index) => {
+                        const puesto = poster.ubicacion_detallada || (index + 1);
+                        const titulo = `"${(poster.titulo || "").replace(/"/g, '""')}"`;
+                        csvContent += `"${espacio.nombre_espacio}","${puesto}",${titulo}\n`;
+                    });
+                }
+            });
+        } else {
+            csvContent += "Espacio,Puesto / N°,Titulo del Poster,Evento,Autores,Categoria,Autor / Usuario\n";
+            espaciosConPosters.forEach(espacio => {
+                if (espacio.postersAsignados.length === 0) {
+                    csvContent += `"${espacio.nombre_espacio}","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar"\n`;
+                } else {
+                    espacio.postersAsignados.forEach((poster, index) => {
+                        const puesto = poster.ubicacion_detallada || (index + 1);
+                        const titulo = `"${(poster.titulo || "").replace(/"/g, '""')}"`;
+                        const evento = `"${(poster.nombre_evento || "Sin evento").replace(/"/g, '""')}"`;
+                        const autores = `"${(poster.autores || "").replace(/"/g, '""')}"`;
+                        const categoria = `"${(poster.categoria || "").replace(/"/g, '""')}"`;
+                        const usuario = `"${(poster.nombre_usuario || "Desconocido").replace(/"/g, '""')}"`;
+                        csvContent += `"${espacio.nombre_espacio}","${puesto}",${titulo},${evento},${autores},${categoria},${usuario}\n`;
+                    });
+                }
+            });
+        }
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "listado_ubicaciones_posters.csv");
+        link.setAttribute("download", `listado_ubicaciones_${modoVista}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -131,7 +158,45 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
             <h2>Listado de Pósters por Ubicación Física</h2>
             <p style={{ color: '#5f5e5e', textAlign: 'center', margin: '0.5rem 0 1.5rem' }}>Consulta la ocupación por espacio físico y exporta el listado</p>
 
-            <div className="no-print" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+            <div className="no-print" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                {/* Selector de modo: Completo vs Reducido */}
+                <div style={{ display: 'inline-flex', background: '#eef2f5', padding: '4px', borderRadius: '10px', gap: '4px' }}>
+                    <button
+                        type="button"
+                        onClick={() => setModoVista('completo')}
+                        style={{
+                            border: 'none',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            fontSize: '0.88rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            background: modoVista === 'completo' ? '#132740' : 'transparent',
+                            color: modoVista === 'completo' ? '#fff' : '#5f5e5e',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        📋 Listado Completo
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setModoVista('reducido')}
+                        style={{
+                            border: 'none',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            fontSize: '0.88rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            background: modoVista === 'reducido' ? '#132740' : 'transparent',
+                            color: modoVista === 'reducido' ? '#fff' : '#5f5e5e',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        🔍 Listado Reducido
+                    </button>
+                </div>
+
                 <button onClick={exportarExcel} className="boton-primario" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}><FaFileExcel /> Descargar Excel</button>
                 <button onClick={imprimirListado} className="boton-secundario" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}><FaPrint /> Imprimir Listado</button>
             </div>
@@ -157,12 +222,16 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>Espacio / N°</th>
+                                                <th style={{ width: modoVista === 'reducido' ? '25%' : '18%' }}>Espacio / N°</th>
                                                 <th>Título del Póster</th>
-                                                <th>Evento</th>
-                                                <th>Autores</th>
-                                                <th>Categoría</th>
-                                                <th>Autor / Usuario</th>
+                                                {modoVista === 'completo' && (
+                                                    <>
+                                                        <th>Evento</th>
+                                                        <th>Autores</th>
+                                                        <th>Categoría</th>
+                                                        <th>Autor / Usuario</th>
+                                                    </>
+                                                )}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -182,21 +251,25 @@ const ListadoUbicaciones = ({ cerrarTabla }) => {
                                                         )}
                                                     </td>
                                                     <td style={{ fontWeight: 600 }}>{poster.titulo}</td>
-                                                    <td>
-                                                        {poster.nombre_evento ? (
-                                                            <span className="badge-evento">
-                                                                <span className="badge-evento-texto">
-                                                                    {poster.nombre_evento}
-                                                                    {poster.codigo_evento && <small>{poster.codigo_evento}</small>}
-                                                                </span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="sin-evento">Sin evento</span>
-                                                        )}
-                                                    </td>
-                                                    <td>{poster.autores}</td>
-                                                    <td><span className="badge-rol rol-2">{poster.categoria}</span></td>
-                                                    <td>{poster.nombre_usuario || 'Desconocido'}</td>
+                                                    {modoVista === 'completo' && (
+                                                        <>
+                                                            <td>
+                                                                {poster.nombre_evento ? (
+                                                                    <span className="badge-evento">
+                                                                        <span className="badge-evento-texto">
+                                                                            {poster.nombre_evento}
+                                                                            {poster.codigo_evento && <small>{poster.codigo_evento}</small>}
+                                                                        </span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="sin-evento">Sin evento</span>
+                                                                )}
+                                                            </td>
+                                                            <td>{poster.autores}</td>
+                                                            <td><span className="badge-rol rol-2">{poster.categoria}</span></td>
+                                                            <td>{poster.nombre_usuario || 'Desconocido'}</td>
+                                                        </>
+                                                    )}
                                                 </tr>
                                             ))}
                                         </tbody>

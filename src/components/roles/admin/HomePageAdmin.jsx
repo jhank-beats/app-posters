@@ -33,6 +33,7 @@ const HomePageAdmin = () => {
 
     // Estado para el Listado Completo por Ubicaciones
     const [mostrarListadoUbicaciones, setMostrarListadoUbicaciones] = useState(false);
+    const [modoListadoUbicaciones, setModoListadoUbicaciones] = useState('completo');
 
     // Estados para Criterios de Evaluación
     const [mostrarCriterios, setMostrarCriterios] = useState(false);
@@ -347,8 +348,24 @@ const HomePageAdmin = () => {
                         <button className="boton-primario" onClick={() => setMostrarGestionEspacios(true)}>
                             Administrar Espacios y Capacidad
                         </button>
-                        <button className="boton-primario" style={{ background: '#005f73' }} onClick={() => setMostrarListadoUbicaciones(true)}>
-                            📍 Ver Listado Completo por Ubicaciones
+                        <button
+                            className="boton-primario"
+                            style={{ background: '#005f73' }}
+                            onClick={() => {
+                                setModoListadoUbicaciones('completo');
+                                setMostrarListadoUbicaciones(true);
+                            }}
+                        >
+                            📍 Ver Listado Completo
+                        </button>
+                        <button
+                            className="boton-secundario"
+                            onClick={() => {
+                                setModoListadoUbicaciones('reducido');
+                                setMostrarListadoUbicaciones(true);
+                            }}
+                        >
+                            🔍 Ver Listado Reducido
                         </button>
                     </div>
                 </div>
@@ -367,7 +384,10 @@ const HomePageAdmin = () => {
             {/* Modal Listado Completo por Ubicaciones */}
             {mostrarListadoUbicaciones && (
                 <div className="modal">
-                    <ListadoUbicaciones cerrarTabla={() => setMostrarListadoUbicaciones(false)} />
+                    <ListadoUbicaciones
+                        modoInicial={modoListadoUbicaciones}
+                        cerrarTabla={() => setMostrarListadoUbicaciones(false)}
+                    />
                 </div>
             )}
 

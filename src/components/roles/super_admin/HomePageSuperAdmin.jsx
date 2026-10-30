@@ -38,6 +38,7 @@ const HomePageSuperAdmin = () => {
 
     // Estado para el Listado Completo por Ubicaciones
     const [mostrarListadoUbicaciones, setMostrarListadoUbicaciones] = useState(false);
+    const [modoListadoUbicaciones, setModoListadoUbicaciones] = useState('completo');
 
     // Estados para Criterios de Evaluación
     const [mostrarCriterios, setMostrarCriterios] = useState(false);
@@ -355,8 +356,24 @@ const HomePageSuperAdmin = () => {
                         <button className="boton-primario" onClick={() => setMostrarGestionEspacios(true)}>
                             Administrar / Crear Espacios Físicos
                         </button>
-                        <button className="boton-secundario" onClick={() => setMostrarListadoUbicaciones(true)}>
-                            📍 Ver Listado Completo por Ubicaciones
+                        <button
+                            className="boton-primario"
+                            style={{ background: '#005f73' }}
+                            onClick={() => {
+                                setModoListadoUbicaciones('completo');
+                                setMostrarListadoUbicaciones(true);
+                            }}
+                        >
+                            📍 Ver Listado Completo
+                        </button>
+                        <button
+                            className="boton-secundario"
+                            onClick={() => {
+                                setModoListadoUbicaciones('reducido');
+                                setMostrarListadoUbicaciones(true);
+                            }}
+                        >
+                            🔍 Ver Listado Reducido
                         </button>
                     </div>
                 </div>
@@ -374,10 +391,13 @@ const HomePageSuperAdmin = () => {
                 </div>
             )}
 
-            {/* Modal para ver el Listado de Ubicaciones Completo */}
+            {/* Modal para ver el Listado de Ubicaciones Completo o Reducido */}
             {mostrarListadoUbicaciones && (
                 <div className="modal">
-                    <ListadoUbicaciones cerrarTabla={() => setMostrarListadoUbicaciones(false)} />
+                    <ListadoUbicaciones
+                        modoInicial={modoListadoUbicaciones}
+                        cerrarTabla={() => setMostrarListadoUbicaciones(false)}
+                    />
                 </div>
             )}
 
