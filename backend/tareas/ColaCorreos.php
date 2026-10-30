@@ -21,15 +21,24 @@ require_once __DIR__ . '/../api/includes/Correos.php';
 require_once __DIR__ . '/../Conexion.php';
 
 // Si los correos están deshabilitados, salir de inmediato sin drenar
-if (correo_env('DISABLE_EMAILS', 'true') === 'true' || correo_env('CORREOS_HABILITADOS', 'false') === 'false') {
+if (correos_estan_deshabilitados()) {
     flock($lockFp, LOCK_UN);
     fclose($lockFp);
-    echo "[" . date('c') . "] cola_correos: envío de correos deshabilitado temporalmente.\n";
+    echo "[" . date('c') . "] cola_correos: envío de correos deshabilitado por configuración.\n";
     exit(0);
 }
 
 const LOTE = 25;
 const MAX_INTENTOS = 5;
+
+// Protección en servidor: Si existen correos en cola con más de 1 hora de antigüedad,
+// se descartan automáticamente para evitar disparar correos acumulados durante pausas de servicio.
+$conexion->query(
+    "UPDATE cola_correos
+     SET estado = 'error',
+         ultimo_error = 'Descartado: correo antiguo acumulado en cola previo a la reactivación'
+     WHERE estado = 'pendiente' AND created_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)"
+);
 
 $res = $conexion->query(
     "SELECT id, destinatario, asunto, mensaje
@@ -57,7 +66,7 @@ while ($row = $res->fetch_assoc()) {
     if ($ok) {
         $stmt = $conexion->prepare("UPDATE cola_correos SET estado='enviado', enviado_at=NOW() WHERE id=?");
     } else {
-        $stmt = $conexion->prepare("UPDATE cola_correos SET ultimo_error='fallo SMTP' WHERE id=?");
+        $stmt = $conexion->prepare("UPDATE cola_correos SET estado = IF(intentos >= " . MAX_INTENTOS . ", 'error', 'pendiente'), ultimo_error='fallo SMTP' WHERE id=?");
     }
     if ($stmt) {
         $stmt->bind_param("i", $id);

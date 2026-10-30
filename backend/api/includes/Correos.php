@@ -27,6 +27,24 @@ function correo_env($clave, $porDefecto = '')
 }
 
 /**
+ * Determina si el envío de correos está pausado o deshabilitado temporalmente.
+ * Por defecto está habilitado si SMTP está configurado.
+ * Se puede pausar definiendo en .env: DISABLE_EMAILS=true o CORREOS_HABILITADOS=false.
+ */
+function correos_estan_deshabilitados()
+{
+    $disable = strtolower(trim((string)correo_env('DISABLE_EMAILS', 'false')));
+    if ($disable === 'true' || $disable === '1') {
+        return true;
+    }
+    $habilitados = strtolower(trim((string)correo_env('CORREOS_HABILITADOS', 'true')));
+    if ($habilitados === 'false' || $habilitados === '0') {
+        return true;
+    }
+    return false;
+}
+
+/**
  * Envuelve el cuerpo HTML en la plantilla con marca institucional si aún no la lleva.
  */
 function correo_asegurar_plantilla($asunto, $mensajeHtml)
@@ -57,8 +75,8 @@ function correo_asegurar_plantilla($asunto, $mensajeHtml)
 
 function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
 {
-    // INTERRUPTOR DE SEGURIDAD: Deshabilitar temporalmente todos los envíos de correo
-    if (correo_env('DISABLE_EMAILS', 'true') === 'true' || correo_env('CORREOS_HABILITADOS', 'false') === 'false') {
+    // INTERRUPTOR DE SEGURIDAD: Pausar envíos si está configurado en .env
+    if (correos_estan_deshabilitados()) {
         error_log("correo: ENVÍO DESHABILITADO POR CONFIGURACIÓN (destinatario: {$destinatario}, asunto: {$asunto})");
         return true; // Retorna true para que la cola o el flujo no consideren que falló ni hagan reintentos
     }
@@ -112,7 +130,7 @@ function enviarCorreoNotificacion($destinatario, $asunto, $mensajeHtml)
 function correo_disparar_drenaje_cola()
 {
     // Si los correos están deshabilitados, no disparar drenaje
-    if (correo_env('DISABLE_EMAILS', 'true') === 'true' || correo_env('CORREOS_HABILITADOS', 'false') === 'false') {
+    if (correos_estan_deshabilitados()) {
         return false;
     }
 
@@ -134,8 +152,8 @@ function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml, $dispararDrena
     global $conexion;
 
     // Si los correos están deshabilitados, ni siquiera encolar
-    if (correo_env('DISABLE_EMAILS', 'true') === 'true' || correo_env('CORREOS_HABILITADOS', 'false') === 'false') {
-        error_log("encolarCorreoFondo: correos deshabilitados temporalmente, omitiendo {$destinatario}");
+    if (correos_estan_deshabilitados()) {
+        error_log("encolarCorreoFondo: correos deshabilitados por configuración, omitiendo {$destinatario}");
         return true;
     }
 
