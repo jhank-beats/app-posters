@@ -719,19 +719,7 @@ a:hover {
   font-weight: 600;
   line-height: 1.35;
   box-shadow: 0 1px 4px rgba(19, 39, 64, 0.05);
-}
-
-.item-sugerencia-tabla.clickeable {
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.item-sugerencia-tabla.clickeable:hover {
-  background-color: #d1f0f7;
-  border-color: #00acc9;
-  color: #005f73;
-  transform: translateX(3px);
-  box-shadow: 0 2px 8px rgba(0, 172, 201, 0.18);
+  user-select: none;
 }
 
 .item-sugerencia-tabla.sugerencia-vermas {

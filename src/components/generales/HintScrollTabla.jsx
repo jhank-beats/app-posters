@@ -129,13 +129,6 @@ export default function HintScrollTabla({
     };
   }, [desborda, scrollWidth]);
 
-  const deslizarADerecha = () => {
-    const cont = rootRef.current?.parentElement;
-    if (cont) {
-      cont.scrollBy({ left: 220, behavior: 'smooth' });
-    }
-  };
-
   // Si no hay desborde y no hay sugerencia de ver más, mantenemos el nodo anclado silencioso
   if (!desborda && !textoVerMas) {
     return <span ref={rootRef} className="hint-scroll-tabla-oculto" aria-hidden="true" />;
@@ -145,14 +138,7 @@ export default function HintScrollTabla({
     <div ref={rootRef} className="barra-scroll-top-wrapper">
       <div className="barra-sugerencias-tabla">
         {desborda && (
-          <div
-            className="item-sugerencia-tabla clickeable"
-            role="button"
-            tabIndex={0}
-            onClick={deslizarADerecha}
-            onKeyDown={(e) => e.key === 'Enter' && deslizarADerecha()}
-            title="Haz clic para deslizar la tabla hacia la derecha"
-          >
+          <div className="item-sugerencia-tabla">
             <span aria-hidden="true">👉</span>
             <span>{textoDeslizar}</span>
           </div>

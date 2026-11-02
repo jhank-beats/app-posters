@@ -154,16 +154,16 @@ const ControlEnvioCorreos = ({ esSuperAdmin = false }) => {
                             {/* Fila Interruptor Global para Super Admin */}
                             {esSuperAdmin && (
                                 <tr style={{ background: '#f8fafc' }}>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <FaGlobe style={{ color: '#00acc9', fontSize: '1.1rem' }} />
-                                            <div>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textAlign: 'center' }}>
+                                            <FaGlobe style={{ color: '#00acc9', fontSize: '1.2rem', flexShrink: 0 }} />
+                                            <div style={{ textAlign: 'center' }}>
                                                 <strong>Interruptor General (Todo el Sistema)</strong>
-                                                <div className="subtexto-celda">Aplica a todas las carreras y eventos</div>
+                                                <div className="subtexto-celda" style={{ textAlign: 'center' }}>Aplica a todas las carreras y eventos</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td style={{ textAlign: 'center' }}>
                                         {globalHabilitado ? (
                                             <span className="badge-rol rol-2" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                                 <FaCheckCircle style={{ color: '#2e7d32' }} /> HABILITADO GLOBAL
@@ -174,14 +174,14 @@ const ControlEnvioCorreos = ({ esSuperAdmin = false }) => {
                                             </span>
                                         )}
                                     </td>
-                                    <td>
-                                        <div style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.35, maxWidth: '340px' }}>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.35, maxWidth: '380px', margin: '0 auto', textAlign: 'center' }}>
                                             {globalHabilitado
                                                 ? 'Los correos institucionales de toda la plataforma se procesan normalmente.'
                                                 : 'Detiene todos los envíos automáticos de correos en caso de contingencia o mantenimiento.'}
                                         </div>
                                     </td>
-                                    <td>
+                                    <td style={{ textAlign: 'center' }}>
                                         <button
                                             type="button"
                                             className={`btn-accion-tabla ${globalHabilitado ? 'btn-pausar-rec' : 'btn-asignar'}`}
@@ -212,18 +212,18 @@ const ControlEnvioCorreos = ({ esSuperAdmin = false }) => {
 
                                     return (
                                         <tr key={item.carrera || item.id_evento}>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <IconoCarrera style={{ color: colorIcono, fontSize: '1.1rem' }} />
-                                                    <div>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textAlign: 'center' }}>
+                                                    <IconoCarrera style={{ color: colorIcono, fontSize: '1.2rem', flexShrink: 0 }} />
+                                                    <div style={{ textAlign: 'center' }}>
                                                         <strong>{item.carrera_etiqueta || item.carrera}</strong>
-                                                        <div className="subtexto-celda">
+                                                        <div className="subtexto-celda" style={{ textAlign: 'center' }}>
                                                             {item.nombre_evento || `Evento #${item.id_evento}`}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td style={{ textAlign: 'center' }}>
                                                 {habilitado ? (
                                                     <span className="badge-rol rol-2" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                                         <FaCheckCircle style={{ color: '#2e7d32' }} /> HABILITADO
@@ -234,14 +234,14 @@ const ControlEnvioCorreos = ({ esSuperAdmin = false }) => {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td>
-                                                <div style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.35, maxWidth: '340px' }}>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.35, maxWidth: '380px', margin: '0 auto', textAlign: 'center' }}>
                                                     {habilitado
                                                         ? `Se envían notificaciones de subida, asignación, rondas y recordatorios para ${item.carrera_etiqueta}.`
                                                         : `Notificaciones de correos pausadas exclusivamente para ${item.carrera_etiqueta}.`}
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td style={{ textAlign: 'center' }}>
                                                 <button
                                                     type="button"
                                                     className={`btn-accion-tabla ${habilitado ? 'btn-pausar-rec' : 'btn-asignar'}`}
