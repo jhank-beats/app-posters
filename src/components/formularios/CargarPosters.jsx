@@ -120,6 +120,14 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
   const enviarPoster = async (forzarGuardado = false) => {
     setErrorMensaje('')
 
+    if (estadoPublicacionActual && !estadoPublicacionActual.abierta) {
+      setErrorMensaje(
+        estadoPublicacionActual.mensaje ||
+          'La publicación de pósters se encuentra cerrada para la carrera seleccionada.'
+      )
+      return
+    }
+
     const idUsuario = localStorage.getItem('idUsuario') || localStorage.getItem('id_usuario')
     if (!idUsuario) {
       alert('⚠️ Error: No has iniciado sesión. No puedes subir un póster.')
@@ -249,6 +257,39 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
     parseInt(localStorage.getItem('id_rol') || '0', 10) === 2 ||
     (localStorage.getItem('rol') || '').toLowerCase() === 'evaluador'
 
+  const obtenerEstadoPublicacion = () => {
+    const pubSistemas = eventosPorCarrera.sistemas?.estado_publicacion || null
+    const pubCivil = eventosPorCarrera.civil?.estado_publicacion || null
+    if (carreraParticipacion === 'sistemas') {
+      return pubSistemas || { abierta: true, mensaje: '' }
+    }
+    if (carreraParticipacion === 'civil') {
+      return pubCivil || { abierta: true, mensaje: '' }
+    }
+    if (carreraParticipacion === 'ambas') {
+      if (pubSistemas && !pubSistemas.abierta) {
+        return {
+          abierta: false,
+          mensaje: `No se puede publicar en Ambas carreras porque Ingeniería de Sistemas está cerrada: ${pubSistemas.mensaje}`,
+        }
+      }
+      if (pubCivil && !pubCivil.abierta) {
+        return {
+          abierta: false,
+          mensaje: `No se puede publicar en Ambas carreras porque Ingeniería Civil está cerrada: ${pubCivil.mensaje}`,
+        }
+      }
+      return {
+        abierta: true,
+        mensaje: pubSistemas?.mensaje || pubCivil?.mensaje || 'Publicación habilitada en ambas carreras.',
+      }
+    }
+    return { abierta: true, mensaje: '' }
+  }
+
+  const estadoPublicacionActual = obtenerEstadoPublicacion()
+  const publicacionCerrada = Boolean(estadoPublicacionActual && !estadoPublicacionActual.abierta)
+
   const contenido = (
     <>
       {cerrarModal && (
@@ -345,10 +386,20 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
             <option value="sistemas">
               💻 Ingeniería de Sistemas
               {eventosPorCarrera.sistemas ? ` — ${eventosPorCarrera.sistemas.nombre_evento}` : ''}
+              {eventosPorCarrera.sistemas?.estado_publicacion
+                ? eventosPorCarrera.sistemas.estado_publicacion.abierta
+                  ? ' (🟢 Abierta)'
+                  : ' (🔴 Cerrada)'
+                : ''}
             </option>
             <option value="civil">
               🏗️ Ingeniería Civil
               {eventosPorCarrera.civil ? ` — ${eventosPorCarrera.civil.nombre_evento}` : ''}
+              {eventosPorCarrera.civil?.estado_publicacion
+                ? eventosPorCarrera.civil.estado_publicacion.abierta
+                  ? ' (🟢 Abierta)'
+                  : ' (🔴 Cerrada)'
+                : ''}
             </option>
             <option value="ambas">
               🤝 Ambas carreras (Ingeniería de Sistemas e Ingeniería Civil)
@@ -357,6 +408,28 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
           <span className="ayuda-campo">
             Elige si el póster participa en el evento de Ingeniería de Sistemas, Ingeniería Civil o en ambos
           </span>
+          {estadoPublicacionActual?.mensaje && (
+            <div
+              role="status"
+              style={{
+                marginTop: '0.5rem',
+                padding: '0.65rem 0.85rem',
+                borderRadius: '10px',
+                fontSize: '0.84rem',
+                fontWeight: 600,
+                background: publicacionCerrada
+                  ? 'rgba(198, 40, 40, 0.1)'
+                  : 'rgba(46, 125, 50, 0.09)',
+                color: publicacionCerrada ? '#b71c1c' : '#1b5e20',
+                border: `1px solid ${
+                  publicacionCerrada ? 'rgba(198, 40, 40, 0.3)' : 'rgba(46, 125, 50, 0.25)'
+                }`,
+              }}
+            >
+              {publicacionCerrada ? '🔒 ' : '🟢 '}
+              {estadoPublicacionActual.mensaje}
+            </div>
+          )}
         </div>
 
         {/* Profesores y materias (soporta 1 o varias materias por póster) */}
@@ -496,8 +569,21 @@ const CargarPoster = ({ onPosterUpload, cerrarModal }) => {
         {errorMensaje && <p className="error-mensaje">{errorMensaje}</p>}
 
         {duplicadosDetectados.length === 0 && (
-          <button className="boton-primario" type="submit" disabled={enviando}>
-            {enviando ? 'Subiendo póster...' : 'Subir Póster'}
+          <button
+            className="boton-primario"
+            type="submit"
+            disabled={enviando || publicacionCerrada}
+            style={
+              publicacionCerrada
+                ? { opacity: 0.6, cursor: 'not-allowed', background: '#94a3b8' }
+                : undefined
+            }
+          >
+            {publicacionCerrada
+              ? '🔒 Publicación Cerrada para esta Carrera'
+              : enviando
+              ? 'Subiendo póster...'
+              : 'Subir Póster'}
           </button>
         )}
 

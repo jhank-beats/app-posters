@@ -116,6 +116,25 @@ if (isset($_POST['id_evento']) && intval($_POST['id_evento']) > 0 && $carreraPar
     $idsEventosParticipantes = ph_eventos_activos_para_carrera($conexion, $carreraParticipacion);
 }
 $id_evento_activo = intval($idsEventosParticipantes[0] ?? ph_evento_activo($conexion));
+if (empty($idsEventosParticipantes)) {
+    $idsEventosParticipantes = [$id_evento_activo];
+}
+
+// Verificar que la publicación de pósters esté abierta en todos los eventos en los que participa el póster
+foreach ($idsEventosParticipantes as $idEvPart) {
+    $estadoPub = ph_verificar_publicacion_abierta($conexion, intval($idEvPart));
+    if (!$estadoPub['abierta']) {
+        http_response_code(403);
+        echo json_encode([
+            'status' => 'error',
+            'success' => false,
+            'codigo' => 'publicacion_cerrada',
+            'estado_publicacion' => $estadoPub,
+            'message' => $estadoPub['mensaje'],
+        ]);
+        exit;
+    }
+}
 
 $archivoMovido = false;
 $rutaFinal = null;

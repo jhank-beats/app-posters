@@ -814,4 +814,210 @@ function ph_asignar_evaluadores_al_subir($conexion, $id_poster, $id_evento, $id_
         'sin_evaluadores_disponibles' => false,
     ];
 }
+
+/**
+ * Asegura que la tabla `eventos` tenga las columnas de control de publicación y horario.
+ * Idempotente y compatible con cualquier versión de MySQL / MariaDB.
+ */
+function ph_asegurar_columnas_publicacion($conexion)
+{
+    static $verificado = false;
+    if ($verificado || !($conexion instanceof mysqli)) return;
+    $verificado = true;
+
+    $columnasEsperadas = [
+        'publicacion_habilitada' => "TINYINT(1) NOT NULL DEFAULT 1",
+        'usar_horario_publicacion' => "TINYINT(1) NOT NULL DEFAULT 0",
+        'publicacion_inicio' => "DATETIME NULL DEFAULT NULL",
+        'publicacion_fin' => "DATETIME NULL DEFAULT NULL",
+    ];
+
+    foreach ($columnasEsperadas as $col => $definicion) {
+        $res = @$conexion->query("SHOW COLUMNS FROM `eventos` LIKE '{$col}'");
+        if ($res && $res->num_rows === 0) {
+            @$conexion->query("ALTER TABLE `eventos` ADD COLUMN `{$col}` {$definicion}");
+        }
+    }
+}
+
+/**
+ * Formatea una fecha/hora MySQL (YYYY-MM-DD HH:MM:SS) en texto legible (DD/MM/YYYY HH:MM).
+ */
+function ph_formatear_fecha_hora($fechaIso)
+{
+    if (empty($fechaIso)) return null;
+    try {
+        $tz = new DateTimeZone('America/Bogota');
+        $dt = new DateTimeImmutable(trim((string)$fechaIso), $tz);
+        return $dt->format('d/m/Y h:i A');
+    } catch (Throwable $e) {
+        return (string)$fechaIso;
+    }
+}
+
+/**
+ * Calcula en tiempo real el estado de publicación de pósters para una fila de `eventos`.
+ * Devuelve un arreglo asociativo con:
+ *   - abierta (bool): si actualmente se permite subir pósters en este evento/carrera
+ *   - publicacion_habilitada (int 0|1): interruptor manual
+ *   - usar_horario_publicacion (int 0|1): si el horario automático está activo
+ *   - publicacion_inicio (string|null): YYYY-MM-DDTHH:MM (para inputs datetime-local)
+ *   - publicacion_fin (string|null): YYYY-MM-DDTHH:MM (para inputs datetime-local)
+ *   - publicacion_inicio_legible (string|null)
+ *   - publicacion_fin_legible (string|null)
+ *   - estado_codigo ('abierta' | 'abierta_horario' | 'cerrada_manual' | 'pendiente_inicio' | 'horario_vencido')
+ *   - mensaje (string): descripción clara para mostrar al usuario/evaluador/admin
+ */
+function ph_estado_publicacion_evento(array $evento)
+{
+    $habilitada = isset($evento['publicacion_habilitada']) ? intval($evento['publicacion_habilitada']) : 1;
+    $usarHorario = isset($evento['usar_horario_publicacion']) ? intval($evento['usar_horario_publicacion']) : 0;
+    $inicioRaw = !empty($evento['publicacion_inicio']) ? trim((string)$evento['publicacion_inicio']) : null;
+    $finRaw = !empty($evento['publicacion_fin']) ? trim((string)$evento['publicacion_fin']) : null;
+
+    $carreraEtiqueta = ph_etiqueta_carrera($evento['carrera'] ?? 'sistemas');
+
+    $tz = new DateTimeZone('America/Bogota');
+    $ahora = (new DateTimeImmutable('now', $tz))->getTimestamp();
+
+    $tsInicio = null;
+    $inicioInput = '';
+    if ($inicioRaw) {
+        try {
+            $dtIni = new DateTimeImmutable($inicioRaw, $tz);
+            $tsInicio = $dtIni->getTimestamp();
+            $inicioInput = $dtIni->format('Y-m-d\TH:i');
+        } catch (Throwable $e) {
+            $tsInicio = null;
+        }
+    }
+
+    $tsFin = null;
+    $finInput = '';
+    if ($finRaw) {
+        try {
+            $dtFin = new DateTimeImmutable($finRaw, $tz);
+            $tsFin = $dtFin->getTimestamp();
+            $finInput = $dtFin->format('Y-m-d\TH:i');
+        } catch (Throwable $e) {
+            $tsFin = null;
+        }
+    }
+
+    $inicioLegible = ph_formatear_fecha_hora($inicioRaw);
+    $finLegible = ph_formatear_fecha_hora($finRaw);
+
+    if ($habilitada === 0) {
+        return [
+            'abierta' => false,
+            'publicacion_habilitada' => 0,
+            'usar_horario_publicacion' => $usarHorario,
+            'publicacion_inicio' => $inicioInput,
+            'publicacion_fin' => $finInput,
+            'publicacion_inicio_sql' => $inicioRaw,
+            'publicacion_fin_sql' => $finRaw,
+            'publicacion_inicio_legible' => $inicioLegible,
+            'publicacion_fin_legible' => $finLegible,
+            'estado_codigo' => 'cerrada_manual',
+            'mensaje' => "La publicación de pósters para {$carreraEtiqueta} se encuentra cerrada por el administrador.",
+        ];
+    }
+
+    if ($usarHorario === 1) {
+        if ($tsInicio !== null && $ahora < $tsInicio) {
+            return [
+                'abierta' => false,
+                'publicacion_habilitada' => 1,
+                'usar_horario_publicacion' => 1,
+                'publicacion_inicio' => $inicioInput,
+                'publicacion_fin' => $finInput,
+                'publicacion_inicio_sql' => $inicioRaw,
+                'publicacion_fin_sql' => $finRaw,
+                'publicacion_inicio_legible' => $inicioLegible,
+                'publicacion_fin_legible' => $finLegible,
+                'estado_codigo' => 'pendiente_inicio',
+                'mensaje' => "La recepción de pósters para {$carreraEtiqueta} aún no ha iniciado. Abrirá el {$inicioLegible}" . ($finLegible ? " hasta el {$finLegible}." : "."),
+            ];
+        }
+
+        if ($tsFin !== null && $ahora > $tsFin) {
+            return [
+                'abierta' => false,
+                'publicacion_habilitada' => 1,
+                'usar_horario_publicacion' => 1,
+                'publicacion_inicio' => $inicioInput,
+                'publicacion_fin' => $finInput,
+                'publicacion_inicio_sql' => $inicioRaw,
+                'publicacion_fin_sql' => $finRaw,
+                'publicacion_inicio_legible' => $inicioLegible,
+                'publicacion_fin_legible' => $finLegible,
+                'estado_codigo' => 'horario_vencido',
+                'mensaje' => "El horario de publicación de pósters para {$carreraEtiqueta} finalizó el {$finLegible}.",
+            ];
+        }
+
+        $detalleHorario = '';
+        if ($inicioLegible && $finLegible) {
+            $detalleHorario = " (habilitada del {$inicioLegible} al {$finLegible})";
+        } elseif ($finLegible) {
+            $detalleHorario = " (habilitada hasta el {$finLegible})";
+        }
+
+        return [
+            'abierta' => true,
+            'publicacion_habilitada' => 1,
+            'usar_horario_publicacion' => 1,
+            'publicacion_inicio' => $inicioInput,
+            'publicacion_fin' => $finInput,
+            'publicacion_inicio_sql' => $inicioRaw,
+            'publicacion_fin_sql' => $finRaw,
+            'publicacion_inicio_legible' => $inicioLegible,
+            'publicacion_fin_legible' => $finLegible,
+            'estado_codigo' => 'abierta_horario',
+            'mensaje' => "Publicación de pósters abierta para {$carreraEtiqueta}{$detalleHorario}.",
+        ];
+    }
+
+    return [
+        'abierta' => true,
+        'publicacion_habilitada' => 1,
+        'usar_horario_publicacion' => 0,
+        'publicacion_inicio' => $inicioInput,
+        'publicacion_fin' => $finInput,
+        'publicacion_inicio_sql' => $inicioRaw,
+        'publicacion_fin_sql' => $finRaw,
+        'publicacion_inicio_legible' => $inicioLegible,
+        'publicacion_fin_legible' => $finLegible,
+        'estado_codigo' => 'abierta',
+        'mensaje' => "Publicación de pósters abierta para {$carreraEtiqueta}.",
+    ];
+}
+
+/**
+ * Consulta la BD y verifica si un evento tiene la publicación de pósters abierta.
+ */
+function ph_verificar_publicacion_abierta($conexion, $id_evento)
+{
+    ph_asegurar_columnas_publicacion($conexion);
+    $id_evento = intval($id_evento);
+    if ($id_evento <= 0) {
+        $id_evento = ph_evento_activo($conexion);
+    }
+
+    $stmt = $conexion->prepare("SELECT * FROM eventos WHERE id_evento = ? LIMIT 1");
+    if (!$stmt) {
+        return ['abierta' => true, 'mensaje' => ''];
+    }
+    $stmt->bind_param("i", $id_evento);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $fila = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+
+    if (!$fila) {
+        return ['abierta' => true, 'mensaje' => ''];
+    }
+
+    return ph_estado_publicacion_evento($fila);
+}
 ?>

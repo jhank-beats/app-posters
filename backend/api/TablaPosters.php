@@ -106,10 +106,13 @@ function traerPosters()
             }
         }
 
-        // Contexto de evento del administrador (rol 3) o filtro explícito (?id_evento=)
+        // Contexto de evento del administrador (rol 3) o filtro explícito (?id_evento= o ?carrera=)
         $authCurr = auth_current();
         $id_evento_admin = auth_id_evento_admin($conexion, $authCurr);
         $id_evento_filtro = isset($_GET['id_evento']) ? intval($_GET['id_evento']) : 0;
+        if ($id_evento_filtro <= 0 && isset($_GET['carrera']) && trim((string)$_GET['carrera']) !== '' && trim((string)$_GET['carrera']) !== 'todas') {
+            $id_evento_filtro = ph_evento_activo($conexion, $_GET['carrera']);
+        }
         if ($id_evento_admin !== null && ($id_usuario === null || $id_usuario <= 0) && ($id_evaluador === null || $id_evaluador <= 0)) {
             $id_evento_filtro = $id_evento_admin;
         }

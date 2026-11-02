@@ -5,6 +5,8 @@ cors_headers("GET, POST, PUT, DELETE, OPTIONS");
 include_once '../Conexion.php';
 include_once __DIR__ . '/includes/PostersHelper.php';
 
+ph_asegurar_columnas_publicacion($conexion);
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
@@ -26,6 +28,7 @@ switch ($method) {
                     $cEv = ph_normalizar_carrera($row['carrera'] ?? 'sistemas');
                     $row['carrera'] = $cEv;
                     $row['carrera_etiqueta'] = ph_etiqueta_carrera($cEv);
+                    $row['estado_publicacion'] = ph_estado_publicacion_evento($row);
                     $eventosActivos[] = $row;
                     if ($porCarrera[$cEv] === null) {
                         $porCarrera[$cEv] = $row;
@@ -59,6 +62,7 @@ switch ($method) {
                                 $cEv = ph_normalizar_carrera($rowAdm['carrera'] ?? 'sistemas');
                                 $rowAdm['carrera'] = $cEv;
                                 $rowAdm['carrera_etiqueta'] = ph_etiqueta_carrera($cEv);
+                                $rowAdm['estado_publicacion'] = ph_estado_publicacion_evento($rowAdm);
                                 $eventoPrincipal = $rowAdm;
                             }
                             $stmtEvAdm->close();
@@ -92,6 +96,7 @@ switch ($method) {
                     $cEv = ph_normalizar_carrera($row['carrera'] ?? 'sistemas');
                     $row['carrera'] = $cEv;
                     $row['carrera_etiqueta'] = ph_etiqueta_carrera($cEv);
+                    $row['estado_publicacion'] = ph_estado_publicacion_evento($row);
                     $eventos[] = $row;
                 }
             }
@@ -157,16 +162,164 @@ switch ($method) {
         break;
 
     // -------------------------------------------------------------
-    // 3. EDITAR / ACTIVAR EVENTO (PUT) — Solo Super Admin (rol 4)
+    // 3. EDITAR / ACTIVAR EVENTO / CONFIGURAR PUBLICACIÓN (PUT)
     // -------------------------------------------------------------
     case 'PUT':
-        $auth = require_role([4]);
         $data = json_decode(file_get_contents("php://input"));
 
         if (!$data) {
             echo json_encode(["status" => "error", "success" => false, "message" => "Cuerpo de la petición JSON inválido."]);
             exit;
         }
+
+        // CASO 0: Configurar publicación de pósters (habilitar/deshabilitar y horario por carrera) — Roles 3 y 4
+        if (isset($data->accion) && $data->accion === 'configurar_publicacion') {
+            $auth = require_role([3, 4]);
+            $rolActor = intval($auth['rol']);
+
+            if ($rolActor === 3) {
+                $idEvAdmin = auth_id_evento_admin($conexion, $auth);
+                $carreraAdminRaw = auth_carrera_admin($conexion, $auth);
+                $carreraAdmin = ($carreraAdminRaw === 'civil') ? 'civil' : 'sistemas';
+
+                if (!empty($data->id_evento) && intval($data->id_evento) !== intval($idEvAdmin)) {
+                    http_response_code(403);
+                    echo json_encode([
+                        "status" => "error",
+                        "success" => false,
+                        "message" => "Solo puedes modificar la configuración de publicación de tu evento asignado.",
+                    ]);
+                    exit;
+                }
+                if (!empty($data->carrera) && ph_normalizar_carrera($data->carrera) !== $carreraAdmin) {
+                    http_response_code(403);
+                    echo json_encode([
+                        "status" => "error",
+                        "success" => false,
+                        "message" => "Solo puedes gestionar la publicación de pósters de tu propia carrera (" . ph_etiqueta_carrera($carreraAdmin) . ").",
+                    ]);
+                    exit;
+                }
+                $id_evento = intval($idEvAdmin);
+            } else {
+                if (!empty($data->id_evento)) {
+                    $id_evento = intval($data->id_evento);
+                } elseif (!empty($data->carrera)) {
+                    $id_evento = ph_evento_activo($conexion, $data->carrera);
+                } else {
+                    $id_evento = ph_evento_activo($conexion);
+                }
+            }
+
+            $stmtEv = $conexion->prepare("SELECT * FROM eventos WHERE id_evento = ? LIMIT 1");
+            $stmtEv->bind_param("i", $id_evento);
+            $stmtEv->execute();
+            $evActual = $stmtEv->get_result()->fetch_assoc();
+            $stmtEv->close();
+
+            if (!$evActual) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "success" => false, "message" => "No se encontró el evento indicado."]);
+                exit;
+            }
+
+            $arrData = (array)$data;
+            $habilitada = array_key_exists('publicacion_habilitada', $arrData)
+                ? (intval($arrData['publicacion_habilitada']) ? 1 : 0)
+                : intval($evActual['publicacion_habilitada'] ?? 1);
+
+            $usarHorario = array_key_exists('usar_horario_publicacion', $arrData)
+                ? (intval($arrData['usar_horario_publicacion']) ? 1 : 0)
+                : intval($evActual['usar_horario_publicacion'] ?? 0);
+
+            $inicio = $evActual['publicacion_inicio'] ?? null;
+            if (array_key_exists('publicacion_inicio', $arrData)) {
+                $valIni = trim((string)($arrData['publicacion_inicio'] ?? ''));
+                if ($valIni === '') {
+                    $inicio = null;
+                } else {
+                    $tsIni = strtotime($valIni);
+                    if ($tsIni === false) {
+                        http_response_code(400);
+                        echo json_encode(["status" => "error", "success" => false, "message" => "El formato de la fecha/hora de inicio no es válido."]);
+                        exit;
+                    }
+                    $inicio = date('Y-m-d H:i:s', $tsIni);
+                }
+            }
+
+            $fin = $evActual['publicacion_fin'] ?? null;
+            if (array_key_exists('publicacion_fin', $arrData)) {
+                $valFin = trim((string)($arrData['publicacion_fin'] ?? ''));
+                if ($valFin === '') {
+                    $fin = null;
+                } else {
+                    $tsFin = strtotime($valFin);
+                    if ($tsFin === false) {
+                        http_response_code(400);
+                        echo json_encode(["status" => "error", "success" => false, "message" => "El formato de la fecha/hora de cierre no es válido."]);
+                        exit;
+                    }
+                    $fin = date('Y-m-d H:i:s', $tsFin);
+                }
+            }
+
+            if ($inicio !== null && $fin !== null && strtotime($fin) <= strtotime($inicio)) {
+                http_response_code(400);
+                echo json_encode([
+                    "status" => "error",
+                    "success" => false,
+                    "message" => "La fecha y hora final debe ser posterior a la fecha y hora de inicio.",
+                ]);
+                exit;
+            }
+
+            if ($usarHorario === 1 && $inicio === null && $fin === null) {
+                http_response_code(400);
+                echo json_encode([
+                    "status" => "error",
+                    "success" => false,
+                    "message" => "Para activar el horario automático debes definir al menos una fecha/hora de inicio o de cierre.",
+                ]);
+                exit;
+            }
+
+            $stmtUpd = $conexion->prepare(
+                "UPDATE eventos SET publicacion_habilitada = ?, usar_horario_publicacion = ?, publicacion_inicio = ?, publicacion_fin = ? WHERE id_evento = ?"
+            );
+            $stmtUpd->bind_param("iissi", $habilitada, $usarHorario, $inicio, $fin, $id_evento);
+            if (!$stmtUpd->execute()) {
+                $stmtUpd->close();
+                http_response_code(500);
+                echo json_encode(["status" => "error", "success" => false, "message" => "No se pudo actualizar la configuración de publicación."]);
+                exit;
+            }
+            $stmtUpd->close();
+
+            $stmtRef = $conexion->prepare("SELECT * FROM eventos WHERE id_evento = ? LIMIT 1");
+            $stmtRef->bind_param("i", $id_evento);
+            $stmtRef->execute();
+            $evNuevo = $stmtRef->get_result()->fetch_assoc();
+            $stmtRef->close();
+
+            $cEv = ph_normalizar_carrera($evNuevo['carrera'] ?? 'sistemas');
+            $evNuevo['carrera'] = $cEv;
+            $evNuevo['carrera_etiqueta'] = ph_etiqueta_carrera($cEv);
+            $estadoPub = ph_estado_publicacion_evento($evNuevo);
+            $evNuevo['estado_publicacion'] = $estadoPub;
+
+            echo json_encode([
+                "status" => "success",
+                "success" => true,
+                "message" => "Configuración actualizada: " . $estadoPub['mensaje'],
+                "data" => $evNuevo,
+                "estado_publicacion" => $estadoPub,
+            ]);
+            exit;
+        }
+
+        // Resto de acciones PUT son exclusivas de Super Admin (rol 4)
+        $auth = require_role([4]);
 
         // CASO A: Activar un evento específico (desactivando solo los de su misma carrera)
         if (isset($data->accion) && $data->accion === 'activar' && !empty($data->id_evento)) {

@@ -4,23 +4,49 @@ import "./roles.css";
 import { API_BASE } from '../../../config.js';
 import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 
+const ETIQUETAS_CARRERA = {
+    sistemas: 'Ingeniería de Sistemas',
+    civil: 'Ingeniería Civil',
+    todas: 'Todas las Carreras',
+};
 
-const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
+const ListadoUbicaciones = ({
+    cerrarTabla,
+    modoInicial = 'completo',
+    carreraInicial = null,
+    esSuperAdmin = false,
+}) => {
+    const rolStorage = parseInt(localStorage.getItem('id_rol') || '0', 10);
+    const mostrarSelectorCarrera = esSuperAdmin || rolStorage === 4 || Boolean(carreraInicial);
+
+    const [carreraActiva, setCarreraActiva] = useState(
+        carreraInicial || (rolStorage === 4 ? 'sistemas' : 'todas')
+    );
     const [espaciosConPosters, setEspaciosConPosters] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modoVista, setModoVista] = useState(modoInicial); // 'completo' o 'reducido'
     const listadoRef = useRef(null);
 
     useEffect(() => {
-        cargarDatosUbicaciones();
-    }, []);
+        if (carreraInicial) {
+            setCarreraActiva(carreraInicial);
+        }
+    }, [carreraInicial]);
 
-    const cargarDatosUbicaciones = async () => {
+    useEffect(() => {
+        cargarDatosUbicaciones(carreraActiva);
+    }, [carreraActiva]);
+
+    const cargarDatosUbicaciones = async (carreraFiltro) => {
         try {
             setLoading(true);
-            const resEspacios = await fetch(`${API_BASE}/Espacios.php`);
+            const queryCarrera =
+                carreraFiltro && carreraFiltro !== 'todas'
+                    ? `?carrera=${encodeURIComponent(carreraFiltro)}`
+                    : '';
+            const resEspacios = await fetch(`${API_BASE}/Espacios.php${queryCarrera}`);
             const dataEspacios = await resEspacios.json();
-            const resPosters = await fetch(`${API_BASE}/TablaPosters.php`);
+            const resPosters = await fetch(`${API_BASE}/TablaPosters.php${queryCarrera}`);
             const dataPosters = await resPosters.json();
             if (dataEspacios.status === 'success' && dataPosters.success) {
                 const espaciosRaw = dataEspacios.data || [];
@@ -31,7 +57,7 @@ const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
                     if (!espaciosMap.has(String(e.id_espacio))) espaciosMap.set(String(e.id_espacio), e);
                 });
                 const espacios = Array.from(espaciosMap.values());
-                const nombresEspacios = new Set(espacios.map(e => e.nombre_espacio));
+                const idsEspacios = new Set(espacios.map(e => Number(e.id_espacio)));
                 const parsearNumeroUbicacion = (p) => {
                     const val = p.ubicacion_detallada;
                     if (val !== null && val !== undefined && val !== '') {
@@ -43,13 +69,18 @@ const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
 
                 const agrupados = espacios.map(espacio => {
                     const postersDelEspacio = posters
-                        .filter(p => p.nombre_espacio === espacio.nombre_espacio)
+                        .filter(p => {
+                            if (p.id_espacio !== null && p.id_espacio !== undefined && p.id_espacio !== '') {
+                                return Number(p.id_espacio) === Number(espacio.id_espacio);
+                            }
+                            return p.nombre_espacio === espacio.nombre_espacio;
+                        })
                         .sort((a, b) => parsearNumeroUbicacion(a) - parsearNumeroUbicacion(b));
                     return { ...espacio, postersAsignados: postersDelEspacio };
                 });
-                // Posters sin ubicación o con ubicación no existente
+                // Posters sin ubicación o con ubicación no existente en esta carrera
                 const sinUbicacion = posters
-                    .filter(p => !p.nombre_espacio || !nombresEspacios.has(p.nombre_espacio))
+                    .filter(p => !p.id_espacio || !idsEspacios.has(Number(p.id_espacio)))
                     .sort((a, b) => parsearNumeroUbicacion(a) - parsearNumeroUbicacion(b));
                 if (sinUbicacion.length > 0) {
                     agrupados.push({
@@ -68,26 +99,28 @@ const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
         }
     };
 
+    const etiquetaCarreraActual = ETIQUETAS_CARRERA[carreraActiva] || 'General';
+
     const exportarExcel = () => {
         let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
         if (modoVista === 'reducido') {
-            csvContent += "Espacio,Puesto / N°,Titulo del Poster\n";
+            csvContent += "Carrera,Espacio,Puesto / N°,Titulo del Poster\n";
             espaciosConPosters.forEach(espacio => {
                 if (espacio.postersAsignados.length === 0) {
-                    csvContent += `"${espacio.nombre_espacio}","Sin asignar","Sin asignar"\n`;
+                    csvContent += `"${etiquetaCarreraActual}","${espacio.nombre_espacio}","Sin asignar","Sin asignar"\n`;
                 } else {
                     espacio.postersAsignados.forEach((poster, index) => {
                         const puesto = poster.ubicacion_detallada || (index + 1);
                         const titulo = `"${(poster.titulo || "").replace(/"/g, '""')}"`;
-                        csvContent += `"${espacio.nombre_espacio}","${puesto}",${titulo}\n`;
+                        csvContent += `"${etiquetaCarreraActual}","${espacio.nombre_espacio}","${puesto}",${titulo}\n`;
                     });
                 }
             });
         } else {
-            csvContent += "Espacio,Puesto / N°,Titulo del Poster,Evento,Autores,Categoria,Autor / Usuario\n";
+            csvContent += "Carrera,Espacio,Puesto / N°,Titulo del Poster,Evento,Autores,Categoria,Autor / Usuario\n";
             espaciosConPosters.forEach(espacio => {
                 if (espacio.postersAsignados.length === 0) {
-                    csvContent += `"${espacio.nombre_espacio}","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar"\n`;
+                    csvContent += `"${etiquetaCarreraActual}","${espacio.nombre_espacio}","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar","Sin asignar"\n`;
                 } else {
                     espacio.postersAsignados.forEach((poster, index) => {
                         const puesto = poster.ubicacion_detallada || (index + 1);
@@ -96,7 +129,7 @@ const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
                         const autores = `"${(poster.autores || "").replace(/"/g, '""')}"`;
                         const categoria = `"${(poster.categoria || "").replace(/"/g, '""')}"`;
                         const usuario = `"${(poster.nombre_usuario || "Desconocido").replace(/"/g, '""')}"`;
-                        csvContent += `"${espacio.nombre_espacio}","${puesto}",${titulo},${evento},${autores},${categoria},${usuario}\n`;
+                        csvContent += `"${etiquetaCarreraActual}","${espacio.nombre_espacio}","${puesto}",${titulo},${evento},${autores},${categoria},${usuario}\n`;
                     });
                 }
             });
@@ -104,7 +137,8 @@ const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `listado_ubicaciones_${modoVista}.csv`);
+        const sufijoCarrera = carreraActiva && carreraActiva !== 'todas' ? `_${carreraActiva}` : '';
+        link.setAttribute("download", `listado_ubicaciones${sufijoCarrera}_${modoVista}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -118,12 +152,12 @@ const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
         win.document.write(`
             <html>
             <head>
-                <title>Listado de Pósters por Ubicación</title>
+                <title>Listado de Pósters por Ubicación - ${etiquetaCarreraActual}</title>
                 <style>
                     * { box-sizing: border-box; }
                     body { font-family: system-ui, -apple-system, sans-serif; color: #132740; margin: 0; padding: 2rem; background: #fff; }
-                    h2 { color: #132740; text-align: center; margin: 0 0 0.5rem; }
-                    .sub { text-align:center; color:#5f5e5e; margin-bottom:1.5rem; }
+                    h2 { color: #132740; text-align: center; margin: 0 0 0.35rem; }
+                    .sub { text-align:center; color:#5f5e5e; margin-bottom:1.5rem; font-weight:600; }
                     .tarjeta { border:1px solid rgba(19,39,64,0.08); border-top:4px solid #00acc9; border-radius:16px; padding:1.25rem; margin-bottom:1.25rem; break-inside: avoid; page-break-inside: avoid; }
                     .tarjeta h3 { margin:0; color:#132740; font-size:1rem; display:flex; align-items:center; gap:0.5rem; }
                     .badge { background:#f5f7f8; padding:4px 10px; border-radius:999px; font-size:0.8rem; font-weight:700; }
@@ -140,7 +174,7 @@ const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
                 </style>
             </head>
             <body>
-                <h2>Listado de Pósters Organizados por Ubicación Física</h2>
+                <h2>Listado de Pósters por Ubicación Física — ${etiquetaCarreraActual}</h2>
                 <p class="sub">Universidad Cooperativa de Colombia — GensTI</p>
                 ${contenido}
             </body>
@@ -155,8 +189,63 @@ const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
         <section className="todos-posters listado-ubicaciones-print">
             {cerrarTabla && (<button className="cerrar-tabla no-print" onClick={cerrarTabla} aria-label="Cerrar">X</button>)}
             <span className="seccion-eyebrow">Distribución física</span>
-            <h2>Listado de Pósters por Ubicación Física</h2>
-            <p style={{ color: '#5f5e5e', textAlign: 'center', margin: '0.5rem 0 1.5rem' }}>Consulta la ocupación por espacio físico y exporta el listado</p>
+            <h2>
+                Listado de Pósters por Ubicación Física
+                {carreraActiva && carreraActiva !== 'todas' ? ` — ${etiquetaCarreraActual}` : ''}
+            </h2>
+            <p style={{ color: '#5f5e5e', textAlign: 'center', margin: '0.5rem 0 1.25rem' }}>
+                Consulta la ocupación por espacio físico y exporta el listado
+                {carreraActiva && carreraActiva !== 'todas' ? ` de ${etiquetaCarreraActual}` : ''}
+            </p>
+
+            {/* Botones de selección por carrera para Super Admin */}
+            {mostrarSelectorCarrera && (
+                <div
+                    className="no-print"
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '0.75rem',
+                        flexWrap: 'wrap',
+                        marginBottom: '1rem',
+                    }}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setCarreraActiva('sistemas')}
+                        style={{
+                            border: carreraActiva === 'sistemas' ? '2px solid #00acc9' : '1px solid #cbd5e1',
+                            padding: '8px 18px',
+                            borderRadius: '10px',
+                            fontSize: '0.9rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: carreraActiva === 'sistemas' ? '#00acc9' : '#f8fafc',
+                            color: carreraActiva === 'sistemas' ? '#ffffff' : '#132740',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        💻 Listado Ingeniería de Sistemas
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setCarreraActiva('civil')}
+                        style={{
+                            border: carreraActiva === 'civil' ? '2px solid #80ba27' : '1px solid #cbd5e1',
+                            padding: '8px 18px',
+                            borderRadius: '10px',
+                            fontSize: '0.9rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: carreraActiva === 'civil' ? '#80ba27' : '#f8fafc',
+                            color: carreraActiva === 'civil' ? '#ffffff' : '#132740',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        🏗️ Listado Ingeniería Civil
+                    </button>
+                </div>
+            )}
 
             <div className="no-print" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
                 {/* Selector de modo: Completo vs Reducido */}
@@ -205,13 +294,20 @@ const ListadoUbicaciones = ({ cerrarTabla, modoInicial = 'completo' }) => {
             {loading ? (
                 <p style={{ textAlign: 'center', padding: '20px' }}>Generando listado de ubicaciones...</p>
             ) : espaciosConPosters.length === 0 ? (
-                <p style={{ textAlign: 'center', padding: '20px' }}>No hay espacios físicos registrados.</p>
+                <p style={{ textAlign: 'center', padding: '20px' }}>No hay espacios físicos registrados para {etiquetaCarreraActual}.</p>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     {espaciosConPosters.map((espacio) => (
                         <div key={espacio.id_espacio} className="tarjeta" style={{ textAlign: 'left', padding: '1.5rem', breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid rgba(19,39,64,0.08)', paddingBottom: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                <h3 style={{ margin: 0, color: '#132740', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem' }}><FaMapMarkerAlt style={{ color: '#00acc9' }} /> {espacio.nombre_espacio}</h3>
+                                <h3 style={{ margin: 0, color: '#132740', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem' }}>
+                                    <FaMapMarkerAlt style={{ color: '#00acc9' }} /> {espacio.nombre_espacio}
+                                    {espacio.nombre_evento && (
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#5f5e5e' }}>
+                                            ({espacio.nombre_evento})
+                                        </span>
+                                    )}
+                                </h3>
                                 <span className="badge-rol rol-3">Ocupación: {espacio.postersAsignados.length}{espacio.capacidad !== '-' ? ` / ${espacio.capacidad}` : ''}</span>
                             </div>
                             {espacio.postersAsignados.length === 0 ? (

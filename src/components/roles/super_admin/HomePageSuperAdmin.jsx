@@ -12,6 +12,7 @@ import GestionCriterios from './GestionCriterios.jsx';
 import GestionRondas from '../generales/GestionRondas.jsx';
 import GestionRecordatorios from '../generales/GestionRecordatorios.jsx';
 import ListadoUbicaciones from '../generales/ListadoUbicaciones.jsx';
+import ControlPublicacionPosters from '../generales/ControlPublicacionPosters.jsx';
 import Footer from "../../generales/Footer.jsx";
 import VolverArriba from "../../generales/VolverArriba.jsx";
 import { tituloRonda } from '../generales/rondasUtils.js';
@@ -35,10 +36,12 @@ const HomePageSuperAdmin = () => {
     // Estados para la Gestión de Espacios Físicos
     const [mostrarGestionEspacios, setMostrarGestionEspacios] = useState(false);
     const [espaciosResumen, setEspaciosResumen] = useState([]);
+    const [carreraEspaciosResumen, setCarreraEspaciosResumen] = useState('sistemas');
 
     // Estado para el Listado Completo por Ubicaciones
     const [mostrarListadoUbicaciones, setMostrarListadoUbicaciones] = useState(false);
     const [modoListadoUbicaciones, setModoListadoUbicaciones] = useState('completo');
+    const [carreraListadoUbicaciones, setCarreraListadoUbicaciones] = useState('sistemas');
 
     // Estados para Criterios de Evaluación
     const [mostrarCriterios, setMostrarCriterios] = useState(false);
@@ -281,6 +284,10 @@ const HomePageSuperAdmin = () => {
             <section id="posters">
                 <span className="seccion-eyebrow">Contenido</span>
                 <h2>Posters Publicados</h2>
+                <ControlPublicacionPosters
+                    esSuperAdmin={true}
+                    onCambioEstado={() => cargarEventosResumen()}
+                />
                 {!mostrarPosters && (
                     <MostrarPosters
                         limite={limite}
@@ -310,6 +317,53 @@ const HomePageSuperAdmin = () => {
             <section id="espacios">
                 <span className="seccion-eyebrow">Ubicaciones</span>
                 <h2>Gestión de Espacios Físicos y Capacidad</h2>
+
+                {/* Selector de carrera para filtrar la tabla resumen de espacios físicos */}
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '0.75rem',
+                        flexWrap: 'wrap',
+                        marginBottom: '1rem',
+                    }}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setCarreraEspaciosResumen('sistemas')}
+                        style={{
+                            border: carreraEspaciosResumen === 'sistemas' ? '2px solid #00acc9' : '1px solid #cbd5e1',
+                            padding: '8px 18px',
+                            borderRadius: '10px',
+                            fontSize: '0.9rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: carreraEspaciosResumen === 'sistemas' ? '#00acc9' : '#f8fafc',
+                            color: carreraEspaciosResumen === 'sistemas' ? '#ffffff' : '#132740',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        💻 Espacios Ingeniería de Sistemas
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setCarreraEspaciosResumen('civil')}
+                        style={{
+                            border: carreraEspaciosResumen === 'civil' ? '2px solid #80ba27' : '1px solid #cbd5e1',
+                            padding: '8px 18px',
+                            borderRadius: '10px',
+                            fontSize: '0.9rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: carreraEspaciosResumen === 'civil' ? '#80ba27' : '#f8fafc',
+                            color: carreraEspaciosResumen === 'civil' ? '#ffffff' : '#132740',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        🏗️ Espacios Ingeniería Civil
+                    </button>
+                </div>
+
                 <div className="contenedor-tabla">
                   <HintScrollTabla />
                     <table>
@@ -323,14 +377,25 @@ const HomePageSuperAdmin = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {espaciosResumen.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" style={{ textAlign: 'center' }}>
-                                        No se encontraron espacios físicos registrados.
-                                    </td>
-                                </tr>
-                            ) : (
-                                espaciosResumen.slice(0, limite).map((esp) => {
+                            {(() => {
+                                const filtrados = espaciosResumen.filter((esp) => {
+                                    const cEv = String(esp.evento_carrera || esp.carrera || '').toLowerCase();
+                                    const nomEv = String(esp.nombre_evento || '').toLowerCase();
+                                    if (carreraEspaciosResumen === 'civil') {
+                                        return cEv.includes('civil') || nomEv.includes('civil');
+                                    }
+                                    return cEv.includes('sistema') || nomEv.includes('sistema') || (!cEv.includes('civil') && !nomEv.includes('civil'));
+                                });
+                                if (filtrados.length === 0) {
+                                    return (
+                                        <tr>
+                                            <td colSpan="5" style={{ textAlign: 'center' }}>
+                                                No se encontraron espacios físicos registrados para {carreraEspaciosResumen === 'civil' ? 'Ingeniería Civil' : 'Ingeniería de Sistemas'}.
+                                            </td>
+                                        </tr>
+                                    );
+                                }
+                                return filtrados.slice(0, limite).map((esp) => {
                                     const ocupacion = esp.ocupacion_actual !== undefined ? parseInt(esp.ocupacion_actual) : (esp.ocupados || 0);
                                     const lleno = ocupacion >= esp.capacidad;
                                     return (
@@ -348,8 +413,8 @@ const HomePageSuperAdmin = () => {
                                             </td>
                                         </tr>
                                     );
-                                })
-                            )}
+                                });
+                            })()}
                         </tbody>
                     </table>
                     <div className="grupo-botones-espacios">
@@ -358,22 +423,25 @@ const HomePageSuperAdmin = () => {
                         </button>
                         <button
                             className="boton-primario"
-                            style={{ background: '#005f73' }}
+                            style={{ background: '#00acc9' }}
                             onClick={() => {
+                                setCarreraListadoUbicaciones('sistemas');
                                 setModoListadoUbicaciones('completo');
                                 setMostrarListadoUbicaciones(true);
                             }}
                         >
-                            📍 Ver Listado Completo
+                            💻 Listado Espacios Sistemas
                         </button>
                         <button
-                            className="boton-secundario"
+                            className="boton-primario"
+                            style={{ background: '#80ba27' }}
                             onClick={() => {
-                                setModoListadoUbicaciones('reducido');
+                                setCarreraListadoUbicaciones('civil');
+                                setModoListadoUbicaciones('completo');
                                 setMostrarListadoUbicaciones(true);
                             }}
                         >
-                            🔍 Ver Listado Reducido
+                            🏗️ Listado Espacios Civil
                         </button>
                     </div>
                 </div>
@@ -391,11 +459,13 @@ const HomePageSuperAdmin = () => {
                 </div>
             )}
 
-            {/* Modal para ver el Listado de Ubicaciones Completo o Reducido */}
+            {/* Modal para ver el Listado de Ubicaciones por Carrera (Completo o Reducido) */}
             {mostrarListadoUbicaciones && (
                 <div className="modal">
                     <ListadoUbicaciones
                         modoInicial={modoListadoUbicaciones}
+                        carreraInicial={carreraListadoUbicaciones}
+                        esSuperAdmin={true}
                         cerrarTabla={() => setMostrarListadoUbicaciones(false)}
                     />
                 </div>

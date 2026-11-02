@@ -11,6 +11,7 @@ import GestionCriterios from '../super_admin/GestionCriterios.jsx';
 import GestionRondas from '../generales/GestionRondas.jsx';
 import GestionRecordatorios from '../generales/GestionRecordatorios.jsx';
 import ListadoUbicaciones from '../generales/ListadoUbicaciones.jsx';
+import ControlPublicacionPosters from '../generales/ControlPublicacionPosters.jsx';
 import Footer from "../../generales/Footer.jsx";
 import VolverArriba from "../../generales/VolverArriba.jsx";
 import { tituloRonda } from '../generales/rondasUtils.js';
@@ -274,6 +275,7 @@ const HomePageAdmin = () => {
             <section id="posters">
                 <span className="seccion-eyebrow">Contenido</span>
                 <h2>Posters Publicados</h2>
+                <ControlPublicacionPosters esSuperAdmin={false} />
                 {!mostrarPosters && (
                     <MostrarPosters
                         limite={limite}
