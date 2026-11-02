@@ -1,18 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 /**
- * Barra de desplazamiento horizontal superior para tablas en todos los roles.
+ * Barra de desplazamiento horizontal superior sincronizada con sugerencias
+ * institucionales visibles para todas las vistas (escritorio y móvil).
  * Debe ubicarse como PRIMER HIJO dentro de cada .contenedor-tabla.
- * Mueve la barra de scroll a la parte superior de la tabla y se sincroniza
- * de manera bidireccional con el desplazamiento horizontal del contenedor.
+ * 
+ * Props:
+ * - sugerencia: Texto explicativo de deslizamiento (ej: "Desliza a la derecha para ver más acciones")
+ * - verMas: true (usa texto por defecto) o string personalizado ("Da clic en 'Ver más' para ver todas las opciones")
+ * - etiqueta: Retrocompatibilidad con implementaciones anteriores
  */
-export default function HintScrollTabla({ etiqueta = 'Desliza → para ver más columnas' }) {
+export default function HintScrollTabla({
+  sugerencia = 'Desliza a la derecha para ver más acciones y columnas',
+  verMas = null,
+  etiqueta = null,
+}) {
   const rootRef = useRef(null);
   const trackRef = useRef(null);
   const [desborda, setDesborda] = useState(false);
   const [scrollWidth, setScrollWidth] = useState(0);
-  const [clientWidth, setClientWidth] = useState(0);
-  const [mostrarHintMovil, setMostrarHintMovil] = useState(false);
+
+  const textoDeslizar = etiqueta || sugerencia;
+  const textoVerMas =
+    verMas === true
+      ? "Da clic en 'Ver más' para ver todas las opciones"
+      : typeof verMas === 'string' && verMas.trim().length > 0
+      ? verMas
+      : null;
 
   useEffect(() => {
     const cont = rootRef.current?.parentElement;
@@ -20,27 +34,16 @@ export default function HintScrollTabla({ etiqueta = 'Desliza → para ver más 
 
     let syncingFromCont = false;
     let syncingFromTrack = false;
-    let hintTocado = false;
 
-    const actualizarDimensiones = () => {
+    const actualizar = () => {
       const sw = cont.scrollWidth || 0;
       const cw = cont.clientWidth || 0;
       const hayDesborde = sw > cw + 4;
       setDesborda(hayDesborde);
       setScrollWidth(sw);
-      setClientWidth(cw);
-
-      const anchoVentana = window.innerWidth || 0;
-      if (!hintTocado) {
-        setMostrarHintMovil(anchoVentana <= 768 && hayDesborde);
-      }
     };
 
     const alScrollCont = () => {
-      if (cont.scrollLeft > 12) {
-        hintTocado = true;
-        setMostrarHintMovil(false);
-      }
       if (syncingFromTrack) return;
       if (trackRef.current) {
         syncingFromCont = true;
@@ -63,21 +66,21 @@ export default function HintScrollTabla({ etiqueta = 'Desliza → para ver más 
       track.addEventListener('scroll', alScrollTrack, { passive: true });
     }
     cont.addEventListener('scroll', alScrollCont, { passive: true });
-    window.addEventListener('resize', actualizarDimensiones);
+    window.addEventListener('resize', actualizar);
 
     let ro = null;
     if (typeof ResizeObserver !== 'undefined') {
       ro = new ResizeObserver(() => {
-        actualizarDimensiones();
+        actualizar();
       });
       ro.observe(cont);
       const tabla = cont.querySelector('table');
       if (tabla) ro.observe(tabla);
     }
 
-    actualizarDimensiones();
-    const t1 = setTimeout(actualizarDimensiones, 150);
-    const t2 = setTimeout(actualizarDimensiones, 600);
+    actualizar();
+    const t1 = setTimeout(actualizar, 100);
+    const t2 = setTimeout(actualizar, 500);
 
     return () => {
       clearTimeout(t1);
@@ -87,11 +90,11 @@ export default function HintScrollTabla({ etiqueta = 'Desliza → para ver más 
       if (track) {
         track.removeEventListener('scroll', alScrollTrack);
       }
-      window.removeEventListener('resize', actualizarDimensiones);
+      window.removeEventListener('resize', actualizar);
     };
   }, []);
 
-  // Mantener sincronizado el listener del track al cambiar desborda o scrollWidth
+  // Mantener sincronizado el scroll del track superior al cambiar desborda o el contenido
   useEffect(() => {
     const track = trackRef.current;
     const cont = rootRef.current?.parentElement;
@@ -117,7 +120,7 @@ export default function HintScrollTabla({ etiqueta = 'Desliza → para ver más 
     track.addEventListener('scroll', alScrollTrack, { passive: true });
     cont.addEventListener('scroll', alScrollCont, { passive: true });
 
-    // Mantener la posición actual sincronizada
+    // Mantener la posición sincronizada
     track.scrollLeft = cont.scrollLeft;
 
     return () => {
@@ -126,47 +129,60 @@ export default function HintScrollTabla({ etiqueta = 'Desliza → para ver más 
     };
   }, [desborda, scrollWidth]);
 
+  const deslizarADerecha = () => {
+    const cont = rootRef.current?.parentElement;
+    if (cont) {
+      cont.scrollBy({ left: 220, behavior: 'smooth' });
+    }
+  };
+
+  // Si no hay desborde y no hay sugerencia de ver más, mantenemos el nodo anclado silencioso
+  if (!desborda && !textoVerMas) {
+    return <span ref={rootRef} className="hint-scroll-tabla-oculto" aria-hidden="true" />;
+  }
+
   return (
-    <div
-      ref={rootRef}
-      className="barra-scroll-top-wrapper"
-      style={{
-        position: 'sticky',
-        left: 0,
-        width: clientWidth ? `${clientWidth}px` : '100%',
-        maxWidth: '100%',
-        zIndex: 6,
-        display: desborda ? 'block' : 'none',
-        marginBottom: '0.5rem',
-      }}
-    >
-      {mostrarHintMovil && (
+    <div ref={rootRef} className="barra-scroll-top-wrapper">
+      <div className="barra-sugerencias-tabla">
+        {desborda && (
+          <div
+            className="item-sugerencia-tabla clickeable"
+            role="button"
+            tabIndex={0}
+            onClick={deslizarADerecha}
+            onKeyDown={(e) => e.key === 'Enter' && deslizarADerecha()}
+            title="Haz clic para deslizar la tabla hacia la derecha"
+          >
+            <span aria-hidden="true">👉</span>
+            <span>{textoDeslizar}</span>
+          </div>
+        )}
+
+        {textoVerMas && (
+          <div className="item-sugerencia-tabla sugerencia-vermas">
+            <span aria-hidden="true">💡</span>
+            <span>{textoVerMas}</span>
+          </div>
+        )}
+      </div>
+
+      {desborda && (
         <div
-          className="hint-scroll-tabla"
-          role="status"
-          onClick={() => {
-            const cont = rootRef.current?.parentElement;
-            if (cont) cont.scrollLeft = 140;
-            setMostrarHintMovil(false);
-          }}
+          ref={trackRef}
+          className="barra-scroll-top-track"
+          title="Desliza para ver más columnas de la tabla"
+          role="scrollbar"
         >
-          {etiqueta}
+          <div
+            className="barra-scroll-top-dummy"
+            style={{
+              width: `${scrollWidth}px`,
+              height: '1px',
+              minWidth: `${scrollWidth}px`,
+            }}
+          />
         </div>
       )}
-      <div
-        ref={trackRef}
-        className="barra-scroll-top-track"
-        title="Desliza para ver más columnas de la tabla"
-      >
-        <div
-          className="barra-scroll-top-dummy"
-          style={{
-            width: `${scrollWidth}px`,
-            height: '1px',
-            minWidth: `${scrollWidth}px`,
-          }}
-        />
-      </div>
     </div>
   );
 }

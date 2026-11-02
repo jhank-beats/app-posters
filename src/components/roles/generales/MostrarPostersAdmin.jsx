@@ -372,7 +372,9 @@ const MostrarPostersAdmin = ({ cerrarTabla, onVerRanking = null }) => {
             </div>
 
             <div className="contenedor-tabla">
-              <HintScrollTabla />
+              <HintScrollTabla
+                sugerencia="Desliza a la derecha para ver todas las acciones (editar póster, asignar evaluador o ver ranking)"
+              />
                 <table>
                     <thead>
                         <tr>

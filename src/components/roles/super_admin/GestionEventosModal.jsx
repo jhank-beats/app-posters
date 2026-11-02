@@ -128,7 +128,9 @@ const GestionEventosModal = ({ cerrarTabla, cerrarModal }) => {
             {/* Cuerpo con scroll: el header con la X y los botones quedan fijos. */}
             <div className="formularios-body">
                 <div className="contenedor-tabla">
-                  <HintScrollTabla />
+                  <HintScrollTabla
+                    sugerencia="Desliza a la derecha para ver fechas, estado y botones de modificar o eliminar"
+                  />
                     <table>
                     <thead>
                         <tr>

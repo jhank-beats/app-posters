@@ -127,7 +127,9 @@ const GestionCriterios = ({ cerrarTabla }) => {
                 botones se quedan fijos y siempre visibles). */}
             <div className="formularios-body">
                 <div className="contenedor-tabla">
-                  <HintScrollTabla />
+                  <HintScrollTabla
+                    sugerencia="Desliza a la derecha para ver descripción completa y botones de editar o eliminar"
+                  />
                     <table>
                         <thead>
                             <tr>

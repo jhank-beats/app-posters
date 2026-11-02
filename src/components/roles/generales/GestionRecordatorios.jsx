@@ -388,7 +388,10 @@ const GestionRecordatorios = ({ modo = 'resumen', abrirModal, cerrarModal }) => 
     if (modo === 'resumen') {
         return (
             <div className="contenedor-tabla">
-              <HintScrollTabla />
+              <HintScrollTabla
+                sugerencia="Desliza a la derecha para ver horarios, destinatarios y botones de control"
+                verMas="Da clic en 'Gestionar Recordatorios' para ver todas las opciones"
+              />
                 {alerta && (
                     <div
                         className={`alerta-recordatorio alerta-recordatorio--${alerta.tipo}`}

@@ -19,6 +19,13 @@
    sección destino (categorías, rondas, posters…) debajo del header. */
 .contenedor-pagina section[id] {
   scroll-margin-top: 84px;
+  margin-bottom: 4.5rem;
+}
+
+@media (max-width: 768px) {
+  .contenedor-pagina section[id] {
+    margin-bottom: 3.25rem;
+  }
 }
 
 .header-contenedor {
@@ -656,16 +663,16 @@ a:hover {
    ========================= */
 
 .contenedor-tabla {
-  padding: 1rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
   width: 100%;
   max-width: 1280px;
-  margin: 0 auto;
+  margin: 1.25rem auto 2rem;
   border-radius: 16px;
   box-shadow: 0 6px 20px rgba(19, 39, 64, 0.08);
   /* La sombra está en el contenedor (no se mueve al desplazar) y
@@ -685,7 +692,52 @@ a:hover {
   left: 0;
   width: 100%;
   z-index: 6;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Sugerencias institucionales para todas las vistas (escritorio y móvil) */
+.barra-sugerencias-tabla {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  margin-bottom: 0.55rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.item-sugerencia-tabla {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 8px;
+  background-color: #e6f7fb;
+  border: 1px solid #9fd8e4;
+  color: #0b6b7d;
+  font-size: 0.83rem;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: 0 1px 4px rgba(19, 39, 64, 0.05);
+}
+
+.item-sugerencia-tabla.clickeable {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.item-sugerencia-tabla.clickeable:hover {
+  background-color: #d1f0f7;
+  border-color: #00acc9;
+  color: #005f73;
+  transform: translateX(3px);
+  box-shadow: 0 2px 8px rgba(0, 172, 201, 0.18);
+}
+
+.item-sugerencia-tabla.sugerencia-vermas {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
 }
 
 .barra-scroll-top-track {
@@ -1239,13 +1291,15 @@ table select {
 
 /* Eyebrow institucional para secciones de roles */
 .seccion-eyebrow {
-  display: inline-block;
-  margin-bottom: 0.5rem;
-  font-size: 0.72rem;
+  display: block;
+  margin-top: 1rem;
+  margin-bottom: 0.45rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #00acc9;
+  text-align: center;
 }
 
 
@@ -1411,7 +1465,7 @@ table select {
 .grupo-botones-espacios {
   display: flex !important;
   flex-direction: row !important;
-  gap: clamp(0.5rem, 1.2vw, 1.25rem) !important;
+  gap: 1rem !important;
   justify-content: center !important;
   align-items: center !important;
   flex-wrap: wrap !important;
@@ -1424,16 +1478,15 @@ table select {
 .grupo-botones-espacios .boton-secundario,
 .grupo-botones-espacios .selector-carrera-wrapper {
   width: auto !important;
-  flex: 0 1 auto !important;
+  flex: 0 0 auto !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   white-space: normal !important;
   margin: 0 !important;
-  font-size: clamp(0.78rem, 1.05vw, 0.95rem) !important;
-  padding: clamp(0.45rem, 0.8vw, 0.75rem) clamp(0.7rem, 1.2vw, 1.25rem) !important;
-  max-width: 100% !important;
-  text-align: center !important;
+  font-size: 0.92rem !important;
+  padding: 0.65rem 1.25rem !important;
+  box-sizing: border-box !important;
   transition: all 0.2s ease !important;
 }
 
@@ -3195,12 +3248,6 @@ Overlay Formularios - Registro/Login (dentro de modal-registro)
 
 .hint-scroll-tabla:hover {
   background: #d3f1f8;
-}
-
-@media (min-width: 769px) {
-  .hint-scroll-tabla {
-    display: none;
-  }
 }
 
 /* === Botones de póster en home de roles (escritorio y móvil) === */

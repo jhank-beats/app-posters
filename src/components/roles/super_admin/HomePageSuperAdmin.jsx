@@ -232,7 +232,10 @@ const HomePageSuperAdmin = () => {
                 <span className="seccion-eyebrow">Parametrización</span>
                 <h2>Criterios de Evaluación Dinámicos</h2>
                 <div className="contenedor-tabla">
-                  <HintScrollTabla />
+                  <HintScrollTabla
+                    sugerencia="Desliza a la derecha para ver la descripción y estado"
+                    verMas="Da clic en 'Administrar / Crear Criterios' para configurar todos los criterios"
+                  />
                     <table>
                         <thead>
                             <tr>
@@ -329,7 +332,10 @@ const HomePageSuperAdmin = () => {
                 <h2>Gestión de Espacios Físicos y Capacidad</h2>
 
                 <div className="contenedor-tabla">
-                  <HintScrollTabla />
+                  <HintScrollTabla
+                    sugerencia="Desliza a la derecha para ver evento, capacidad, ocupados y estado"
+                    verMas="Da clic en 'Administrar / Crear Espacios' o 'Ver Listado' para ver todas las opciones"
+                  />
                     <table>
                         <thead>
                             <tr>
@@ -499,7 +505,10 @@ const HomePageSuperAdmin = () => {
                     <p>Cargando lista de eventos...</p>
                 ) : (
                     <div className="contenedor-tabla">
-                      <HintScrollTabla />
+                      <HintScrollTabla
+                        sugerencia="Desliza a la derecha para ver fechas de inicio, fin y estado"
+                        verMas="Da clic en 'Administrar / Ver todos los eventos' para ver todas las opciones"
+                      />
                         <table>
                             <thead>
                                 <tr>
@@ -572,7 +581,10 @@ const HomePageSuperAdmin = () => {
                 <span className="seccion-eyebrow">Rondas y premios</span>
                 <h2>Rondas de Evaluación y Premios</h2>
                 <div className="contenedor-tabla">
-                  <HintScrollTabla />
+                  <HintScrollTabla
+                    sugerencia="Desliza a la derecha para ver estado de ronda, premios y ganadores"
+                    verMas="Da clic en 'Administrar / Abrir Rondas' para gestionar las evaluaciones"
+                  />
                     <table>
                         <thead>
                             <tr>

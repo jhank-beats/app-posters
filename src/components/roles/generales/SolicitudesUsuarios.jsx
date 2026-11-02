@@ -95,7 +95,10 @@ const SolicitudesUsuarios = ({ cerrarTabla, limite = null, verMas }) => {
             {!limite && <h2>Todos los Usuarios Pendientes por Aceptación</h2>}
 
             <div className="contenedor-tabla">
-              <HintScrollTabla />
+              <HintScrollTabla
+                sugerencia="Desliza a la derecha para ver acciones de aprobar y rechazar"
+                verMas={Boolean(limite && verMas)}
+              />
                 <table>
                     <thead>
                         <tr>

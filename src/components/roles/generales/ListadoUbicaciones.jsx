@@ -293,7 +293,9 @@ const ListadoUbicaciones = ({
                                 <p style={{ color: '#5f5e5e', fontStyle: 'italic' }}>No hay pósters asignados en este espacio todavía.</p>
                             ) : (
                                 <div className="contenedor-tabla">
-                                  <HintScrollTabla />
+                                  <HintScrollTabla
+                                    sugerencia="Desliza a la derecha para ver todos los autores y carrera asignada"
+                                  />
                                     <table>
                                         <thead>
                                             <tr>

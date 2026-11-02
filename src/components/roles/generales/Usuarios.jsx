@@ -319,7 +319,10 @@ const Usuarios = ({ cerrarTabla, limite = null, verMas }) => {
             {esModal && renderFiltros()}
 
             <div className="contenedor-tabla">
-              <HintScrollTabla />
+              <HintScrollTabla
+                sugerencia="Desliza a la derecha para ver cambiar rol, editar y eliminar"
+                verMas={Boolean(limite && verMas)}
+              />
                 <table>
                     <thead>
                         <tr>

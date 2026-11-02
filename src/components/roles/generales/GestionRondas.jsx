@@ -771,7 +771,9 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                         )}
 
                         <div className="contenedor-tabla">
-                          <HintScrollTabla />
+                          <HintScrollTabla
+                            sugerencia="Desliza a la derecha para ver calificaciones, jurados y lugares premiados"
+                          />
                             <table>
                                 <thead>
                                     <tr>
@@ -866,7 +868,9 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                 {pod.preview && (
                                     <>
                                         <div className="contenedor-tabla">
-                                          <HintScrollTabla />
+                                          <HintScrollTabla
+                                            sugerencia="Desliza a la derecha para ver ganadores y lugares asignados"
+                                          />
                                             <table>
                                                 <thead>
                                                     <tr>
@@ -1149,7 +1153,9 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                         {rankingC.length === 0 && <p>No hay pósters en esta ronda.</p>}
                                         {rankingC.length > 0 && (
                                             <div className="contenedor-tabla tabla-cierre-posters">
-                                                <HintScrollTabla />
+                                                <HintScrollTabla
+                                                    sugerencia="Desliza a la derecha para ver calificaciones y seleccionar los pósters que pasan"
+                                                />
                                                 <table>
                                                     <thead>
                                                         <tr>

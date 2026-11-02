@@ -127,7 +127,10 @@ const Categorias = ({ cerrarTabla, limite = null, verMas }) => {
             {!limite && <h2>Gestión de Categorías</h2>}
 
             <div className="contenedor-tabla">
-              <HintScrollTabla />
+              <HintScrollTabla
+                sugerencia="Desliza a la derecha para ver acciones de modificar y eliminar"
+                verMas={Boolean(limite && verMas)}
+              />
                 <table>
                     <thead>
                         <tr>

@@ -445,7 +445,10 @@ const MostrarPosters = ({ cerrarTabla, limite = null, verMas, soloMisPosters = f
             )}
 
             <div className="contenedor-tabla">
-              <HintScrollTabla />
+              <HintScrollTabla
+                sugerencia="Desliza a la derecha para ver más acciones"
+                verMas={Boolean(limite && verMas)}
+              />
                 <table>
                     <thead>
                         <tr>

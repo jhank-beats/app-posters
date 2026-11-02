@@ -188,7 +188,9 @@ const ControlPublicacionPosters = ({ esSuperAdmin = false, onCambioEstado }) => 
     return (
         <>
             <div className="contenedor-tabla">
-                <HintScrollTabla />
+                <HintScrollTabla
+                    sugerencia="Desliza a la derecha para ver detalle en tiempo real y botones de acción (Cerrar / Habilitar / Horario)"
+                />
 
                 {aviso && (
                     <div

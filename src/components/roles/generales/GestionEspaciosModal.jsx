@@ -229,7 +229,9 @@ const GestionEspaciosModal = ({ cerrarModal }) => {
 
                 <div className="tabla-espacios-container" style={{ marginTop: '1rem' }}>
                     <div className="contenedor-tabla">
-                        <HintScrollTabla />
+                        <HintScrollTabla
+                            sugerencia="Desliza a la derecha para ver ocupación y botones de editar o eliminar"
+                        />
                         <table>
                             <thead>
                                 <tr>

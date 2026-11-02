@@ -88,7 +88,9 @@ const ControlEnvioCorreos = ({ esSuperAdmin = false }) => {
 
     return (
         <div className="contenedor-tabla">
-            <HintScrollTabla />
+            <HintScrollTabla
+                sugerencia="Desliza a la derecha para ver detalle y alternar el interruptor de correos"
+            />
 
             {aviso && (
                 <div
