@@ -13,6 +13,7 @@ import GestionRondas from '../generales/GestionRondas.jsx';
 import GestionRecordatorios from '../generales/GestionRecordatorios.jsx';
 import ListadoUbicaciones from '../generales/ListadoUbicaciones.jsx';
 import ControlPublicacionPosters from '../generales/ControlPublicacionPosters.jsx';
+import ControlEnvioCorreos from '../generales/ControlEnvioCorreos.jsx';
 import Footer from "../../generales/Footer.jsx";
 import VolverArriba from "../../generales/VolverArriba.jsx";
 import { tituloRonda } from '../generales/rondasUtils.js';
@@ -194,9 +195,21 @@ const HomePageSuperAdmin = () => {
                             <h3>Gestionar Eventos</h3>
                             <p>Crear semestres y definir el evento activo</p>
                         </div>
+                        <div className="tarjeta" onClick={() => irASeccion('publicacion')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('publicacion')}>
+                            <div className="icono">⏰</div>
+                            <h3>Horarios de Publicación</h3>
+                            <p>Habilitar o cerrar subida de pósters y definir fechas</p>
+                        </div>
+                        <div className="tarjeta" onClick={() => irASeccion('correos')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('correos')}>
+                            <div className="icono">✉️</div>
+                            <h3>Control de Correos</h3>
+                            <p>Pausar o reactivar notificaciones globales o por carrera</p>
+                        </div>
                         <div className="tarjeta" onClick={() => irASeccion('recordatorios')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('recordatorios')}>
-                            <div className="icono">⏰</div>
+                            <div className="icono">🔔</div>
                             <h3>Recordatorios de Evaluación</h3>
                             <p>Configurar horas, personalizar el mensaje y verificar pósters pendientes</p>
                         </div>
@@ -284,10 +297,6 @@ const HomePageSuperAdmin = () => {
             <section id="posters">
                 <span className="seccion-eyebrow">Contenido</span>
                 <h2>Posters Publicados</h2>
-                <ControlPublicacionPosters
-                    esSuperAdmin={true}
-                    onCambioEstado={() => cargarEventosResumen()}
-                />
                 {!mostrarPosters && (
                     <MostrarPosters
                         limite={limite}
@@ -313,56 +322,23 @@ const HomePageSuperAdmin = () => {
                 </div>
             )}
 
+            {/* Control de Publicación y Horarios */}
+            <section id="publicacion">
+                <span className="seccion-eyebrow">Convocatoria y Fechas</span>
+                <h2>Control y Horario de Publicación de Pósters</h2>
+                <p style={{ color: '#5f5e5e', textAlign: 'center', margin: '0.5rem 0 1.5rem', fontSize: '0.92rem' }}>
+                    Habilita o cierra la subida de pósters y programa ventanas de fechas/horas de recepción por carrera.
+                </p>
+                <ControlPublicacionPosters
+                    esSuperAdmin={true}
+                    onCambioEstado={() => cargarEventosResumen()}
+                />
+            </section>
+
             {/* Gestión de Espacios Físicos (Resumen en Home) */}
             <section id="espacios">
                 <span className="seccion-eyebrow">Ubicaciones</span>
                 <h2>Gestión de Espacios Físicos y Capacidad</h2>
-
-                {/* Selector de carrera para filtrar la tabla resumen de espacios físicos */}
-                <div
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        gap: '0.75rem',
-                        flexWrap: 'wrap',
-                        marginBottom: '1rem',
-                    }}
-                >
-                    <button
-                        type="button"
-                        onClick={() => setCarreraEspaciosResumen('sistemas')}
-                        style={{
-                            border: carreraEspaciosResumen === 'sistemas' ? '2px solid #00acc9' : '1px solid #cbd5e1',
-                            padding: '8px 18px',
-                            borderRadius: '10px',
-                            fontSize: '0.9rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            background: carreraEspaciosResumen === 'sistemas' ? '#00acc9' : '#f8fafc',
-                            color: carreraEspaciosResumen === 'sistemas' ? '#ffffff' : '#132740',
-                            transition: 'all 0.2s ease',
-                        }}
-                    >
-                        💻 Espacios Ingeniería de Sistemas
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setCarreraEspaciosResumen('civil')}
-                        style={{
-                            border: carreraEspaciosResumen === 'civil' ? '2px solid #80ba27' : '1px solid #cbd5e1',
-                            padding: '8px 18px',
-                            borderRadius: '10px',
-                            fontSize: '0.9rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            background: carreraEspaciosResumen === 'civil' ? '#80ba27' : '#f8fafc',
-                            color: carreraEspaciosResumen === 'civil' ? '#ffffff' : '#132740',
-                            transition: 'all 0.2s ease',
-                        }}
-                    >
-                        🏗️ Espacios Ingeniería Civil
-                    </button>
-                </div>
 
                 <div className="contenedor-tabla">
                   <HintScrollTabla />
@@ -379,6 +355,7 @@ const HomePageSuperAdmin = () => {
                         <tbody>
                             {(() => {
                                 const filtrados = espaciosResumen.filter((esp) => {
+                                    if (carreraEspaciosResumen === 'todas') return true;
                                     const cEv = String(esp.evento_carrera || esp.carrera || '').toLowerCase();
                                     const nomEv = String(esp.nombre_evento || '').toLowerCase();
                                     if (carreraEspaciosResumen === 'civil') {
@@ -390,7 +367,7 @@ const HomePageSuperAdmin = () => {
                                     return (
                                         <tr>
                                             <td colSpan="5" style={{ textAlign: 'center' }}>
-                                                No se encontraron espacios físicos registrados para {carreraEspaciosResumen === 'civil' ? 'Ingeniería Civil' : 'Ingeniería de Sistemas'}.
+                                                No se encontraron espacios físicos registrados para {carreraEspaciosResumen === 'civil' ? 'Ingeniería Civil' : carreraEspaciosResumen === 'todas' ? 'ninguna carrera' : 'Ingeniería de Sistemas'}.
                                             </td>
                                         </tr>
                                     );
@@ -421,30 +398,54 @@ const HomePageSuperAdmin = () => {
                         <button className="boton-primario" onClick={() => setMostrarGestionEspacios(true)}>
                             Administrar / Crear Espacios Físicos
                         </button>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#eef2f5', padding: '6px 12px', borderRadius: '10px' }}>
+                            <label htmlFor="select-carrera-esp" style={{ fontWeight: 700, fontSize: '0.88rem', color: '#132740' }}>
+                                Carrera:
+                            </label>
+                            <select
+                                id="select-carrera-esp"
+                                value={carreraEspaciosResumen}
+                                onChange={(e) => {
+                                    setCarreraEspaciosResumen(e.target.value);
+                                    setCarreraListadoUbicaciones(e.target.value);
+                                }}
+                                style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #cbd5e1',
+                                    fontSize: '0.88rem',
+                                    fontWeight: 600,
+                                    color: '#132740',
+                                    background: '#ffffff',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <option value="sistemas">💻 Ingeniería de Sistemas</option>
+                                <option value="civil">🏗️ Ingeniería Civil</option>
+                                <option value="todas">🌐 Todas las Carreras</option>
+                            </select>
+                        </div>
                         <button
-                            className="boton-primario"
-                            style={{ background: '#00acc9' }}
+                            className="boton-secundario"
                             onClick={() => {
-                                setCarreraListadoUbicaciones('sistemas');
                                 setModoListadoUbicaciones('completo');
                                 setMostrarListadoUbicaciones(true);
                             }}
                         >
-                            💻 Listado Espacios Sistemas
-                        </button>
-                        <button
-                            className="boton-primario"
-                            style={{ background: '#80ba27' }}
-                            onClick={() => {
-                                setCarreraListadoUbicaciones('civil');
-                                setModoListadoUbicaciones('completo');
-                                setMostrarListadoUbicaciones(true);
-                            }}
-                        >
-                            🏗️ Listado Espacios Civil
+                            📍 Ver Listado de Ubicaciones
                         </button>
                     </div>
                 </div>
+            </section>
+
+            {/* Control de Envío de Correos */}
+            <section id="correos">
+                <span className="seccion-eyebrow">Comunicaciones</span>
+                <h2>Control de Envío de Correos</h2>
+                <p style={{ color: '#5f5e5e', textAlign: 'center', margin: '0.5rem 0 1.5rem', fontSize: '0.92rem' }}>
+                    Pausa o reactiva las notificaciones por correo electrónico a nivel global o por carrera en caso de contingencia.
+                </p>
+                <ControlEnvioCorreos esSuperAdmin={true} />
             </section>
 
             {/* Modal Gestión de Espacios Físicos */}

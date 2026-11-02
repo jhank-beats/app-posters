@@ -535,7 +535,7 @@ function guardarAsignacion($conexion)
         echo json_encode($respAsignar);
 
         foreach ($notificaciones as $n) {
-            encolarCorreoFondo($n['correo'], $n['asunto'], $n['mensaje']);
+            encolarCorreoFondo($n['correo'], $n['asunto'], $n['mensaje'], false, null, intval($id_evento_asig ?? 0));
         }
         return;
 

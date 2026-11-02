@@ -20,11 +20,13 @@ require_once __DIR__ . '/../api/includes/Auth.php';
 require_once __DIR__ . '/../api/includes/Correos.php';
 require_once __DIR__ . '/../Conexion.php';
 
-// Si los correos están deshabilitados, salir de inmediato sin drenar
+correos_asegurar_tablas_y_columnas($conexion);
+
+// Si los correos están deshabilitados globalmente, salir de inmediato sin drenar
 if (correos_estan_deshabilitados()) {
     flock($lockFp, LOCK_UN);
     fclose($lockFp);
-    echo "[" . date('c') . "] cola_correos: envío de correos deshabilitado por configuración.\n";
+    echo "[" . date('c') . "] cola_correos: envío de correos deshabilitado globalmente por configuración.\n";
     exit(0);
 }
 
@@ -41,12 +43,23 @@ $conexion->query(
 );
 
 $res = $conexion->query(
-    "SELECT id, destinatario, asunto, mensaje
+    "SELECT id, destinatario, asunto, mensaje, carrera, id_evento
      FROM cola_correos
      WHERE estado = 'pendiente' AND intentos < " . MAX_INTENTOS . "
      ORDER BY id ASC
      LIMIT " . LOTE
 );
+
+if (!$res) {
+    // Si la tabla no tiene aún las columnas carrera e id_evento, fallback seguro
+    $res = $conexion->query(
+        "SELECT id, destinatario, asunto, mensaje, NULL AS carrera, NULL AS id_evento
+         FROM cola_correos
+         WHERE estado = 'pendiente' AND intentos < " . MAX_INTENTOS . "
+         ORDER BY id ASC
+         LIMIT " . LOTE
+    );
+}
 
 if (!$res) {
     fwrite(STDERR, "No se pudo leer cola_correos (¿ejecutaste BD/migracion_cola_correos.sql?)\n");
@@ -58,6 +71,13 @@ if (!$res) {
 $procesados = 0;
 while ($row = $res->fetch_assoc()) {
     $id = (int)$row['id'];
+    $carrFila = $row['carrera'] ?? null;
+    $idEvFila = isset($row['id_evento']) ? intval($row['id_evento']) : null;
+
+    // Si esta carrera o evento específico tiene correos pausados, omitir por ahora
+    if (correos_estan_deshabilitados($carrFila, $idEvFila)) {
+        continue;
+    }
 
     // Marcar como 'enviando' temporalmente incrementando intento para evitar doble procesamiento
     $conexion->query("UPDATE cola_correos SET intentos = intentos + 1 WHERE id = {$id} AND estado = 'pendiente'");

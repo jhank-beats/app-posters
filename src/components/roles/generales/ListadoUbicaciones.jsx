@@ -198,56 +198,35 @@ const ListadoUbicaciones = ({
                 {carreraActiva && carreraActiva !== 'todas' ? ` de ${etiquetaCarreraActual}` : ''}
             </p>
 
-            {/* Botones de selección por carrera para Super Admin */}
-            {mostrarSelectorCarrera && (
-                <div
-                    className="no-print"
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        gap: '0.75rem',
-                        flexWrap: 'wrap',
-                        marginBottom: '1rem',
-                    }}
-                >
-                    <button
-                        type="button"
-                        onClick={() => setCarreraActiva('sistemas')}
-                        style={{
-                            border: carreraActiva === 'sistemas' ? '2px solid #00acc9' : '1px solid #cbd5e1',
-                            padding: '8px 18px',
-                            borderRadius: '10px',
-                            fontSize: '0.9rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            background: carreraActiva === 'sistemas' ? '#00acc9' : '#f8fafc',
-                            color: carreraActiva === 'sistemas' ? '#ffffff' : '#132740',
-                            transition: 'all 0.2s ease',
-                        }}
-                    >
-                        💻 Listado Ingeniería de Sistemas
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setCarreraActiva('civil')}
-                        style={{
-                            border: carreraActiva === 'civil' ? '2px solid #80ba27' : '1px solid #cbd5e1',
-                            padding: '8px 18px',
-                            borderRadius: '10px',
-                            fontSize: '0.9rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            background: carreraActiva === 'civil' ? '#80ba27' : '#f8fafc',
-                            color: carreraActiva === 'civil' ? '#ffffff' : '#132740',
-                            transition: 'all 0.2s ease',
-                        }}
-                    >
-                        🏗️ Listado Ingeniería Civil
-                    </button>
-                </div>
-            )}
-
+            {/* Selector de carrera integrado y controles de visualización y exportación */}
             <div className="no-print" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                {mostrarSelectorCarrera && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#eef2f5', padding: '4px 10px', borderRadius: '10px' }}>
+                        <label htmlFor="select-carrera-ubic" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#132740' }}>
+                            Carrera:
+                        </label>
+                        <select
+                            id="select-carrera-ubic"
+                            value={carreraActiva}
+                            onChange={(e) => setCarreraActiva(e.target.value)}
+                            style={{
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '8px',
+                                padding: '5px 10px',
+                                fontSize: '0.86rem',
+                                fontWeight: 600,
+                                color: '#132740',
+                                background: '#ffffff',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <option value="sistemas">💻 Ingeniería de Sistemas</option>
+                            <option value="civil">🏗️ Ingeniería Civil</option>
+                            <option value="todas">🌐 Todas las Carreras</option>
+                        </select>
+                    </div>
+                )}
+
                 {/* Selector de modo: Completo vs Reducido */}
                 <div style={{ display: 'inline-flex', background: '#eef2f5', padding: '4px', borderRadius: '10px', gap: '4px' }}>
                     <button

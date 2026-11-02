@@ -36,7 +36,9 @@ const HeaderAdmin = ({ abrirCuenta }) => {
                         <Link className='menu-enlace' to="pendientes" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Pendientes</Link>
                         <Link className='menu-enlace' to="criterios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Criterios</Link>
                         <Link className='menu-enlace' to="posters" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Posters</Link>
+                        <Link className='menu-enlace' to="publicacion" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Horarios</Link>
                         <Link className='menu-enlace' to="espacios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Espacios</Link>
+                        <Link className='menu-enlace' to="correos" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Correos</Link>
                         <Link className='menu-enlace' to="usuarios" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Usuarios</Link>
                         <Link className='menu-enlace' to="categorias" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Categorías</Link>
                         <Link className='menu-enlace' to="rondas" smooth={true} duration={500} offset={-84} onClick={() => setMenuAbierto(false)}>Rondas</Link>

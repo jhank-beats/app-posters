@@ -762,7 +762,7 @@ function abrirRonda($auth, $datos)
                 <p>Hola, <strong>" . rh_escapar($participante['nombres'] . ' ' . $participante['apellidos']) . "</strong>,</p>
                 <p>Se abrió la <strong>" . rh_escapar($ronda['nombre']) . "</strong> del evento <strong>" . rh_escapar($ronda['nombre_evento']) . "</strong>.</p>
                 <p>Ya puedes ingresar a la plataforma, revisar los pósters y registrar tus calificaciones.</p>";
-            encolarCorreoFondo($participante['correo'], 'Se abrió la ' . $ronda['nombre'] . ' de evaluación', rh_plantilla_correo('Ronda abierta', $cuerpo));
+            encolarCorreoFondo($participante['correo'], 'Se abrió la ' . $ronda['nombre'] . ' de evaluación', rh_plantilla_correo('Ronda abierta', $cuerpo), true, $ronda['evento_carrera'] ?? null, intval($ronda['id_evento']));
             $avisados++;
         }
     }
@@ -1047,7 +1047,7 @@ function cerrarYPasar($auth, $datos)
             <p>¡Hola, <strong>" . rh_escapar($fila['nombre_autor']) . "</strong>!</p>
             <p>Tu póster <strong>'{$titulo}'</strong> pasó a la siguiente ronda del evento <strong>" . rh_escapar($ronda['nombre_evento']) . "</strong>.</p>
             <p>¡Felicidades! Revisa la plataforma para ver el detalle de la convocatoria.</p>";
-        encolarCorreoFondo($fila['correo'], '¡Tu póster pasó a la siguiente ronda!', rh_plantilla_correo('¡Tu póster pasó a la siguiente ronda!', $cuerpo));
+        encolarCorreoFondo($fila['correo'], '¡Tu póster pasó a la siguiente ronda!', rh_plantilla_correo('¡Tu póster pasó a la siguiente ronda!', $cuerpo), false, $ronda['evento_carrera'] ?? null, intval($ronda['id_evento']));
         $correos[] = $fila['correo'];
     }
 
@@ -1069,7 +1069,7 @@ function cerrarYPasar($auth, $datos)
             <p>Hola, <strong>" . rh_escapar($ev['nombre']) . "</strong>,</p>
             <p>Se te asignó el póster <strong>'{$t}'</strong> en la <strong>Ronda " . (intval($ronda['numero']) + 1) . "</strong> del evento <strong>" . rh_escapar($ronda['nombre_evento']) . "</strong>.</p>
             <p>Ingresa a la plataforma para registrar tu calificación.</p>";
-        encolarCorreoFondo($ev['correo'], 'Te asignaron pósters de la Ronda ' . (intval($ronda['numero']) + 1), rh_plantilla_correo('Nuevos pósters asignados', $cuerpo));
+        encolarCorreoFondo($ev['correo'], 'Te asignaron pósters de la Ronda ' . (intval($ronda['numero']) + 1), rh_plantilla_correo('Nuevos pósters asignados', $cuerpo), false, $ronda['evento_carrera'] ?? null, intval($ronda['id_evento']));
         $evaluadoresAvisados++;
     }
 
@@ -1267,7 +1267,7 @@ function corregirSeleccion($auth, $datos)
         $cuerpo = "
             <p>¡Hola, <strong>" . rh_escapar($fila['nombre_autor']) . "</strong>!</p>
             <p>Tu póster <strong>'{$titulo}'</strong> pasó a la siguiente ronda del evento <strong>" . rh_escapar($ronda['nombre_evento']) . "</strong>.</p>";
-        encolarCorreoFondo($fila['correo'], '¡Tu póster pasó a la siguiente ronda!', rh_plantilla_correo('¡Tu póster pasó a la siguiente ronda!', $cuerpo));
+        encolarCorreoFondo($fila['correo'], '¡Tu póster pasó a la siguiente ronda!', rh_plantilla_correo('¡Tu póster pasó a la siguiente ronda!', $cuerpo), false, $ronda['evento_carrera'] ?? null, intval($ronda['id_evento']));
         $correos[] = $fila['correo'];
     }
 
@@ -1414,7 +1414,7 @@ function publicarPodio($auth, $datos)
                 <p>¡Hola, <strong>" . rh_escapar($fila['nombre_autor']) . "</strong>!</p>
                 <p>¡Felicidades! Tu póster <strong>'{$titulo}'</strong> obtuvo el <strong>{$lugarTexto}</strong> en el evento <strong>" . rh_escapar($ronda['nombre_evento']) . "</strong>.</p>
                 <p>Tu certificado está disponible en la plataforma.</p>";
-            encolarCorreoFondo($fila['correo'], '¡Felicidades, obtuviste el ' . $premiado['premio'] . '!', rh_plantilla_correo('¡Felicidades!', $cuerpo));
+            encolarCorreoFondo($fila['correo'], '¡Felicidades, obtuviste el ' . $premiado['premio'] . '!', rh_plantilla_correo('¡Felicidades!', $cuerpo), false, $ronda['evento_carrera'] ?? null, intval($ronda['id_evento']));
             $correosGanadores++;
         }
 
@@ -1426,7 +1426,7 @@ function publicarPodio($auth, $datos)
                 <p>Hola, <strong>" . rh_escapar($participante['nombres'] . ' ' . $participante['apellidos']) . "</strong>,</p>
                 <p>Se publicaron los resultados de la <strong>" . rh_escapar($ronda['nombre']) . "</strong> del evento <strong>" . rh_escapar($ronda['nombre_evento']) . "</strong>.</p>
                 <p>Gracias por tu participación como evaluador.</p>";
-            encolarCorreoFondo($participante['correo'], 'Resultados de la ' . $ronda['nombre'], rh_plantilla_correo('Resultados de la ronda', $cuerpo));
+            encolarCorreoFondo($participante['correo'], 'Resultados de la ' . $ronda['nombre'], rh_plantilla_correo('Resultados de la ronda', $cuerpo), false, $ronda['evento_carrera'] ?? null, intval($ronda['id_evento']));
         }
     }
 

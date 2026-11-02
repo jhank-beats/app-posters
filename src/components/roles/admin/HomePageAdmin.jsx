@@ -12,6 +12,7 @@ import GestionRondas from '../generales/GestionRondas.jsx';
 import GestionRecordatorios from '../generales/GestionRecordatorios.jsx';
 import ListadoUbicaciones from '../generales/ListadoUbicaciones.jsx';
 import ControlPublicacionPosters from '../generales/ControlPublicacionPosters.jsx';
+import ControlEnvioCorreos from '../generales/ControlEnvioCorreos.jsx';
 import Footer from "../../generales/Footer.jsx";
 import VolverArriba from "../../generales/VolverArriba.jsx";
 import { tituloRonda } from '../generales/rondasUtils.js';
@@ -181,9 +182,21 @@ const HomePageAdmin = () => {
                             <h3>Modificar Categorías</h3>
                             <p>Cambiar, agregar o eliminar categorías de los pósters</p>
                         </div>
+                        <div className="tarjeta" onClick={() => irASeccion('publicacion')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('publicacion')}>
+                            <div className="icono">⏰</div>
+                            <h3>Horarios de Publicación</h3>
+                            <p>Habilitar o cerrar subida de pósters y definir fechas</p>
+                        </div>
+                        <div className="tarjeta" onClick={() => irASeccion('correos')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('correos')}>
+                            <div className="icono">✉️</div>
+                            <h3>Control de Correos</h3>
+                            <p>Pausar o reactivar notificaciones de tu carrera</p>
+                        </div>
                         <div className="tarjeta" onClick={() => irASeccion('recordatorios')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('recordatorios')}>
-                            <div className="icono">⏰</div>
+                            <div className="icono">🔔</div>
                             <h3>Recordatorios de Evaluación</h3>
                             <p>Configurar horas, personalizar el mensaje y verificar pósters pendientes</p>
                         </div>
@@ -275,7 +288,6 @@ const HomePageAdmin = () => {
             <section id="posters">
                 <span className="seccion-eyebrow">Contenido</span>
                 <h2>Posters Publicados</h2>
-                <ControlPublicacionPosters esSuperAdmin={false} />
                 {!mostrarPosters && (
                     <MostrarPosters
                         limite={limite}
@@ -301,6 +313,16 @@ const HomePageAdmin = () => {
                     </div>
                 </div>
             )}
+
+            {/* Control de Publicación y Horarios */}
+            <section id="publicacion">
+                <span className="seccion-eyebrow">Convocatoria y Fechas</span>
+                <h2>Control y Horario de Publicación de Pósters</h2>
+                <p style={{ color: '#5f5e5e', textAlign: 'center', margin: '0.5rem 0 1.5rem', fontSize: '0.92rem' }}>
+                    Habilita o cierra la subida de pósters y define fechas límite de recepción para tu carrera asignada.
+                </p>
+                <ControlPublicacionPosters esSuperAdmin={false} />
+            </section>
 
             {/* Gestión de Espacios Físicos (Resumen en Home) */}
             <section id="espacios">
@@ -371,6 +393,16 @@ const HomePageAdmin = () => {
                         </button>
                     </div>
                 </div>
+            </section>
+
+            {/* Control de Envío de Correos */}
+            <section id="correos">
+                <span className="seccion-eyebrow">Comunicaciones</span>
+                <h2>Control de Envío de Correos</h2>
+                <p style={{ color: '#5f5e5e', textAlign: 'center', margin: '0.5rem 0 1.5rem', fontSize: '0.92rem' }}>
+                    Pausa o reactiva los envíos de correos de tu carrera en caso de contingencia o mantenimiento.
+                </p>
+                <ControlEnvioCorreos esSuperAdmin={false} />
             </section>
 
             {/* Modal Gestión de Espacios Físicos */}

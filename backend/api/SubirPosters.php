@@ -354,10 +354,10 @@ try {
     echo json_encode($respuesta);
 
     if ($destSub && $asuntoSub && $mensajeSub) {
-        encolarCorreoFondo($destSub, $asuntoSub, $mensajeSub);
+        encolarCorreoFondo($destSub, $asuntoSub, $mensajeSub, true, $carreraParticipacion, $id_evento_activo);
     }
     foreach ($resultadoAsignacion['notificaciones'] as $notif) {
-        encolarCorreoFondo($notif['correo'], $notif['asunto'], $notif['mensaje']);
+        encolarCorreoFondo($notif['correo'], $notif['asunto'], $notif['mensaje'], false, $carreraParticipacion, $id_evento_activo);
     }
     exit;
 

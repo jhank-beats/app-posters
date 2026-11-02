@@ -27,11 +27,141 @@ function correo_env($clave, $porDefecto = '')
 }
 
 /**
- * Determina si el envío de correos está pausado o deshabilitado temporalmente.
- * Por defecto está habilitado si SMTP está configurado.
- * Se puede pausar definiendo en .env: DISABLE_EMAILS=true o CORREOS_HABILITADOS=false.
+ * Asegura la existencia de la tabla configuracion_sistema y la columna correos_habilitados en eventos.
  */
-function correos_estan_deshabilitados()
+function correos_asegurar_tablas_y_columnas($conexion = null)
+{
+    static $verificado = false;
+    if ($verificado) return;
+
+    if (!$conexion || !($conexion instanceof mysqli)) {
+        global $conexion;
+    }
+    if (!$conexion || !($conexion instanceof mysqli)) {
+        return;
+    }
+    $verificado = true;
+
+    // 1. Tabla de configuración del sistema (clave-valor)
+    @$conexion->query("CREATE TABLE IF NOT EXISTS `configuracion_sistema` (
+        `clave` VARCHAR(64) NOT NULL PRIMARY KEY,
+        `valor` VARCHAR(255) NOT NULL,
+        `descripcion` VARCHAR(255) NULL,
+        `actualizado_en` DATETIME NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // Insertar valor por defecto global si no existe
+    @$conexion->query("INSERT IGNORE INTO `configuracion_sistema` (`clave`, `valor`, `descripcion`, `actualizado_en`) 
+        VALUES ('correos_global_habilitados', '1', 'Interruptor general de correos para todo el sistema', NOW())");
+
+    // 2. Columna correos_habilitados en eventos
+    $resCol = @$conexion->query("SHOW COLUMNS FROM `eventos` LIKE 'correos_habilitados'");
+    if ($resCol && $resCol->num_rows === 0) {
+        @$conexion->query("ALTER TABLE `eventos` ADD COLUMN `correos_habilitados` TINYINT(1) NOT NULL DEFAULT 1");
+    }
+
+    // 3. Columna carrera e id_evento en cola_correos para rastreo y filtrado
+    $resColCola1 = @$conexion->query("SHOW COLUMNS FROM `cola_correos` LIKE 'carrera'");
+    if ($resColCola1 && $resColCola1->num_rows === 0) {
+        @$conexion->query("ALTER TABLE `cola_correos` ADD COLUMN `carrera` VARCHAR(20) NULL DEFAULT NULL");
+    }
+    $resColCola2 = @$conexion->query("SHOW COLUMNS FROM `cola_correos` LIKE 'id_evento'");
+    if ($resColCola2 && $resColCola2->num_rows === 0) {
+        @$conexion->query("ALTER TABLE `cola_correos` ADD COLUMN `id_evento` INT NULL DEFAULT NULL");
+    }
+}
+
+/**
+ * Consulta si los correos están habilitados globalmente en la base de datos.
+ */
+function correos_global_habilitados($conexion = null)
+{
+    if (!$conexion || !($conexion instanceof mysqli)) {
+        global $conexion;
+    }
+    if (!$conexion || !($conexion instanceof mysqli)) {
+        return true;
+    }
+    correos_asegurar_tablas_y_columnas($conexion);
+    $res = @$conexion->query("SELECT valor FROM configuracion_sistema WHERE clave = 'correos_global_habilitados' LIMIT 1");
+    if ($res && ($row = $res->fetch_assoc())) {
+        return intval($row['valor']) === 1;
+    }
+    return true;
+}
+
+/**
+ * Consulta si los correos están habilitados para una carrera o evento específico.
+ */
+function correos_carrera_habilitados($carreraOIdEvento, $conexion = null)
+{
+    if (!$conexion || !($conexion instanceof mysqli)) {
+        global $conexion;
+    }
+    if (!$conexion || !($conexion instanceof mysqli)) {
+        return true;
+    }
+    correos_asegurar_tablas_y_columnas($conexion);
+
+    if (is_numeric($carreraOIdEvento) && intval($carreraOIdEvento) > 0) {
+        $stmt = @$conexion->prepare("SELECT correos_habilitados FROM eventos WHERE id_evento = ? LIMIT 1");
+        if ($stmt) {
+            $idEv = intval($carreraOIdEvento);
+            $stmt->bind_param("i", $idEv);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && ($row = $res->fetch_assoc())) {
+                $stmt->close();
+                return intval($row['correos_habilitados'] ?? 1) === 1;
+            }
+            $stmt->close();
+        }
+    } else {
+        $carreraNorm = function_exists('ph_normalizar_carrera') 
+            ? ph_normalizar_carrera((string)$carreraOIdEvento) 
+            : strtolower(trim((string)$carreraOIdEvento));
+
+        if ($carreraNorm === 'ambas') {
+            $res = @$conexion->query("SELECT correos_habilitados FROM eventos WHERE activo = 1");
+            if ($res) {
+                while ($row = $res->fetch_assoc()) {
+                    if (intval($row['correos_habilitados'] ?? 1) === 0) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        if (function_exists('ph_evento_activo')) {
+            $idEvAct = ph_evento_activo($conexion, $carreraNorm);
+            if ($idEvAct > 0) {
+                return correos_carrera_habilitados($idEvAct, $conexion);
+            }
+        }
+
+        $stmt = @$conexion->prepare(
+            "SELECT correos_habilitados FROM eventos WHERE activo = 1 AND (carrera = ? OR carrera = 'ambas') ORDER BY (carrera = ?) DESC, id_evento ASC LIMIT 1"
+        );
+        if ($stmt) {
+            $stmt->bind_param("ss", $carreraNorm, $carreraNorm);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && ($row = $res->fetch_assoc())) {
+                $stmt->close();
+                return intval($row['correos_habilitados'] ?? 1) === 1;
+            }
+            $stmt->close();
+        }
+    }
+    return true;
+}
+
+/**
+ * Determina si el envío de correos está pausado o deshabilitado.
+ * Puede evaluarse a nivel global o para una carrera / evento específico.
+ */
+function correos_estan_deshabilitados($carrera = null, $id_evento = null)
 {
     $disable = strtolower(trim((string)correo_env('DISABLE_EMAILS', 'false')));
     if ($disable === 'true' || $disable === '1') {
@@ -41,6 +171,24 @@ function correos_estan_deshabilitados()
     if ($habilitados === 'false' || $habilitados === '0') {
         return true;
     }
+
+    global $conexion;
+    if ($conexion instanceof mysqli) {
+        if (!correos_global_habilitados($conexion)) {
+            return true;
+        }
+
+        if ($id_evento !== null && intval($id_evento) > 0) {
+            if (!correos_carrera_habilitados(intval($id_evento), $conexion)) {
+                return true;
+            }
+        } elseif ($carrera !== null && trim((string)$carrera) !== '' && trim((string)$carrera) !== 'todas') {
+            if (!correos_carrera_habilitados((string)$carrera, $conexion)) {
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 
@@ -147,13 +295,13 @@ function correo_disparar_drenaje_cola()
 
 // Encola el correo en la tabla cola_correos (drenada por cron + disparo en vivo).
 // Si SMTP no está configurado, no encola (evita filas que nunca se envían).
-function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml, $dispararDrenaje = true)
+function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml, $dispararDrenaje = true, $carrera = null, $id_evento = null)
 {
     global $conexion;
 
-    // Si los correos están deshabilitados, ni siquiera encolar
-    if (correos_estan_deshabilitados()) {
-        error_log("encolarCorreoFondo: correos deshabilitados por configuración, omitiendo {$destinatario}");
+    // Si los correos están deshabilitados (global o para esta carrera), ni siquiera encolar
+    if (correos_estan_deshabilitados($carrera, $id_evento)) {
+        error_log("encolarCorreoFondo: correos deshabilitados por configuración para " . ($carrera ?? $id_evento ?? 'global') . ", omitiendo {$destinatario}");
         return true;
     }
 
@@ -169,11 +317,16 @@ function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml, $dispararDrena
 
     if (isset($conexion) && $conexion instanceof mysqli) {
         try {
+            correos_asegurar_tablas_y_columnas($conexion);
+
+            $idEv = ($id_evento !== null && intval($id_evento) > 0) ? intval($id_evento) : null;
+            $carr = ($carrera !== null && trim((string)$carrera) !== '') ? strtolower(trim((string)$carrera)) : null;
+
             $stmt = $conexion->prepare(
-                "INSERT INTO cola_correos (destinatario, asunto, mensaje, estado, intentos) VALUES (?, ?, ?, 'pendiente', 0)"
+                "INSERT INTO cola_correos (destinatario, asunto, mensaje, estado, intentos, carrera, id_evento) VALUES (?, ?, ?, 'pendiente', 0, ?, ?)"
             );
             if ($stmt) {
-                $stmt->bind_param("sss", $destinatario, $asunto, $html);
+                $stmt->bind_param("ssssi", $destinatario, $asunto, $html, $carr, $idEv);
                 if ($stmt->execute()) {
                     $stmt->close();
                     if ($dispararDrenaje) {
@@ -182,6 +335,20 @@ function encolarCorreoFondo($destinatario, $asunto, $mensajeHtml, $dispararDrena
                     return true;
                 }
                 $stmt->close();
+            } else {
+                // Si la tabla no tiene las columnas adicionales aún, fallback seguro
+                $stmtFallback = $conexion->prepare(
+                    "INSERT INTO cola_correos (destinatario, asunto, mensaje, estado, intentos) VALUES (?, ?, ?, 'pendiente', 0)"
+                );
+                if ($stmtFallback) {
+                    $stmtFallback->bind_param("sss", $destinatario, $asunto, $html);
+                    if ($stmtFallback->execute()) {
+                        $stmtFallback->close();
+                        if ($dispararDrenaje) correo_disparar_drenaje_cola();
+                        return true;
+                    }
+                    $stmtFallback->close();
+                }
             }
         } catch (Throwable $e) {
             error_log('encolarCorreoFondo: ' . $e->getMessage());
