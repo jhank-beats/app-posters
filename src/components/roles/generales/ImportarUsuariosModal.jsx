@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { API_BASE } from '../../../config.js';
+import HintScrollTabla from '../../generales/HintScrollTabla.jsx';
 import './roles.css';
 
 const COLUMNAS = [
@@ -120,6 +121,7 @@ export default function ImportarUsuariosModal({ cerrar, onImportado }) {
               📋 Formato de columnas
             </label>
             <div className="contenedor-tabla" style={{ padding: 0, maxWidth: 'none' }}>
+              <HintScrollTabla />
               <table>
                 <thead>
                   <tr>

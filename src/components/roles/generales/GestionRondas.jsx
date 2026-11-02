@@ -1149,6 +1149,7 @@ const GestionRondas = ({ cerrarTabla, idEventoInicial = null, idRondaFoco = null
                                         {rankingC.length === 0 && <p>No hay pósters en esta ronda.</p>}
                                         {rankingC.length > 0 && (
                                             <div className="contenedor-tabla tabla-cierre-posters">
+                                                <HintScrollTabla />
                                                 <table>
                                                     <thead>
                                                         <tr>

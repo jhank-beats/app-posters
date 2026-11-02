@@ -171,11 +171,11 @@ const HomePageSuperAdmin = () => {
                             <h3>Gestionar Usuarios / Roles</h3>
                             <p>Aprobar o rechazar solicitudes y modificar roles</p>
                         </div>
-                        <div className="tarjeta" onClick={() => irASeccion('criterios')} role="button" tabIndex={0}
-                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('criterios')}>
-                            <div className="icono">📝</div>
-                            <h3>Criterios de Evaluación</h3>
-                            <p>Crear, modificar y parametrizar los criterios</p>
+                        <div className="tarjeta" onClick={() => irASeccion('publicacion')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('publicacion')}>
+                            <div className="icono">⏰</div>
+                            <h3>Horarios de Publicación</h3>
+                            <p>Habilitar o cerrar subida de pósters y definir fechas</p>
                         </div>
                         <div className="tarjeta" onClick={() => irASeccion('espacios')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('espacios')}>
@@ -183,35 +183,23 @@ const HomePageSuperAdmin = () => {
                             <h3>Espacios Físicos</h3>
                             <p>Definir salones, estantes y capacidad de ubicación</p>
                         </div>
-                        <div className="tarjeta" onClick={() => irASeccion('categorias')} role="button" tabIndex={0}
-                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('categorias')}>
-                            <div className="icono">📊</div>
-                            <h3>Modificar Categorías</h3>
-                            <p>Cambiar, agregar o eliminar categorías por carrera</p>
-                        </div>
                         <div className="tarjeta" onClick={() => irASeccion('eventos')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('eventos')}>
                             <div className="icono">🗓️</div>
                             <h3>Gestionar Eventos</h3>
                             <p>Crear semestres y definir el evento activo</p>
                         </div>
-                        <div className="tarjeta" onClick={() => irASeccion('publicacion')} role="button" tabIndex={0}
-                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('publicacion')}>
-                            <div className="icono">⏰</div>
-                            <h3>Horarios de Publicación</h3>
-                            <p>Habilitar o cerrar subida de pósters y definir fechas</p>
+                        <div className="tarjeta" onClick={() => irASeccion('criterios')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('criterios')}>
+                            <div className="icono">📝</div>
+                            <h3>Criterios de Evaluación</h3>
+                            <p>Crear, modificar y parametrizar los criterios</p>
                         </div>
                         <div className="tarjeta" onClick={() => irASeccion('correos')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('correos')}>
                             <div className="icono">✉️</div>
                             <h3>Control de Correos</h3>
                             <p>Pausar o reactivar notificaciones globales o por carrera</p>
-                        </div>
-                        <div className="tarjeta" onClick={() => irASeccion('recordatorios')} role="button" tabIndex={0}
-                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('recordatorios')}>
-                            <div className="icono">🔔</div>
-                            <h3>Recordatorios de Evaluación</h3>
-                            <p>Configurar horas, personalizar el mensaje y verificar pósters pendientes</p>
                         </div>
                     </div>
                 </div>
@@ -398,7 +386,7 @@ const HomePageSuperAdmin = () => {
                         <button className="boton-primario" onClick={() => setMostrarGestionEspacios(true)}>
                             Administrar / Crear Espacios Físicos
                         </button>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#eef2f5', padding: '6px 12px', borderRadius: '10px' }}>
+                        <div className="selector-carrera-wrapper" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#eef2f5', padding: '6px 12px', borderRadius: '10px' }}>
                             <label htmlFor="select-carrera-esp" style={{ fontWeight: 700, fontSize: '0.88rem', color: '#132740' }}>
                                 Carrera:
                             </label>

@@ -164,6 +164,12 @@ const HomePageAdmin = () => {
                             <h3>Administrar Pósters</h3>
                             <p>Revisar, editar o eliminar</p>
                         </div>
+                        <div className="tarjeta" onClick={() => irASeccion('publicacion')} role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('publicacion')}>
+                            <div className="icono">⏰</div>
+                            <h3>Horarios de Publicación</h3>
+                            <p>Habilitar o cerrar subida de pósters y definir fechas</p>
+                        </div>
                         <div className="tarjeta" onClick={() => irASeccion('espacios')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('espacios')}>
                             <div className="icono">📍</div>
@@ -176,29 +182,11 @@ const HomePageAdmin = () => {
                             <h3>Criterios de Evaluación</h3>
                             <p>Crear, modificar o eliminar los criterios de evaluación de tu evento</p>
                         </div>
-                        <div className="tarjeta" onClick={() => irASeccion('categorias')} role="button" tabIndex={0}
-                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('categorias')}>
-                            <div className="icono">📊</div>
-                            <h3>Modificar Categorías</h3>
-                            <p>Cambiar, agregar o eliminar categorías de los pósters</p>
-                        </div>
-                        <div className="tarjeta" onClick={() => irASeccion('publicacion')} role="button" tabIndex={0}
-                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('publicacion')}>
-                            <div className="icono">⏰</div>
-                            <h3>Horarios de Publicación</h3>
-                            <p>Habilitar o cerrar subida de pósters y definir fechas</p>
-                        </div>
                         <div className="tarjeta" onClick={() => irASeccion('correos')} role="button" tabIndex={0}
                             onKeyDown={(e) => e.key === 'Enter' && irASeccion('correos')}>
                             <div className="icono">✉️</div>
                             <h3>Control de Correos</h3>
                             <p>Pausar o reactivar notificaciones de tu carrera</p>
-                        </div>
-                        <div className="tarjeta" onClick={() => irASeccion('recordatorios')} role="button" tabIndex={0}
-                            onKeyDown={(e) => e.key === 'Enter' && irASeccion('recordatorios')}>
-                            <div className="icono">🔔</div>
-                            <h3>Recordatorios de Evaluación</h3>
-                            <p>Configurar horas, personalizar el mensaje y verificar pósters pendientes</p>
                         </div>
                     </div>
                 </div>
@@ -368,7 +356,7 @@ const HomePageAdmin = () => {
                             )}
                         </tbody>
                     </table>
-                    <div style={{ textAlign: 'center', marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <div className="grupo-botones-espacios">
                         <button className="boton-primario" onClick={() => setMostrarGestionEspacios(true)}>
                             Administrar Espacios y Capacidad
                         </button>

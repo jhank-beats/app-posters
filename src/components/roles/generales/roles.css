@@ -671,6 +671,53 @@ a:hover {
   /* La sombra está en el contenedor (no se mueve al desplazar) y
      will-change deja el scroll compuesto listo en Firefox. */
   will-change: scroll-position;
+  scrollbar-width: none; /* Firefox: oculta la barra horizontal inferior */
+  -ms-overflow-style: none; /* IE y Edge */
+}
+
+.contenedor-tabla::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera: oculta la barra horizontal inferior */
+}
+
+/* Barra de desplazamiento horizontal superior sincronizada para tablas */
+.barra-scroll-top-wrapper {
+  position: sticky;
+  left: 0;
+  width: 100%;
+  z-index: 6;
+  margin-bottom: 0.5rem;
+}
+
+.barra-scroll-top-track {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 12px;
+  background-color: #eef4f8;
+  border-radius: 999px;
+  border: 1px solid #dbeafe;
+  scrollbar-width: thin;
+  scrollbar-color: #00acc9 #eef4f8;
+  cursor: ew-resize;
+}
+
+.barra-scroll-top-track::-webkit-scrollbar {
+  display: block !important;
+  height: 10px !important;
+}
+
+.barra-scroll-top-track::-webkit-scrollbar-track {
+  background: #eef4f8;
+  border-radius: 999px;
+}
+
+.barra-scroll-top-track::-webkit-scrollbar-thumb {
+  background: #00acc9;
+  border-radius: 999px;
+}
+
+.barra-scroll-top-track::-webkit-scrollbar-thumb:hover {
+  background: #008fa8;
 }
 
 .contenedor-tabla a {
@@ -1364,23 +1411,30 @@ table select {
 .grupo-botones-espacios {
   display: flex !important;
   flex-direction: row !important;
-  gap: 1.25rem !important;
+  gap: clamp(0.5rem, 1.2vw, 1.25rem) !important;
   justify-content: center !important;
   align-items: center !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
   margin-top: 1.25rem !important;
   width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .grupo-botones-espacios .boton-primario,
-.grupo-botones-espacios .boton-secundario {
+.grupo-botones-espacios .boton-secundario,
+.grupo-botones-espacios .selector-carrera-wrapper {
   width: auto !important;
-  flex: 0 0 auto !important;
+  flex: 0 1 auto !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  white-space: nowrap !important;
+  white-space: normal !important;
   margin: 0 !important;
+  font-size: clamp(0.78rem, 1.05vw, 0.95rem) !important;
+  padding: clamp(0.45rem, 0.8vw, 0.75rem) clamp(0.7rem, 1.2vw, 1.25rem) !important;
+  max-width: 100% !important;
+  text-align: center !important;
+  transition: all 0.2s ease !important;
 }
 
 /* Únicamente en modo teléfono / celular */
@@ -1395,14 +1449,16 @@ table select {
     gap: 0.75rem !important;
   }
   .grupo-botones-espacios .boton-primario,
-  .grupo-botones-espacios .boton-secundario {
+  .grupo-botones-espacios .boton-secundario,
+  .grupo-botones-espacios .selector-carrera-wrapper {
     width: 100% !important;
     font-size: 0.9rem !important;
     padding: 0.75rem 1rem !important;
     white-space: normal !important;
     text-align: center !important;
-    display: block !important;
+    display: flex !important;
     box-sizing: border-box !important;
+    justify-content: center !important;
   }
 }
 
@@ -1485,6 +1541,7 @@ Overlay Formularios
 .modal .todos-posters,
 .modal .todos-usuarios,
 .modal-formulario {
+  position: relative;
   background-color: #ffffff;
   border-top: 4px solid #00acc9;
   border-radius: 20px;
